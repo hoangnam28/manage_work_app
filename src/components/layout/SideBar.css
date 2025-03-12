@@ -1,0 +1,25 @@
+.site-layout-background {
+    background: #fff;
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    font-size: 16px;
+    font-weight: bold;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.sidebar-header .anticon {
+       margin-right: 8px;
+}
+
+.sidebar-footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 16px;
+    border-top: 1px solid #f0f0f0;
+    text-align: center;
+}
