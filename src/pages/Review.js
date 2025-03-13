@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Table, Input, DatePicker, Upload, Button, Modal, Form, Popconfirm, Image, Space } from "antd";
+import { Table, Input, DatePicker, Upload, Button, Modal, Form, Popconfirm, Image, Space, List, Spin } from "antd";
+import { Typography } from 'antd';
 import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined } from "@ant-design/icons";
 import axios from "axios";
 import moment from 'moment';
@@ -12,6 +13,44 @@ const Review = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [imageLoadingStates, setImageLoadingStates] = useState({});
+  const [editHistory, setEditHistory] = useState([]);
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
+  const [cellStatuses, setCellStatuses] = useState({});
+  const [selectedField, setSelectedField] = useState(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const { Text } = Typography;
+
+  // Thêm hàm để lấy thông tin user từ token
+  const fetchUserInfo = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        toast.error('Vui lòng đăng nhập lại');
+        return;
+      }
+
+      const response = await axios.get('http://localhost:5000/api/auth/profile', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      setCurrentUser(response.data);
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+      if (error.response?.status === 401) {
+        toast.error('Phiên đăng nhập hết hạn');
+        // Redirect to login page or handle token expiration
+      }
+    }
+  };
+
+  // Thêm useEffect để lấy thông tin user khi component mount
+  useEffect(() => {
+    fetchUserInfo();
+  }, []);
 
   // Wrap fetchData in useCallback
   const fetchData = useCallback(async () => {
@@ -151,45 +190,48 @@ const Review = () => {
 
   const handleSaveRow = async (record) => {
     try {
-      const processedRecord = { ...record };
-      if (processedRecord.GHI_CHU) {
-        if (typeof processedRecord.GHI_CHU === 'object') {
-          if (processedRecord.GHI_CHU._events || processedRecord.GHI_CHU._readableState) {
-            processedRecord.GHI_CHU = '';
-          } else {
-            try {
-              processedRecord.GHI_CHU = JSON.stringify(processedRecord.GHI_CHU);
-            } catch (e) {
-              processedRecord.GHI_CHU = '';
-            }
-          }
-        } else if (typeof processedRecord.GHI_CHU === 'string') {
-          if (processedRecord.GHI_CHU.includes('_events') ||
-            processedRecord.GHI_CHU.includes('_readableState')) {
-            processedRecord.GHI_CHU = '';
+      const token = localStorage.getItem('accessToken');
+      if (!token || !currentUser) {
+        toast.error('Vui lòng đăng nhập lại');
+        return;
+      }
+
+      const dataToUpdate = {
+        ma: record.MA,
+        khach_hang: record.KHACH_HANG,
+        ma_tai_lieu: record.MA_TAI_LIEU,
+        rev: record.REV,
+        phu_trach_thiet_ke: record.PHU_TRACH_THIET_KE,
+        ngay_thiet_ke: record.NGAY_THIET_KE,
+        cong_venh: record.CONG_VENH,
+        phu_trach_review: record.PHU_TRACH_REVIEW,
+        ngay: record.NGAY,
+        v_cut: record.V_CUT,
+        xu_ly_be_mat: record.XU_LY_BE_MAT,
+        ghi_chu: record.GHI_CHU,
+        edited_by: currentUser.username
+      };
+
+      await axios.put(
+        `http://localhost:5000/api/document/update/${record.COLUMN_ID}`,
+        dataToUpdate,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
           }
         }
-      }
-      await axios.put(`http://localhost:5000/api/document/update/${processedRecord.COLUMN_ID}`, {
-        stt: processedRecord.STT,
-        ma: processedRecord.MA,
-        khach_hang: processedRecord.KHACH_HANG,
-        ma_tai_lieu: processedRecord.MA_TAI_LIEU,
-        rev: processedRecord.REV,
-        phu_trach_thiet_ke: processedRecord.PHU_TRACH_THIET_KE,
-        ngay_thiet_ke: processedRecord.NGAY_THIET_KE ? moment(processedRecord.NGAY_THIET_KE).format('YYYY-MM-DD') : null,
-        cong_venh: processedRecord.CONG_VENH,
-        phu_trach_review: processedRecord.PHU_TRACH_REVIEW,
-        ngay: processedRecord.NGAY ? moment(processedRecord.NGAY).format('YYYY-MM-DD') : null,
-        v_cut: processedRecord.V_CUT,
-        xu_ly_be_mat: processedRecord.XU_LY_BE_MAT,
-        ghi_chu: processedRecord.GHI_CHU
-      });
+      );
+
       toast.success('Lưu thành công');
       fetchData();
     } catch (error) {
       console.error(error);
-      toast.error('Lỗi khi lưu dữ liệu');
+      if (error.response?.status === 401) {
+        toast.error('Phiên đăng nhập hết hạn');
+        // Redirect to login page or handle token expiration
+      } else {
+        toast.error('Lỗi khi lưu dữ liệu');
+      }
     }
   };
 
@@ -199,13 +241,8 @@ const Review = () => {
     const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
     if (index > -1) {
       const item = newData[index];
-      // Đảm bảo value là chuỗi
-      const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
-      newData[index] = { ...item, [field]: stringValue };
+      newData[index] = { ...item, [field]: value };
       setData(newData);
-
-      // Log để kiểm tra
-      console.log(`Changed ${field} to:`, stringValue, typeof stringValue);
     }
   };
 
@@ -285,6 +322,28 @@ const Review = () => {
     }
   };
 
+  const fetchEditHistory = async (columnId, field) => {
+    setHistoryLoading(true);
+    try {
+      console.log('Fetching history for:', { columnId, field });
+      const response = await axios.get(`http://localhost:5000/api/document/edit-history/${columnId}/${field}`);
+      console.log('History response:', response.data);
+      setEditHistory(response.data);
+      setSelectedField(field);
+      setHistoryModalVisible(true);
+    } catch (error) {
+      console.error('Error fetching history:', error);
+      toast.error('Lỗi khi lấy lịch sử chỉnh sửa');
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
+  const getCellStatus = (columnId, field) => {
+    const key = `${columnId}-${field}`;
+    return cellStatuses[key] || 'default';
+  };
+
   const columns = [
     {
       title: "STT",
@@ -299,12 +358,26 @@ const Review = () => {
       key: "ma",
       width: 120,
       render: (text, record) => (
-        <Input.TextArea
-          value={text}
-          onChange={e => handleCellChange(e.target.value, record, 'MA')}
-          autoSize={{ minRows: 1, maxRows: 3 }}
-          style={{ width: '100%', resize: 'none' }}
-        />
+        <div
+          onClick={() => fetchEditHistory(record.COLUMN_ID, 'MA')}
+          style={{
+            cursor: 'pointer',
+            padding: '4px',
+            border: getCellStatus(record.COLUMN_ID, 'MA') === 'new' 
+              ? '1px solid #1890ff'
+              : getCellStatus(record.COLUMN_ID, 'MA') === 'edited'
+              ? '1px solid #52c41a'
+              : '1px solid transparent'
+          }}
+        >
+          <Input.TextArea
+            value={text}
+            onChange={e => handleCellChange(e.target.value, record, 'MA')}
+            autoSize={{ minRows: 1, maxRows: 7 }}
+            style={{ width: '100%', resize: 'none' }}
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
       )
     },
     {
@@ -313,12 +386,26 @@ const Review = () => {
       key: "khach_hang",
       width: 150,
       render: (text, record) => (
-        <Input.TextArea
-          value={text}
-          onChange={e => handleCellChange(e.target.value, record, 'KHACH_HANG')}
-          autoSize={{ minRows: 1, maxRows: 3 }}
-          style={{ width: '100%', resize: 'none' }}
-        />
+        <div
+          onClick={() => fetchEditHistory(record.COLUMN_ID, 'KHACH_HANG')}
+          style={{
+            cursor: 'pointer',
+            padding: '4px',
+            border: getCellStatus(record.COLUMN_ID, 'KHACH_HANG') === 'new' 
+              ? '1px solid #1890ff'
+              : getCellStatus(record.COLUMN_ID, 'KHACH_HANG') === 'edited'
+              ? '1px solid #52c41a'
+              : '1px solid transparent'
+          }}
+        >
+          <Input.TextArea
+            value={text}
+            onChange={e => handleCellChange(e.target.value, record, 'KHACH_HANG')}
+            autoSize={{ minRows: 1, maxRows: 7 }}
+            style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
       )
     },
     {
@@ -327,12 +414,26 @@ const Review = () => {
       key: "ma_tai_lieu",
       width: 180,
       render: (text, record) => (
-        <Input.TextArea
-          value={text}
-          onChange={e => handleCellChange(e.target.value, record, 'MA_TAI_LIEU')}
-          autoSize={{ minRows: 1, maxRows: 3 }}
-          style={{ width: '100%', resize: 'none' }}
-        />
+        <div
+          onClick={() => fetchEditHistory(record.COLUMN_ID, 'MA_TAI_LIEU')}
+          style={{
+            cursor: 'pointer',
+            padding: '4px',
+            border: getCellStatus(record.COLUMN_ID, 'MA_TAI_LIEU') === 'new' 
+              ? '1px solid #1890ff'
+              : getCellStatus(record.COLUMN_ID, 'MA_TAI_LIEU') === 'edited'
+              ? '1px solid #52c41a'
+              : '1px solid transparent'
+          }}
+        >
+          <Input.TextArea
+            value={text}
+            onChange={e => handleCellChange(e.target.value, record, 'MA_TAI_LIEU')}
+            autoSize={{ minRows: 1, maxRows: 7 }}
+            style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
       )
     },
     {
@@ -341,12 +442,26 @@ const Review = () => {
       key: "rev",
       width: 80,
       render: (text, record) => (
-        <Input.TextArea
-          value={text}
-          onChange={e => handleCellChange(e.target.value, record, 'REV')}
-          autoSize={{ minRows: 1, maxRows: 3 }}
-          style={{ width: '100%', resize: 'none' }}
-        />
+        <div
+          onClick={() => fetchEditHistory(record.COLUMN_ID, 'REV')}
+          style={{
+            cursor: 'pointer',
+            padding: '4px',
+            border: getCellStatus(record.COLUMN_ID, 'REV') === 'new' 
+              ? '1px solid #1890ff'
+              : getCellStatus(record.COLUMN_ID, 'REV') === 'edited'
+              ? '1px solid #52c41a'
+              : '1px solid transparent'
+          }}
+        >
+          <Input.TextArea
+            value={text}
+            onChange={e => handleCellChange(e.target.value, record, 'REV')}
+            autoSize={{ minRows: 1, maxRows: 7 }}
+            style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
       )
     },
     {
@@ -355,12 +470,26 @@ const Review = () => {
       key: "phu_trach_thiet_ke",
       width: 150,
       render: (text, record) => (
-        <Input.TextArea
-          value={text}
-          onChange={e => handleCellChange(e.target.value, record, 'PHU_TRACH_THIET_KE')}
-          autoSize={{ minRows: 1, maxRows: 3 }}
-          style={{ width: '100%', resize: 'none' }}
-        />
+        <div
+          onClick={() => fetchEditHistory(record.COLUMN_ID, 'PHU_TRACH_THIET_KE')}
+          style={{
+            cursor: 'pointer',
+            padding: '4px',
+            border: getCellStatus(record.COLUMN_ID, 'PHU_TRACH_THIET_KE') === 'new' 
+              ? '1px solid #1890ff'
+              : getCellStatus(record.COLUMN_ID, 'PHU_TRACH_THIET_KE') === 'edited'
+              ? '1px solid #52c41a'
+              : '1px solid transparent'
+          }}
+        >
+          <Input.TextArea
+            value={text}
+            onChange={e => handleCellChange(e.target.value, record, 'PHU_TRACH_THIET_KE')}
+            autoSize={{ minRows: 1, maxRows: 7 }}
+            style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
       )
     },
     {
@@ -382,12 +511,26 @@ const Review = () => {
       key: "cong_venh",
       width: 120,
       render: (text, record) => (
-        <Input.TextArea
-          value={text}
-          onChange={e => handleCellChange(e.target.value, record, 'CONG_VENH')}
-          autoSize={{ minRows: 1, maxRows: 3 }}
-          style={{ width: '100%', resize: 'none' }}
-        />
+        <div
+          onClick={() => fetchEditHistory(record.COLUMN_ID, 'CONG_VENH')}
+          style={{
+            cursor: 'pointer',
+            padding: '4px',
+            border: getCellStatus(record.COLUMN_ID, 'CONG_VENH') === 'new' 
+              ? '1px solid #1890ff'
+              : getCellStatus(record.COLUMN_ID, 'CONG_VENH') === 'edited'
+              ? '1px solid #52c41a'
+              : '1px solid transparent'
+          }}
+        >
+          <Input.TextArea
+            value={text}
+            onChange={e => handleCellChange(e.target.value, record, 'CONG_VENH')}
+            autoSize={{ minRows: 1, maxRows: 7 }}
+            style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
       )
     },
     {
@@ -460,12 +603,26 @@ const Review = () => {
       key: "phu_trach_review",
       width: 150,
       render: (text, record) => (
-        <Input.TextArea
-          value={text}
-          onChange={e => handleCellChange(e.target.value, record, 'PHU_TRACH_REVIEW')}
-          autoSize={{ minRows: 1, maxRows: 3 }}
-          style={{ width: '100%', resize: 'none' }}
-        />
+        <div
+          onClick={() => fetchEditHistory(record.COLUMN_ID, 'PHU_TRACH_REVIEW')}
+          style={{
+            cursor: 'pointer',
+            padding: '4px',
+            border: getCellStatus(record.COLUMN_ID, 'PHU_TRACH_REVIEW') === 'new' 
+              ? '1px solid #1890ff'
+              : getCellStatus(record.COLUMN_ID, 'PHU_TRACH_REVIEW') === 'edited'
+              ? '1px solid #52c41a'
+              : '1px solid transparent'
+          }}
+        >
+          <Input.TextArea
+            value={text}
+            onChange={e => handleCellChange(e.target.value, record, 'PHU_TRACH_REVIEW')}
+            autoSize={{ minRows: 1, maxRows: 7 }}
+            style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
       )
     },
     {
@@ -487,12 +644,26 @@ const Review = () => {
       key: "v_cut",
       width: 100,
       render: (text, record) => (
-        <Input.TextArea
-          value={text}
-          onChange={e => handleCellChange(e.target.value, record, 'V_CUT')}
-          autoSize={{ minRows: 1, maxRows: 3 }}
-          style={{ width: '100%', resize: 'none' }}
-        />
+        <div
+          onClick={() => fetchEditHistory(record.COLUMN_ID, 'V_CUT')}
+          style={{
+            cursor: 'pointer',
+            padding: '4px',
+            border: getCellStatus(record.COLUMN_ID, 'V_CUT') === 'new' 
+              ? '1px solid #1890ff'
+              : getCellStatus(record.COLUMN_ID, 'V_CUT') === 'edited'
+              ? '1px solid #52c41a'
+              : '1px solid transparent'
+          }}
+        >
+          <Input.TextArea
+            value={text}
+            onChange={e => handleCellChange(e.target.value, record, 'V_CUT')}
+            autoSize={{ minRows: 1, maxRows: 7 }}
+            style={{ width: '100%', resize: 'none',maxHeight: '120px'  }}
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
       )
     },
     {
@@ -552,12 +723,26 @@ const Review = () => {
       key: "xu_ly_be_mat",
       width: 150,
       render: (text, record) => (
-        <Input.TextArea
-          value={text}
-          onChange={e => handleCellChange(e.target.value, record, 'XU_LY_BE_MAT')}
-          autoSize={{ minRows: 1, maxRows: 3 }}
-          style={{ width: '100%', resize: 'none' }}
-        />
+        <div
+          onClick={() => fetchEditHistory(record.COLUMN_ID, 'XU_LY_BE_MAT')}
+          style={{
+            cursor: 'pointer',
+            padding: '4px',
+            border: getCellStatus(record.COLUMN_ID, 'XU_LY_BE_MAT') === 'new' 
+              ? '1px solid #1890ff'
+              : getCellStatus(record.COLUMN_ID, 'XU_LY_BE_MAT') === 'edited'
+              ? '1px solid #52c41a'
+              : '1px solid transparent'
+          }}
+        >
+          <Input.TextArea
+            value={text}
+            onChange={e => handleCellChange(e.target.value, record, 'XU_LY_BE_MAT')}
+            autoSize={{ minRows: 1, maxRows: 7 }}
+            style={{ width: '100%', resize: 'none',maxHeight: '120px'  }}
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
       )
     },
     {
@@ -640,12 +825,26 @@ const Review = () => {
         }
 
         return (
-          <Input.TextArea
-            value={displayValue}
-            onChange={e => handleCellChange(e.target.value, record, 'GHI_CHU')}
-            autoSize={{ minRows: 1, maxRows: 4 }}
-            style={{ width: '100%', resize: 'none' }}
-          />
+          <div
+            onClick={() => fetchEditHistory(record.COLUMN_ID, 'GHI_CHU')}
+            style={{
+              cursor: 'pointer',
+              padding: '4px',
+              border: getCellStatus(record.COLUMN_ID, 'GHI_CHU') === 'new' 
+                ? '1px solid #1890ff'
+                : getCellStatus(record.COLUMN_ID, 'GHI_CHU') === 'edited'
+                ? '1px solid #52c41a'
+                : '1px solid transparent'
+            }}
+          >
+            <Input.TextArea
+              value={displayValue}
+              onChange={e => handleCellChange(e.target.value, record, 'GHI_CHU')}
+              autoSize={{ minRows: 1, maxRows: 7 }}
+              style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
+              onClick={e => e.stopPropagation()}
+            />
+          </div>
         );
       }
     },
@@ -687,8 +886,42 @@ const Review = () => {
     setPagination(pagination);
   };
 
+  const HistoryModal = () => (
+    <Modal
+      title="Lịch sử chỉnh sửa"
+      open={historyModalVisible}
+      onCancel={() => setHistoryModalVisible(false)}
+      footer={null}
+      width={600}
+    >
+      {historyLoading ? (
+        <div style={{ textAlign: 'center', padding: '20px' }}>
+          <Spin />
+        </div>
+      ) : (
+        <List
+          dataSource={editHistory}
+          renderItem={item => (
+            <List.Item>
+              <List.Item.Meta
+                title={`${item.EDITED_BY} đã chỉnh sửa lúc - ${item.EDIT_TIME}`}
+                description={
+                  <Space direction="vertical">
+                    <Text type="secondary">Giá trị cũ: {item.OLD_VALUE || '(trống)'}</Text>
+                    <Text>Giá trị mới: {item.NEW_VALUE}</Text>
+                  </Space>
+                } 
+              />
+            </List.Item>
+          )}
+          locale={{ emptyText: 'Chưa có lịch sử chỉnh sửa' }}
+        />
+      )}
+    </Modal>
+  );
+
   return (
-    <MainLayout username="YourUsername" onLogout={() => console.log('Logout')}>
+    <MainLayout username={currentUser?.username} onLogout={() => console.log('Logout')}>
       <Toaster position="top-right" richColors />
       <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
         <Button type="primary" onClick={() => setIsModalVisible(true)}>Tạo mới</Button>
@@ -749,6 +982,26 @@ const Review = () => {
         .ant-upload-disabled {
           cursor: not-allowed;
         }
+        .cell-new {
+          border: 1px solid #1890ff !important;
+        }
+        .cell-edited {
+          border: 1px solid #52c41a !important;
+        }
+        .history-cell {
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+        .history-cell:hover {
+          background-color: rgba(24, 144, 255, 0.1);
+        }
+        .editable-cell {
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+        .editable-cell:hover {
+          background-color: rgba(24, 144, 255, 0.1);
+        }
       `}</style>
 
       <Modal
@@ -769,6 +1022,7 @@ const Review = () => {
           </Form.Item>
         </Form>
       </Modal>
+      <HistoryModal />
     </MainLayout>
   );
 };

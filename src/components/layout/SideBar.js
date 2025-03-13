@@ -14,6 +14,9 @@ const SideBar = ({ username, onLogout, userId }) => {
         </Menu>
     );
 
+    const storedUser = localStorage.getItem("userInfo");
+    const user = storedUser ? JSON.parse(storedUser) : null;
+
     return (
         <Sider width={200} className="site-layout-background">
             <div className="sidebar-header">
@@ -22,7 +25,7 @@ const SideBar = ({ username, onLogout, userId }) => {
                     icon={<UserOutlined />}
                     src={userId ? `http://localhost:5000/api/auth/avatar/${userId}` : null}
                 />
-                <span style={{ marginLeft: '8px' }}>{username}</span>
+                <span style={{ marginLeft: '8px' }}>{user?.username || "Guest"}</span>
             </div>
             <Menu mode="inline" defaultSelectedKeys={['1']} style={{ height: '100%', borderRight: 0 }}>
                 <Menu.Item key="1">
