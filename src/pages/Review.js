@@ -15,12 +15,11 @@ const Review = () => {
   const [imageLoadingStates, setImageLoadingStates] = useState({});
   const [editHistory, setEditHistory] = useState([]);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
-  const [cellStatuses, setCellStatuses] = useState({});
-  const [selectedField, setSelectedField] = useState(null);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
 
   const { Text } = Typography;
+  
 
   // Thêm hàm để lấy thông tin user từ token
   const fetchUserInfo = async () => {
@@ -232,6 +231,7 @@ const Review = () => {
       }
     }
   };
+  
 
   // Hàm xử lý thay đổi giá trị trong bảng
   const handleCellChange = (value, record, field) => {
@@ -256,20 +256,24 @@ const Review = () => {
   };
 
   const handleAddNew = () => {
-    form.validateFields().then(async values => {
-      try {
-        await axios.post('http://localhost:5000/api/document/add', values);
-        toast.success('Thêm dữ liệu thành công');
-        fetchData();
-        setIsModalVisible(false);
-        form.resetFields();
-      } catch (error) {
-        console.error(error);
-        toast.error('Lỗi khi thêm dữ liệu');
-      }
-    });
+    form.validateFields()
+      .then(async values => {
+        try {
+          await axios.post('http://localhost:5000/api/document/add', values);
+          toast.success('Thêm dữ liệu thành công');
+          fetchData();
+          setIsModalVisible(false);
+          form.resetFields();
+        } catch (error) {
+          console.error(error);
+          toast.error('Lỗi khi thêm dữ liệu');
+        }
+      })
+      .catch(errorInfo => {
+        console.error('Validation Failed:', errorInfo);
+        toast.error('Vui lòng nhập đầy đủ các trường thông tin!');
+      });
   };
-
 
   const handleDelete = async (column_id) => {
     try {
@@ -326,7 +330,6 @@ const Review = () => {
       const response = await axios.get(`http://localhost:5000/api/document/edit-history/${columnId}/${field}`);
       console.log('History response:', response.data);
       setEditHistory(response.data);
-      setSelectedField(field);
       setHistoryModalVisible(true);
     } catch (error) {
       console.error('Error fetching history:', error);
@@ -334,11 +337,6 @@ const Review = () => {
     } finally {
       setHistoryLoading(false);
     }
-  };
-
-  const getCellStatus = (columnId, field) => {
-    const key = `${columnId}-${field}`;
-    return cellStatuses[key] || 'default';
   };
 
   const columns = [
@@ -360,11 +358,6 @@ const Review = () => {
           style={{
             cursor: 'pointer',
             padding: '4px',
-            border: getCellStatus(record.COLUMN_ID, 'MA') === 'new' 
-              ? '1px solid #1890ff'
-              : getCellStatus(record.COLUMN_ID, 'MA') === 'edited'
-              ? '1px solid #52c41a'
-              : '1px solid transparent'
           }}
         >
           <Input.TextArea
@@ -388,11 +381,6 @@ const Review = () => {
           style={{
             cursor: 'pointer',
             padding: '4px',
-            border: getCellStatus(record.COLUMN_ID, 'KHACH_HANG') === 'new' 
-              ? '1px solid #1890ff'
-              : getCellStatus(record.COLUMN_ID, 'KHACH_HANG') === 'edited'
-              ? '1px solid #52c41a'
-              : '1px solid transparent'
           }}
         >
           <Input.TextArea
@@ -416,11 +404,6 @@ const Review = () => {
           style={{
             cursor: 'pointer',
             padding: '4px',
-            border: getCellStatus(record.COLUMN_ID, 'MA_TAI_LIEU') === 'new' 
-              ? '1px solid #1890ff'
-              : getCellStatus(record.COLUMN_ID, 'MA_TAI_LIEU') === 'edited'
-              ? '1px solid #52c41a'
-              : '1px solid transparent'
           }}
         >
           <Input.TextArea
@@ -444,11 +427,6 @@ const Review = () => {
           style={{
             cursor: 'pointer',
             padding: '4px',
-            border: getCellStatus(record.COLUMN_ID, 'REV') === 'new' 
-              ? '1px solid #1890ff'
-              : getCellStatus(record.COLUMN_ID, 'REV') === 'edited'
-              ? '1px solid #52c41a'
-              : '1px solid transparent'
           }}
         >
           <Input.TextArea
@@ -472,11 +450,6 @@ const Review = () => {
           style={{
             cursor: 'pointer',
             padding: '4px',
-            border: getCellStatus(record.COLUMN_ID, 'PHU_TRACH_THIET_KE') === 'new' 
-              ? '1px solid #1890ff'
-              : getCellStatus(record.COLUMN_ID, 'PHU_TRACH_THIET_KE') === 'edited'
-              ? '1px solid #52c41a'
-              : '1px solid transparent'
           }}
         >
           <Input.TextArea
@@ -513,11 +486,6 @@ const Review = () => {
           style={{
             cursor: 'pointer',
             padding: '4px',
-            border: getCellStatus(record.COLUMN_ID, 'CONG_VENH') === 'new' 
-              ? '1px solid #1890ff'
-              : getCellStatus(record.COLUMN_ID, 'CONG_VENH') === 'edited'
-              ? '1px solid #52c41a'
-              : '1px solid transparent'
           }}
         >
           <Input.TextArea
@@ -605,11 +573,6 @@ const Review = () => {
           style={{
             cursor: 'pointer',
             padding: '4px',
-            border: getCellStatus(record.COLUMN_ID, 'PHU_TRACH_REVIEW') === 'new' 
-              ? '1px solid #1890ff'
-              : getCellStatus(record.COLUMN_ID, 'PHU_TRACH_REVIEW') === 'edited'
-              ? '1px solid #52c41a'
-              : '1px solid transparent'
           }}
         >
           <Input.TextArea
@@ -646,11 +609,6 @@ const Review = () => {
           style={{
             cursor: 'pointer',
             padding: '4px',
-            border: getCellStatus(record.COLUMN_ID, 'V_CUT') === 'new' 
-              ? '1px solid #1890ff'
-              : getCellStatus(record.COLUMN_ID, 'V_CUT') === 'edited'
-              ? '1px solid #52c41a'
-              : '1px solid transparent'
           }}
         >
           <Input.TextArea
@@ -723,11 +681,6 @@ const Review = () => {
           style={{
             cursor: 'pointer',
             padding: '4px',
-            border: getCellStatus(record.COLUMN_ID, 'XU_LY_BE_MAT') === 'new' 
-              ? '1px solid #1890ff'
-              : getCellStatus(record.COLUMN_ID, 'XU_LY_BE_MAT') === 'edited'
-              ? '1px solid #52c41a'
-              : '1px solid transparent'
           }}
         >
           <Input.TextArea
@@ -825,11 +778,6 @@ const Review = () => {
             style={{
               cursor: 'pointer',
               padding: '4px',
-              border: getCellStatus(record.COLUMN_ID, 'GHI_CHU') === 'new' 
-                ? '1px solid #1890ff'
-                : getCellStatus(record.COLUMN_ID, 'GHI_CHU') === 'edited'
-                ? '1px solid #52c41a'
-                : '1px solid transparent'
             }}
           >
             <Input.TextArea
@@ -912,6 +860,38 @@ const Review = () => {
           locale={{ emptyText: 'Chưa có lịch sử chỉnh sửa' }}
         />
       )}
+    </Modal>
+  );
+  const CreateDocument = () => (
+    <Modal
+      title="Tạo mới"
+      visible={isModalVisible}
+      onOk={handleAddNew}
+      onCancel={() => setIsModalVisible(false)}
+    >
+      <Form form={form} layout="vertical">
+        <Form.Item
+          name="ma"
+          label="Đầu mã"
+          rules={[{ required: true, message: 'Vui lòng nhập Đầu mã!' }]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="khach_hang"
+          label="Khách hàng"
+          rules={[{ required: true, message: 'Vui lòng nhập Khách hàng!' }]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="ma_tai_lieu"
+          label="Mã tài liệu khách hàng"
+          rules={[{ required: true, message: 'Vui lòng nhập Mã tài liệu khách hàng!' }]}
+        >
+          <Input />
+        </Form.Item>
+      </Form>
     </Modal>
   );
 
@@ -998,25 +978,7 @@ const Review = () => {
           background-color: rgba(24, 144, 255, 0.1);
         }
       `}</style>
-
-      <Modal
-        title="Tạo mới"
-        visible={isModalVisible}
-        onOk={handleAddNew}
-        onCancel={() => setIsModalVisible(false)}
-      >
-        <Form form={form} layout="vertical">
-          <Form.Item name="ma" label="Đầu mã" rules={[{ required: true, message: 'Vui lòng nhập Đầu mã!' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="khach_hang" label="Khách hàng" rules={[{ required: true, message: 'Vui lòng nhập Khách hàng!' }]}>
-            <Input />
-          </Form.Item>
-          <Form.Item name="ma_tai_lieu" label="Mã tài liệu khách hàng" rules={[{ required: true, message: 'Vui lòng nhập Mã tài liệu khách hàng!' }]}>
-            <Input />
-          </Form.Item>
-        </Form>
-      </Modal>
+      <CreateDocument />
       <HistoryModal />
     </MainLayout>
   );
