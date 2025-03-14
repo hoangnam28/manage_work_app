@@ -5,14 +5,30 @@ import './SideBar.css';
 
 const { Sider } = Layout;
 
-const SideBar = ({ username, onLogout, userId }) => {
-    const menu = (
-        <Menu>
-            <Menu.Item key="1">Option 1</Menu.Item>
-            <Menu.Item key="2">Option 2</Menu.Item>
-            <Menu.Item key="3">Option 3</Menu.Item>
-        </Menu>
-    );
+const SideBar = ({onLogout, userId }) => {
+    const menu1 = {
+        items: [
+            { key: '1', label: 'Option 1' },
+            { key: '2', label: 'Option 2' },
+            { key: '3', label: 'Option 3' },
+        ]
+    };
+
+    const menu2 = {
+        items: [
+            { key: '1', label: 'Option 1' },
+            { key: '2', label: 'Option 2' },
+            { key: '3', label: 'Option 3' },
+        ]
+    };
+
+    const menu3 = {
+        items: [
+            { key: '1', label: 'Option 1' },
+            { key: '2', label: 'Option 2' },
+            { key: '3', label: 'Option 3' },
+        ]
+    };
 
     const storedUser = localStorage.getItem("userInfo");
     const user = storedUser ? JSON.parse(storedUser) : null;
@@ -21,30 +37,30 @@ const SideBar = ({ username, onLogout, userId }) => {
         {
             key: '1',
             label: (
-                <Dropdown menu={menu}>
-                    <button className="ant-dropdown-link" onClick={e => e.preventDefault()} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                <Dropdown menu={menu1} trigger={['click']}>
+                    <span className="ant-dropdown-link">
                         Menu 1 <DownOutlined />
-                    </button>
+                    </span>
                 </Dropdown>
             ),
         },
         {
             key: '2',
             label: (
-                <Dropdown menu={menu}>
-                    <button className="ant-dropdown-link" onClick={e => e.preventDefault()} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                <Dropdown menu={menu2} trigger={['click']}>
+                    <span className="ant-dropdown-link">
                         Menu 2 <DownOutlined />
-                    </button>
+                    </span>
                 </Dropdown>
             ),
         },
         {
             key: '3',
             label: (
-                <Dropdown menu={menu}>
-                    <button className="ant-dropdown-link" onClick={e => e.preventDefault()} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                <Dropdown menu={menu3} trigger={['click']}>
+                    <span className="ant-dropdown-link">
                         Menu 3 <DownOutlined />
-                    </button>
+                    </span>
                 </Dropdown>
             ),
         },
@@ -60,7 +76,12 @@ const SideBar = ({ username, onLogout, userId }) => {
                 />
                 <span style={{ marginLeft: '8px' }}>{user?.username || "Guest"}</span>
             </div>
-            <Menu mode="inline" defaultSelectedKeys={['1']} style={{ height: '100%', borderRight: 0 }} items={menuItems} />
+            <Menu 
+                mode="inline" 
+                defaultSelectedKeys={['1']} 
+                style={{ height: '100%', borderRight: 0 }} 
+                items={menuItems} 
+            />
             <div className="sidebar-footer">
                 <Button type="primary" icon={<LogoutOutlined />} onClick={onLogout}>
                     Logout

@@ -15,7 +15,7 @@ const MainLayout = ({ children }) => {
         navigate('/');
     };
 
-    const username = localStorage.getItem('username'); // Get username from localStorage
+    const username = localStorage.getItem('username'); 
 
     return (
         <Layout style={{ minHeight: '100vh' }}>

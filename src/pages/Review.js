@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Table, Input, DatePicker, Upload, Button, Modal, Form, Popconfirm, Image, Space, List, Spin } from "antd";
 import { Typography } from 'antd';
-import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined } from "@ant-design/icons";
+import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined, DownloadOutlined } from "@ant-design/icons";
 import axios from "axios";
 import moment from 'moment';
 import MainLayout from "../components/layout/MainLayout";
 import { Toaster, toast } from 'sonner';
+import * as XLSX from 'xlsx';
 
 const Review = () => {
   const [data, setData] = useState([]);
@@ -280,22 +281,66 @@ const Review = () => {
     }
   };
 
-
-  const handleExcelUpload = async (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-
+  const handleExportExcel = () => {
     try {
-      const response = await axios.post('http://localhost:5000/api/review/upload-excel', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      toast.success(response.data.message);
-      fetchData();
+      // Chuẩn bị dữ liệu cho Excel
+      const exportData = data.map(item => ({
+        'STT': item.STT,
+        'Đầu mã': item.MA,
+        'Khách hàng': item.KHACH_HANG,
+        'Mã tài liệu khách hàng': item.MA_TAI_LIEU,
+        'Rev.': item.REV,
+        'Phụ trách thiết kế': item.PHU_TRACH_THIET_KE,
+        'Ngày thiết kế': item.NGAY_THIET_KE ? moment(item.NGAY_THIET_KE).format('DD/MM/YYYY') : '',
+        'Cong vênh': item.CONG_VENH,
+        'Phụ trách review': item.PHU_TRACH_REVIEW,
+        'Ngày': item.NGAY ? moment(item.NGAY).format('DD/MM/YYYY') : '',
+        'V-Cut': item.V_CUT,
+        'Xử lý bề mặt': item.XU_LY_BE_MAT,
+        'Ghi chú': item.GHI_CHU
+      }));
+
+      // Tạo workbook mới
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+
+      // Điều chỉnh độ rộng cột
+      const columnWidths = [
+        { wch: 5 },  
+        { wch: 15 }, 
+        { wch: 20 }, 
+        { wch: 25 }, 
+        { wch: 8 },  
+        { wch: 20 }, 
+        { wch: 15 }, 
+        { wch: 15 }, 
+        { wch: 20 }, 
+        { wch: 15 }, 
+        { wch: 10 }, 
+        { wch: 20 }, 
+        { wch: 30 }  
+      ];
+      ws['!cols'] = columnWidths;
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const address = XLSX.utils.encode_col(C) + "1";
+        if (!ws[address]) continue;
+        ws[address].s = {
+          font: { bold: true },
+          fill: { fgColor: { rgb: "EEEEEE" } },
+          alignment: { horizontal: "center" }
+        };
+      }
+
+      XLSX.utils.book_append_sheet(wb, ws, "Danh sách Review");
+
+      // Tạo tên file với timestamp
+      const fileName = `Review_Tasks_${moment().format('DDMMYYYY_HHmmss')}.xlsx`;
+      XLSX.writeFile(wb, fileName);
+      toast.success('Xuất Excel thành công');
     } catch (error) {
-      console.error(error);
-      toast.error('Lỗi khi tải lên file Excel');
+      console.error('Export error:', error);
+      toast.error('Lỗi khi xuất Excel');
     }
   };
 
@@ -498,7 +543,6 @@ const Review = () => {
       width: 180,
       render: (record) => {
         const isLoading = imageLoadingStates[`${record.COLUMN_ID}-hinh_anh1`];
-        
         return (
           <Space direction="vertical" style={{ width: '100%' }}>
             {Array.isArray(record.hinh_anh1) && record.hinh_anh1.length > 0 ? (
@@ -819,7 +863,7 @@ const Review = () => {
     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} mục`
   });
 
-  const handleTableChange = (pagination, filters, sorter) => {
+  const handleTableChange = (pagination) => {
     setPagination(pagination);
   };
 
@@ -894,9 +938,14 @@ const Review = () => {
       <Toaster position="top-right" richColors />
       <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
         <Button type="primary" onClick={() => setIsModalVisible(true)}>Tạo mới</Button>
-        <Upload beforeUpload={handleExcelUpload} showUploadList={false}>
-          <Button icon={<UploadOutlined />}>Import Excel</Button>
-        </Upload>
+        <Button 
+          icon={<DownloadOutlined />} 
+          onClick={handleExportExcel}
+          type="primary"
+          style={{ background: '#52c41a', borderColor: '#52c41a' }}
+        >
+          Xuất Excel
+        </Button>
       </div>
       <Table
         dataSource={data}

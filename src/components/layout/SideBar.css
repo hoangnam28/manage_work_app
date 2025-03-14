@@ -23,3 +23,14 @@
     border-top: 1px solid #f0f0f0;
     text-align: center;
 }
+
+.ant-dropdown-link {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ant-dropdown-link:hover {
+    color: #1890ff;
+}
