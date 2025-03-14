@@ -17,6 +17,39 @@ const SideBar = ({ username, onLogout, userId }) => {
     const storedUser = localStorage.getItem("userInfo");
     const user = storedUser ? JSON.parse(storedUser) : null;
 
+    const menuItems = [
+        {
+            key: '1',
+            label: (
+                <Dropdown menu={menu}>
+                    <button className="ant-dropdown-link" onClick={e => e.preventDefault()} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                        Menu 1 <DownOutlined />
+                    </button>
+                </Dropdown>
+            ),
+        },
+        {
+            key: '2',
+            label: (
+                <Dropdown menu={menu}>
+                    <button className="ant-dropdown-link" onClick={e => e.preventDefault()} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                        Menu 2 <DownOutlined />
+                    </button>
+                </Dropdown>
+            ),
+        },
+        {
+            key: '3',
+            label: (
+                <Dropdown menu={menu}>
+                    <button className="ant-dropdown-link" onClick={e => e.preventDefault()} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
+                        Menu 3 <DownOutlined />
+                    </button>
+                </Dropdown>
+            ),
+        },
+    ];
+
     return (
         <Sider width={200} className="site-layout-background">
             <div className="sidebar-header">
@@ -27,29 +60,7 @@ const SideBar = ({ username, onLogout, userId }) => {
                 />
                 <span style={{ marginLeft: '8px' }}>{user?.username || "Guest"}</span>
             </div>
-            <Menu mode="inline" defaultSelectedKeys={['1']} style={{ height: '100%', borderRight: 0 }}>
-                <Menu.Item key="1">
-                    <Dropdown overlay={menu}>
-                        <button className="ant-dropdown-link" onClick={e => e.preventDefault()} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                            Menu 1 <DownOutlined />
-                        </button>
-                    </Dropdown>
-                </Menu.Item>
-                <Menu.Item key="2">
-                    <Dropdown overlay={menu}>
-                        <button className="ant-dropdown-link" onClick={e => e.preventDefault()} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                            Menu 2 <DownOutlined />
-                        </button>
-                    </Dropdown>
-                </Menu.Item>
-                <Menu.Item key="3">
-                    <Dropdown overlay={menu}>
-                        <button className="ant-dropdown-link" onClick={e => e.preventDefault()} style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                            Menu 3 <DownOutlined />
-                        </button>
-                    </Dropdown>
-                </Menu.Item>
-            </Menu>
+            <Menu mode="inline" defaultSelectedKeys={['1']} style={{ height: '100%', borderRight: 0 }} items={menuItems} />
             <div className="sidebar-footer">
                 <Button type="primary" icon={<LogoutOutlined />} onClick={onLogout}>
                     Logout

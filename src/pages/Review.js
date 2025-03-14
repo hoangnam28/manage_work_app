@@ -41,17 +41,14 @@ const Review = () => {
       console.error('Error fetching user info:', error);
       if (error.response?.status === 401) {
         toast.error('Phiên đăng nhập hết hạn');
-        // Redirect to login page or handle token expiration
       }
     }
   };
 
-  // Thêm useEffect để lấy thông tin user khi component mount
   useEffect(() => {
     fetchUserInfo();
   }, []);
 
-  // Wrap fetchData in useCallback
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -80,8 +77,6 @@ const Review = () => {
         }
         return processedItem;
       });
-
-      // Tải hình ảnh cho mỗi bản ghi
       const dataWithImages = await Promise.all(
         processedData.map(async (record) => {
           if (!record.COLUMN_ID) {
@@ -106,8 +101,7 @@ const Review = () => {
     } finally {
       setLoading(false);
     }
-  }, []); // Empty dependency array since fetchData doesn't depend on any state/props
-
+  }, []);
   useEffect(() => {
     fetchData();
   }, [fetchData]);
