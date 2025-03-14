@@ -123,8 +123,6 @@ const Review = () => {
         `http://localhost:5000/api/document/get-images/${columnId}/${field}`
       );
       
-      console.log(`Response for ${field}:`, response.data);
-      
       if (response.data && Array.isArray(response.data.images)) {
         return response.data.images;
       } else {
@@ -325,7 +323,6 @@ const Review = () => {
   const fetchEditHistory = async (columnId, field) => {
     setHistoryLoading(true);
     try {
-      console.log('Fetching history for:', { columnId, field });
       const response = await axios.get(`http://localhost:5000/api/document/edit-history/${columnId}/${field}`);
       console.log('History response:', response.data);
       setEditHistory(response.data);
@@ -373,7 +370,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'MA')}
-            autoSize={{ minRows: 1, maxRows: 7 }}
+            autoSize={{ minRows: 1, maxRows: 10 }}
             style={{ width: '100%', resize: 'none' }}
             onClick={e => e.stopPropagation()}
           />
@@ -401,7 +398,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'KHACH_HANG')}
-            autoSize={{ minRows: 1, maxRows: 7 }}
+            autoSize={{ minRows: 1, maxRows: 10 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
             onClick={e => e.stopPropagation()}
           />
@@ -429,7 +426,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'MA_TAI_LIEU')}
-            autoSize={{ minRows: 1, maxRows: 7 }}
+            autoSize={{ minRows: 1, maxRows: 10 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
             onClick={e => e.stopPropagation()}
           />
@@ -457,7 +454,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'REV')}
-            autoSize={{ minRows: 1, maxRows: 7 }}
+            autoSize={{ minRows: 1, maxRows: 10 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
             onClick={e => e.stopPropagation()}
           />
@@ -485,7 +482,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'PHU_TRACH_THIET_KE')}
-            autoSize={{ minRows: 1, maxRows: 7 }}
+            autoSize={{ minRows: 1, maxRows: 10 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
             onClick={e => e.stopPropagation()}
           />
@@ -496,7 +493,7 @@ const Review = () => {
       title: "Ngày thiết kế",
       dataIndex: "NGAY_THIET_KE",
       key: "ngay_thiet_ke",
-      width: 120,
+      width: 160,
       render: (text, record) => (
         <DatePicker
           value={text ? moment(text) : null}
@@ -526,7 +523,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'CONG_VENH')}
-            autoSize={{ minRows: 1, maxRows: 7 }}
+            autoSize={{ minRows: 1, maxRows: 10 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
             onClick={e => e.stopPropagation()}
           />
@@ -618,7 +615,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'PHU_TRACH_REVIEW')}
-            autoSize={{ minRows: 1, maxRows: 7 }}
+            autoSize={{ minRows: 1, maxRows: 10 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
             onClick={e => e.stopPropagation()}
           />
@@ -629,7 +626,7 @@ const Review = () => {
       title: "Ngày",
       dataIndex: "NGAY",
       key: "ngay",
-      width: 120,
+      width: 160,
       render: (text, record) => (
         <DatePicker
           value={text ? moment(text) : null}
@@ -659,7 +656,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'V_CUT')}
-            autoSize={{ minRows: 1, maxRows: 7 }}
+            autoSize={{ minRows: 1, maxRows: 10 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px'  }}
             onClick={e => e.stopPropagation()}
           />
@@ -670,9 +667,7 @@ const Review = () => {
       title: "Hình ảnh",
       key: "hinh_anh2",
       width: 180,
-      render: (record) => {
-        console.log("Rendering hinh_anh1 for record:", record.COLUMN_ID, record.hinh_anh2);
-        
+      render: (record) => { 
         return (
           <Space direction="vertical" style={{ width: '100%' }}>
             {Array.isArray(record.hinh_anh2) && record.hinh_anh2.length > 0 ? (
@@ -738,7 +733,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'XU_LY_BE_MAT')}
-            autoSize={{ minRows: 1, maxRows: 7 }}
+            autoSize={{ minRows: 1, maxRows: 10 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px'  }}
             onClick={e => e.stopPropagation()}
           />
@@ -840,7 +835,7 @@ const Review = () => {
             <Input.TextArea
               value={displayValue}
               onChange={e => handleCellChange(e.target.value, record, 'GHI_CHU')}
-              autoSize={{ minRows: 1, maxRows: 7 }}
+              autoSize={{ minRows: 1, maxRows: 10 }}
               style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
               onClick={e => e.stopPropagation()}
             />
@@ -907,8 +902,8 @@ const Review = () => {
                 title={`${item.EDITED_BY} đã chỉnh sửa lúc - ${item.EDIT_TIME}`}
                 description={
                   <Space direction="vertical">
-                    <Text type="secondary">Giá trị cũ: {item.OLD_VALUE || '(trống)'}</Text>
-                    <Text>Giá trị mới: {item.NEW_VALUE}</Text>
+                    <Text type="secondary">Nội dung cũ: {item.OLD_VALUE || '(trống)'}</Text>
+                    <Text>Nội dung mới: {item.NEW_VALUE}</Text>
                   </Space>
                 } 
               />
