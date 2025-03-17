@@ -80,10 +80,6 @@ const Review = () => {
       });
       const dataWithImages = await Promise.all(
         processedData.map(async (record) => {
-          if (!record.COLUMN_ID) {
-            console.warn('Record missing COLUMN_ID:', record);
-            return record;
-          }
           const hinh_anh1 = await fetchImages(record.COLUMN_ID, "hinh_anh1");
           const hinh_anh2 = await fetchImages(record.COLUMN_ID, "hinh_anh2");
           const hinh_anh3 = await fetchImages(record.COLUMN_ID, "hinh_anh3");
@@ -158,9 +154,7 @@ const Review = () => {
         toast.success('Tải ảnh thành công');
   
         // Tải lại danh sách hình ảnh sau khi upload
-        const updatedImages = await fetchImages(record.COLUMN_ID, field);
-        
-        // Cập nhật state để hiển thị hình ảnh mới
+        const updatedImages = await fetchImages(record.COLUMN_ID, field);        
         const newData = [...data];
         const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
         if (index > -1) {
