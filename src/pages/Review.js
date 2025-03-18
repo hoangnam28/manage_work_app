@@ -512,7 +512,7 @@ const Review = () => {
       title: "Cong vênh",
       dataIndex: "CONG_VENH",
       key: "cong_venh",
-      width: 120,
+      width: 220,
       render: (text, record) => (
         <div
           onClick={() => fetchEditHistory(record.COLUMN_ID, 'CONG_VENH')}
@@ -598,7 +598,7 @@ const Review = () => {
       title: "Phụ trách review",
       dataIndex: "PHU_TRACH_REVIEW",
       key: "phu_trach_review",
-      width: 150,
+      width: 180,
       render: (text, record) => (
         <div
           onClick={() => fetchEditHistory(record.COLUMN_ID, 'PHU_TRACH_REVIEW')}
@@ -634,7 +634,7 @@ const Review = () => {
       title: "V-Cut",
       dataIndex: "V_CUT",
       key: "v_cut",
-      width: 100,
+      width: 250,
       render: (text, record) => (
         <div
           onClick={() => fetchEditHistory(record.COLUMN_ID, 'V_CUT')}
@@ -706,7 +706,7 @@ const Review = () => {
       title: "Xử lý bề mặt",
       dataIndex: "XU_LY_BE_MAT",
       key: "xu_ly_be_mat",
-      width: 150,
+      width: 250,
       render: (text, record) => (
         <div
           onClick={() => fetchEditHistory(record.COLUMN_ID, 'XU_LY_BE_MAT')}
