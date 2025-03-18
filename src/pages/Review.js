@@ -224,15 +224,18 @@ const Review = () => {
 
   // Hàm xử lý thay đổi giá trị trong bảng
   const handleCellChange = (value, record, field) => {
-    const newData = [...data];
-    const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
-    if (index > -1) {
-      const item = newData[index];
-      newData[index] = { ...item, [field]: value };
-      setData(newData);
-    }
+    setData(prevData => {
+      const newData = [...prevData];
+      const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
+      if (index > -1) {
+        const item = newData[index];
+        if (item[field] !== value) { // Chỉ cập nhật nếu giá trị thực sự thay đổi
+          newData[index] = { ...item, [field]: value };
+        }
+      }
+      return newData;
+    });
   };
-
   // Hàm xử lý thay đổi ngày tháng
   const handleDateChange = (date, dateString, record, field) => {
     const newData = [...data];
@@ -267,7 +270,8 @@ const Review = () => {
   const handleDelete = async (column_id) => {
     try {
       await axios.put(`http://localhost:5000/api/document/soft-delete/${column_id}`, {
-        username: currentUser.username
+        username: currentUser.username,
+        company_id: currentUser.company_id
       });
       toast.success("Đánh dấu xóa thành công");
       fetchData();
