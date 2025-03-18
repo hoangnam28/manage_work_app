@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Table, Input, DatePicker, Upload, Button, Modal, Form, Popconfirm, Image, Space, List, Spin } from "antd";
 import { Typography } from 'antd';
-import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined, DownloadOutlined } from "@ant-design/icons";
+import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined, DownloadOutlined, UndoOutlined, HistoryOutlined } from "@ant-design/icons";
 import axios from "axios";
 import moment from 'moment';
 import MainLayout from "../components/layout/MainLayout";
@@ -266,12 +266,14 @@ const Review = () => {
 
   const handleDelete = async (column_id) => {
     try {
-      await axios.delete(`http://localhost:5000/api/document/delete/${column_id}`);
-      toast.success("Xóa dữ liệu thành công");
+      await axios.put(`http://localhost:5000/api/document/soft-delete/${column_id}`, {
+        username: currentUser.username
+      });
+      toast.success("Đánh dấu xóa thành công");
       fetchData();
     } catch (error) {
       console.error(error);
-      toast.error("Lỗi khi xóa dữ liệu");
+      toast.error("Lỗi khi đánh dấu xóa");
     }
   };
 
@@ -372,6 +374,19 @@ const Review = () => {
     }
   };
 
+  const handleRestore = async (column_id) => {
+    try {
+      await axios.put(`http://localhost:5000/api/document/restore/${column_id}`, {
+        username: currentUser.username
+      });
+      toast.success("Khôi phục dữ liệu thành công");
+      fetchData();
+    } catch (error) {
+      console.error(error);
+      toast.error("Lỗi khi khôi phục dữ liệu");
+    }
+  };
+
   const columns = [
     {
       title: "STT",
@@ -384,23 +399,9 @@ const Review = () => {
       title: "Đầu mã",
       dataIndex: "MA",
       key: "ma",
-      width: 120,
+      width: 150,
       render: (text, record) => (
-        <div
-          onClick={() => fetchEditHistory(record.COLUMN_ID, 'MA')}
-          style={{
-            cursor: 'pointer',
-            padding: '4px',
-          }}
-        >
-          <Input.TextArea
-            value={text}
-            onChange={e => handleCellChange(e.target.value, record, 'MA')}
-            autoSize={{ minRows: 1, maxRows: 50 }}
-            style={{ width: '100%', resize: 'none' }}
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
+        renderEditableCell(text, record, 'MA')
       )
     },
     {
@@ -409,21 +410,7 @@ const Review = () => {
       key: "khach_hang",
       width: 150,
       render: (text, record) => (
-        <div
-          onClick={() => fetchEditHistory(record.COLUMN_ID, 'KHACH_HANG')}
-          style={{
-            cursor: 'pointer',
-            padding: '4px',
-          }}
-        >
-          <Input.TextArea
-            value={text}
-            onChange={e => handleCellChange(e.target.value, record, 'KHACH_HANG')}
-            autoSize={{ minRows: 1, maxRows: 50 }}
-            style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
+        renderEditableCell(text, record, 'KHACH_HANG')
       )
     },
     {
@@ -432,44 +419,16 @@ const Review = () => {
       key: "ma_tai_lieu",
       width: 180,
       render: (text, record) => (
-        <div
-          onClick={() => fetchEditHistory(record.COLUMN_ID, 'MA_TAI_LIEU')}
-          style={{
-            cursor: 'pointer',
-            padding: '4px',
-          }}
-        >
-          <Input.TextArea
-            value={text}
-            onChange={e => handleCellChange(e.target.value, record, 'MA_TAI_LIEU')}
-            autoSize={{ minRows: 1, maxRows: 20 }}
-            style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
+        renderEditableCell(text, record, 'MA_TAI_LIEU')
       )
     },
     {
       title: "Rev.",
       dataIndex: "REV",
       key: "rev",
-      width: 80,
+      width: 100,
       render: (text, record) => (
-        <div
-          onClick={() => fetchEditHistory(record.COLUMN_ID, 'REV')}
-          style={{
-            cursor: 'pointer',
-            padding: '4px',
-          }}
-        >
-          <Input.TextArea
-            value={text}
-            onChange={e => handleCellChange(e.target.value, record, 'REV')}
-            autoSize={{ minRows: 1, maxRows: 20 }}
-            style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
+        renderEditableCell(text, record, 'REV')
       )
     },
     {
@@ -478,21 +437,7 @@ const Review = () => {
       key: "phu_trach_thiet_ke",
       width: 150,
       render: (text, record) => (
-        <div
-          onClick={() => fetchEditHistory(record.COLUMN_ID, 'PHU_TRACH_THIET_KE')}
-          style={{
-            cursor: 'pointer',
-            padding: '4px',
-          }}
-        >
-          <Input.TextArea
-            value={text}
-            onChange={e => handleCellChange(e.target.value, record, 'PHU_TRACH_THIET_KE')}
-            autoSize={{ minRows: 1, maxRows: 20 }}
-            style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
+        renderEditableCell(text, record, 'PHU_TRACH_THIET_KE')
       )
     },
     {
@@ -500,13 +445,35 @@ const Review = () => {
       dataIndex: "NGAY_THIET_KE",
       key: "ngay_thiet_ke",
       width: 160,
-      render: (text, record) => (
-        <DatePicker
-          value={text ? moment(text) : null}
-          onChange={(date, dateString) => handleDateChange(date, dateString, record, 'NGAY_THIET_KE')}
-          style={{ width: '100%' }}
-        />
-      )
+      render: (text, record) => {
+        const isDeleted = record.IS_DELETED === 1;
+        return (
+          <div style={{ position: 'relative' }}>
+            <DatePicker
+              value={text ? moment(text) : null}
+              onChange={(date, dateString) => handleDateChange(date, dateString, record, 'NGAY_THIET_KE')}
+              style={{ width: '100%' }}
+              disabled={isDeleted}
+            />
+            {!isDeleted && (
+              <HistoryOutlined 
+                style={{
+                  position: 'absolute',
+                  right: '28px',
+                  top: '8px',
+                  fontSize: '14px',
+                  color: '#1890ff',
+                  opacity: 0.6,
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  zIndex: 1
+                }}
+                onClick={() => fetchEditHistory(record.COLUMN_ID, 'NGAY_THIET_KE')}
+              />
+            )}
+          </div>
+        );
+      }
     },
     {
       title: "Cong vênh",
@@ -514,21 +481,7 @@ const Review = () => {
       key: "cong_venh",
       width: 220,
       render: (text, record) => (
-        <div
-          onClick={() => fetchEditHistory(record.COLUMN_ID, 'CONG_VENH')}
-          style={{
-            cursor: 'pointer',
-            padding: '4px',
-          }}
-        >
-          <Input.TextArea
-            value={text}
-            onChange={e => handleCellChange(e.target.value, record, 'CONG_VENH')}
-            autoSize={{ minRows: 1, maxRows: 50 }}
-            style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
+        renderEditableCell(text, record, 'CONG_VENH')
       )
     },
     {
@@ -600,21 +553,7 @@ const Review = () => {
       key: "phu_trach_review",
       width: 180,
       render: (text, record) => (
-        <div
-          onClick={() => fetchEditHistory(record.COLUMN_ID, 'PHU_TRACH_REVIEW')}
-          style={{
-            cursor: 'pointer',
-            padding: '4px',
-          }}
-        >
-          <Input.TextArea
-            value={text}
-            onChange={e => handleCellChange(e.target.value, record, 'PHU_TRACH_REVIEW')}
-            autoSize={{ minRows: 1, maxRows: 10 }}
-            style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
+        renderEditableCell(text, record, 'PHU_TRACH_REVIEW')
       )
     },
     {
@@ -636,21 +575,7 @@ const Review = () => {
       key: "v_cut",
       width: 250,
       render: (text, record) => (
-        <div
-          onClick={() => fetchEditHistory(record.COLUMN_ID, 'V_CUT')}
-          style={{
-            cursor: 'pointer',
-            padding: '4px',
-          }}
-        >
-          <Input.TextArea
-            value={text}
-            onChange={e => handleCellChange(e.target.value, record, 'V_CUT')}
-            autoSize={{ minRows: 1, maxRows: 20 }}
-            style={{ width: '100%', resize: 'none',maxHeight: '120px'  }}
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
+        renderEditableCell(text, record, 'V_CUT')
       )
     },
     {
@@ -708,21 +633,7 @@ const Review = () => {
       key: "xu_ly_be_mat",
       width: 400,
       render: (text, record) => (
-        <div
-          onClick={() => fetchEditHistory(record.COLUMN_ID, 'XU_LY_BE_MAT')}
-          style={{
-            cursor: 'pointer',
-            padding: '4px',
-          }}
-        >
-          <Input.TextArea
-            value={text}
-            onChange={e => handleCellChange(e.target.value, record, 'XU_LY_BE_MAT')}
-            autoSize={{ minRows: 1, maxRows: 50 }}
-            style={{ width: '100%', resize: 'none',maxHeight: '120px'  }}
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
+        renderEditableCell(text, record, 'XU_LY_BE_MAT')
       )
     },
     {
@@ -805,21 +716,7 @@ const Review = () => {
         }
 
         return (
-          <div
-            onClick={() => fetchEditHistory(record.COLUMN_ID, 'GHI_CHU')}
-            style={{
-              cursor: 'pointer',
-              padding: '4px',
-            }}
-          >
-            <Input.TextArea
-              value={displayValue}
-              onChange={e => handleCellChange(e.target.value, record, 'GHI_CHU')}
-              autoSize={{ minRows: 1, maxRows: 10 }}
-              style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
-              onClick={e => e.stopPropagation()}
-            />
-          </div>
+          renderEditableCell(displayValue, record, 'GHI_CHU')
         );
       }
     },
@@ -827,23 +724,43 @@ const Review = () => {
       title: "Hành động",
       key: "action",
       fixed: 'right',
-      width: 150,
+      width: 250,
       render: (text, record) => (
-        <Space>
-          <Button
-            icon={<SaveOutlined />}
-            onClick={() => handleSaveRow(record)}
-            type="primary"
-            size="small"
-          >
-            Lưu
-          </Button>
-          <Popconfirm
-            title="Bạn có chắc chắn muốn xóa?"
-            onConfirm={() => handleDelete(record.COLUMN_ID)}
-          >
-            <Button icon={<DeleteOutlined />} danger size="small" />
-          </Popconfirm>
+        <Space direction="vertical">
+          {record.IS_DELETED === 1 ? (
+            <>
+              <div style={{ color: '#ff4d4f' }}>
+                <div>Đã xóa bởi: {record.DELETED_BY}</div>
+                <div>Thời gian: {record.DELETED_AT}</div>
+              </div>
+              <Button
+                icon={<UndoOutlined />}
+                onClick={() => handleRestore(record.COLUMN_ID)}
+                type="primary"
+                size="small"
+                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              >
+                Khôi phục
+              </Button>
+            </>
+          ) : (
+            <Space>
+              <Button
+                icon={<SaveOutlined />}
+                onClick={() => handleSaveRow(record)}
+                type="primary"
+                size="small"
+              >
+                Lưu
+              </Button>
+              <Popconfirm
+                title="Bạn có chắc chắn muốn xóa?"
+                onConfirm={() => handleDelete(record.COLUMN_ID)}
+              >
+                <Button icon={<DeleteOutlined />} danger size="small" />
+              </Popconfirm>
+            </Space>
+          )}
         </Space>
       )
     }
@@ -927,6 +844,62 @@ const Review = () => {
     </Modal>
   );
 
+  const getRowClassName = (record) => {
+    if (record.IS_DELETED) {
+      return 'deleted-row';
+    }
+    return 'custom-table-row';
+  };
+
+  const renderEditableCell = (text, record, field) => {
+    const isDeleted = record.IS_DELETED === 1;
+    
+    return (
+      <div
+        onClick={() => !isDeleted && fetchEditHistory(record.COLUMN_ID, field)}
+        style={{
+          cursor: isDeleted ? 'not-allowed' : 'pointer',
+          padding: '4px',
+          position: 'relative',
+        }}
+      >
+        <Input.TextArea
+          value={text}
+          onChange={e => handleCellChange(e.target.value, record, field)}
+          autoSize={{ minRows: 1, maxRows: 50 }}
+          style={{ 
+            width: '100%', 
+            resize: 'none',
+            backgroundColor: isDeleted ? '#f5f5f5' : 'white',
+            color: isDeleted ? '#999' : 'inherit',
+            cursor: isDeleted ? 'not-allowed' : 'text',
+            paddingRight: '24px'
+          }}
+          onClick={e => e.stopPropagation()}
+          disabled={isDeleted}
+        />
+        {!isDeleted && (
+          <HistoryOutlined 
+            style={{
+              position: 'absolute',
+              right: '8px',
+              top: '8px',
+              fontSize: '14px',
+              color: '#1890ff',
+              opacity: 0.6,
+              cursor: 'pointer',
+              transition: 'all 0.3s'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              fetchEditHistory(record.COLUMN_ID, field);
+            }}
+          />
+        )}
+      </div>
+    );
+  };
+
   return (
     <MainLayout username={currentUser?.username} onLogout={() => console.log('Logout')}>
       <Toaster position="top-right" richColors />
@@ -950,7 +923,7 @@ const Review = () => {
         onChange={handleTableChange}
         bordered
         size="middle"
-        rowClassName={() => 'custom-table-row'}
+        rowClassName={getRowClassName}
         loading={loading}
       />
 
@@ -1013,6 +986,75 @@ const Review = () => {
         }
         .editable-cell:hover {
           background-color: rgba(24, 144, 255, 0.1);
+        }
+        .deleted-row td {
+          background-color: #f5f5f5 !important;
+          color: #999;
+          position: relative;
+        }
+        
+        .deleted-row td::after {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 0;
+          right: 0;
+          border-top: 1px solid #ff4d4f;
+          pointer-events: none;
+        }
+        
+        .deleted-row:hover td {
+          background-color: #f0f0f0 !important;
+        }
+        
+        .deleted-row .ant-input-textarea,
+        .deleted-row .ant-picker,
+        .deleted-row .ant-upload {
+          pointer-events: none;
+          background-color: #f5f5f5;
+          color: #999;
+        }
+        
+        .deleted-row .ant-input-textarea textarea {
+          color: #999;
+        }
+        
+        .deleted-row .ant-picker-input input {
+          cursor: not-allowed;
+          color: #999;
+        }
+        
+        .deleted-row .ant-upload button,
+        .deleted-row .ant-picker,
+        .deleted-row .ant-btn:not(.ant-btn-primary) {
+          display: none;
+        }
+
+        .ant-input-textarea-wrapper {
+          position: relative;
+        }
+        
+        .ant-input-textarea-wrapper:hover .anticon-history {
+          opacity: 1;
+        }
+        
+        .ant-picker-wrapper {
+          position: relative;
+        }
+        
+        .ant-picker-wrapper .anticon-history {
+          position: absolute;
+          right: 8px;
+          top: 8px;
+          font-size: 14px;
+          color: #1890ff;
+          opacity: 0.6;
+          cursor: pointer;
+          transition: all 0.3s;
+        }
+        
+        .ant-picker-wrapper:hover .anticon-history {
+          opacity: 1;
         }
       `}</style>
       <CreateDocument />
