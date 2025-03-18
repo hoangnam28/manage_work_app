@@ -21,8 +21,6 @@ const Review = () => {
 
   const { Text } = Typography;
   
-
-  // Thêm hàm để lấy thông tin user từ token
   const fetchUserInfo = async () => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -134,7 +132,6 @@ const Review = () => {
       return;
     }
   
-    // Set loading state for this specific upload
     setImageLoadingStates(prev => ({
       ...prev,
       [`${record.COLUMN_ID}-${field}`]: true
@@ -152,8 +149,6 @@ const Review = () => {
   
       if (response.data) {
         toast.success('Tải ảnh thành công');
-  
-        // Tải lại danh sách hình ảnh sau khi upload
         const updatedImages = await fetchImages(record.COLUMN_ID, field);        
         const newData = [...data];
         const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
@@ -166,7 +161,6 @@ const Review = () => {
       console.error('Upload error:', error);
       toast.error(error.response?.data?.message || 'Lỗi khi tải lên hình ảnh');
     } finally {
-      // Clear loading state
       setImageLoadingStates(prev => ({
         ...prev,
         [`${record.COLUMN_ID}-${field}`]: false
@@ -214,7 +208,6 @@ const Review = () => {
       console.error(error);
       if (error.response?.status === 401) {
         toast.error('Phiên đăng nhập hết hạn');
-        // Redirect to login page or handle token expiration
       } else {
         toast.error('Lỗi khi lưu dữ liệu');
       }
@@ -229,7 +222,7 @@ const Review = () => {
       const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
       if (index > -1) {
         const item = newData[index];
-        if (item[field] !== value) { // Chỉ cập nhật nếu giá trị thực sự thay đổi
+        if (item[field] !== value) { 
           newData[index] = { ...item, [field]: value };
         }
       }
@@ -283,7 +276,6 @@ const Review = () => {
 
   const handleExportExcel = () => {
     try {
-      // Chuẩn bị dữ liệu cho Excel
       const exportData = data.map(item => ({
         'STT': item.STT,
         'Đầu mã': item.MA,
@@ -299,8 +291,6 @@ const Review = () => {
         'Xử lý bề mặt': item.XU_LY_BE_MAT,
         'Ghi chú': item.GHI_CHU
       }));
-
-      // Tạo workbook mới
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(exportData);
 
@@ -334,7 +324,6 @@ const Review = () => {
 
       XLSX.utils.book_append_sheet(wb, ws, "Danh sách Review");
 
-      // Tạo tên file với timestamp
       const fileName = `Review_Tasks_${moment().format('DDMMYYYY_HHmmss')}.xlsx`;
       XLSX.writeFile(wb, fileName);
       toast.success('Xuất Excel thành công');
@@ -349,7 +338,6 @@ const Review = () => {
       await axios.delete(`http://localhost:5000/api/document/delete-image/${columnId}/${field}/${imageName}`);
       toast.success('Xóa ảnh thành công');
       
-      // Refresh images for this field
       const updatedImages = await fetchImages(columnId, field);
       const newData = [...data];
       const index = newData.findIndex(item => item.COLUMN_ID === columnId);
