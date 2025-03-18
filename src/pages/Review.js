@@ -396,7 +396,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'MA')}
-            autoSize={{ minRows: 1, maxRows: 10 }}
+            autoSize={{ minRows: 1, maxRows: 50 }}
             style={{ width: '100%', resize: 'none' }}
             onClick={e => e.stopPropagation()}
           />
@@ -419,7 +419,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'KHACH_HANG')}
-            autoSize={{ minRows: 1, maxRows: 10 }}
+            autoSize={{ minRows: 1, maxRows: 50 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
             onClick={e => e.stopPropagation()}
           />
@@ -442,7 +442,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'MA_TAI_LIEU')}
-            autoSize={{ minRows: 1, maxRows: 10 }}
+            autoSize={{ minRows: 1, maxRows: 20 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
             onClick={e => e.stopPropagation()}
           />
@@ -465,7 +465,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'REV')}
-            autoSize={{ minRows: 1, maxRows: 10 }}
+            autoSize={{ minRows: 1, maxRows: 20 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
             onClick={e => e.stopPropagation()}
           />
@@ -488,7 +488,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'PHU_TRACH_THIET_KE')}
-            autoSize={{ minRows: 1, maxRows: 10 }}
+            autoSize={{ minRows: 1, maxRows: 20 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
             onClick={e => e.stopPropagation()}
           />
@@ -524,7 +524,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'CONG_VENH')}
-            autoSize={{ minRows: 1, maxRows: 10 }}
+            autoSize={{ minRows: 1, maxRows: 50 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px' }}
             onClick={e => e.stopPropagation()}
           />
@@ -646,7 +646,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'V_CUT')}
-            autoSize={{ minRows: 1, maxRows: 10 }}
+            autoSize={{ minRows: 1, maxRows: 20 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px'  }}
             onClick={e => e.stopPropagation()}
           />
@@ -706,7 +706,7 @@ const Review = () => {
       title: "Xử lý bề mặt",
       dataIndex: "XU_LY_BE_MAT",
       key: "xu_ly_be_mat",
-      width: 250,
+      width: 400,
       render: (text, record) => (
         <div
           onClick={() => fetchEditHistory(record.COLUMN_ID, 'XU_LY_BE_MAT')}
@@ -718,7 +718,7 @@ const Review = () => {
           <Input.TextArea
             value={text}
             onChange={e => handleCellChange(e.target.value, record, 'XU_LY_BE_MAT')}
-            autoSize={{ minRows: 1, maxRows: 10 }}
+            autoSize={{ minRows: 1, maxRows: 50 }}
             style={{ width: '100%', resize: 'none',maxHeight: '120px'  }}
             onClick={e => e.stopPropagation()}
           />
