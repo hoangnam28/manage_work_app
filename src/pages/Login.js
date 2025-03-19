@@ -19,7 +19,7 @@ const Login = () => {
 
       console.log('Sending login data:', loginData);
 
-      const response = await axios.post('http://localhost:5000/api/auth/login', loginData);
+      const response = await axios.post('http://192.84.105.173:5000/api/auth/login', loginData);
 
       if (response.data.accessToken) {
         // Lưu token

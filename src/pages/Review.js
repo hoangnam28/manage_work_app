@@ -29,7 +29,7 @@ const Review = () => {
         return;
       }
 
-      const response = await axios.get('http://localhost:5000/api/auth/profile', {
+      const response = await axios.get('http://192.84.105.173:5000/api/auth/profile', {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -51,7 +51,7 @@ const Review = () => {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:5000/api/document/list');
+      const response = await axios.get('http://192.84.105.173:5000/api/document/list');
       const processedData = response.data.map(item => {
         const processedItem = { ...item };
         if (processedItem.GHI_CHU) {
@@ -108,7 +108,7 @@ const Review = () => {
       }
       
       const response = await axios.get(
-        `http://localhost:5000/api/document/get-images/${columnId}/${field}`
+        `http://192.84.105.173:5000/api/document/get-images/${columnId}/${field}`
       );
       
       if (response.data && Array.isArray(response.data.images)) {
@@ -142,7 +142,7 @@ const Review = () => {
   
     try { 
       const response = await axios.post(
-        `http://localhost:5000/api/document/upload-images/${record.COLUMN_ID}/${field}`,
+        `http://192.84.105.173:5000/api/document/upload-images/${record.COLUMN_ID}/${field}`,
         formData,
         { headers: { 'Content-Type': 'multipart/form-data' } }
       );
@@ -193,7 +193,7 @@ const Review = () => {
       };
 
       await axios.put(
-        `http://localhost:5000/api/document/update/${record.COLUMN_ID}`,
+        `http://192.84.105.173:5000/api/document/update/${record.COLUMN_ID}`,
         dataToUpdate,
         {
           headers: {
@@ -216,21 +216,18 @@ const Review = () => {
   
 
   // Hàm xử lý thay đổi giá trị trong bảng
-  const handleCellChange = (value, record, field) => {
+  const handleCellChange = useCallback((value, record, field) => {
     setData(prevData => {
+      const index = prevData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
+      if (index === -1 || prevData[index][field] === value) return prevData;
+      
       const newData = [...prevData];
-      const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
-      if (index > -1) {
-        const item = newData[index];
-        if (item[field] !== value) { 
-          newData[index] = { ...item, [field]: value };
-        }
-      }
+      newData[index] = { ...newData[index], [field]: value };
       return newData;
     });
-  };
+  }, []);
   // Hàm xử lý thay đổi ngày tháng
-  const handleDateChange = (date, dateString, record, field) => {
+  const handleDateChange = (date, record, field) => {
     const newData = [...data];
     const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
     if (index > -1) {
@@ -244,7 +241,7 @@ const Review = () => {
     form.validateFields()
       .then(async values => {
         try {
-          await axios.post('http://localhost:5000/api/document/add', values);
+          await axios.post('http://192.84.105.173:5000/api/document/add', values);
           toast.success('Thêm dữ liệu thành công');
           fetchData();
           setIsModalVisible(false);
@@ -262,7 +259,7 @@ const Review = () => {
 
   const handleDelete = async (column_id) => {
     try {
-      await axios.put(`http://localhost:5000/api/document/soft-delete/${column_id}`, {
+      await axios.put(`http://192.84.105.173:5000/api/document/soft-delete/${column_id}`, {
         username: currentUser.username,
         company_id: currentUser.company_id
       });
@@ -335,7 +332,7 @@ const Review = () => {
 
   const handleDeleteImage = async (columnId, field, imageName) => {
     try {
-      await axios.delete(`http://localhost:5000/api/document/delete-image/${columnId}/${field}/${imageName}`);
+      await axios.delete(`http://192.84.105.173:5000/api/document/delete-image/${columnId}/${field}/${imageName}`);
       toast.success('Xóa ảnh thành công');
       
       const updatedImages = await fetchImages(columnId, field);
@@ -354,7 +351,7 @@ const Review = () => {
   const fetchEditHistory = async (columnId, field) => {
     setHistoryLoading(true);
     try {
-      const response = await axios.get(`http://localhost:5000/api/document/edit-history/${columnId}/${field}`);
+      const response = await axios.get(`http://192.84.105.173:5000/api/document/edit-history/${columnId}/${field}`);
       console.log('History response:', response.data);
       setEditHistory(response.data);
       setHistoryModalVisible(true);
@@ -368,7 +365,7 @@ const Review = () => {
 
   const handleRestore = async (column_id) => {
     try {
-      await axios.put(`http://localhost:5000/api/document/restore/${column_id}`, {
+      await axios.put(`http://192.84.105.173:5000/api/document/restore/${column_id}`, {
         username: currentUser.username
       });
       toast.success("Khôi phục dữ liệu thành công");
@@ -495,7 +492,7 @@ const Review = () => {
                     marginBottom: '8px'
                   }}>
                     <Image
-                      src={`http://localhost:5000/uploads/${img}`}
+                      src={`http://192.84.105.173:5000/uploads/${img}`}
                       alt={`Hình ảnh ${index + 1}`}
                       style={{ width: '100%', maxHeight: '120px', objectFit: 'contain' }}
                       preview={{
@@ -582,7 +579,7 @@ const Review = () => {
                 {record.hinh_anh2.map((img, index) => (
                   <div key={index} style={{ border: '1px solid #f0f0f0', padding: '4px', borderRadius: '4px' }}>
                     <Image
-                      src={`http://localhost:5000/uploads/${img}`}
+                      src={`http://192.84.105.173:5000/uploads/${img}`}
                       alt={`Hình ảnh ${index + 1}`}
                       style={{ width: '100%', maxHeight: '120px', objectFit: 'contain' }}
                       preview={{
@@ -640,7 +637,7 @@ const Review = () => {
                 {record.hinh_anh3.map((img, index) => (
                   <div key={index} style={{ border: '1px solid #f0f0f0', padding: '4px', borderRadius: '4px' }}>
                     <Image
-                      src={`http://localhost:5000/uploads/${img}`}
+                      src={`http://192.84.105.173:5000/uploads/${img}`}
                       alt={`Hình ảnh ${index + 1}`}
                       style={{ width: '100%', maxHeight: '120px', objectFit: 'contain' }}
                       preview={{
