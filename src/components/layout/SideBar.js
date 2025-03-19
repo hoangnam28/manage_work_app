@@ -74,7 +74,7 @@ const SideBar = ({ onLogout, userId }) => {
           icon={<UserOutlined />}
           src={userId ? `http://192.84.105.173:5000/api/auth/avatar/${userId}` : null}
         />
-        <span style={{ marginLeft: '8px' }}>{user?.username || "Guest"}</span>
+        <span style={{ marginLeft: '8px' }}>{user?.username}</span>
       </div>
       <Menu
         mode="inline"

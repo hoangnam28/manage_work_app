@@ -10,9 +10,9 @@ const MainLayout = ({ children }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    navigate('/');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('userInfo');
+    navigate('/'); // Redirect to login page after logout
   };
 
   const username = localStorage.getItem('username');
