@@ -227,15 +227,20 @@ const Review = () => {
     });
   }, []);
   // Hàm xử lý thay đổi ngày tháng
-  const handleDateChange = (date, record, field) => {
-    const newData = [...data];
-    const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
-    if (index > -1) {
-      const item = newData[index];
-      newData[index] = { ...item, [field]: date ? date.format('YYYY-MM-DD') : null };
-      setData(newData);
-    }
-  };
+  const handleDateChange = useCallback((date, record, field) => {
+    setData(prevData => {
+      const newData = [...prevData];
+      const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
+      if (index > -1) {
+        const item = newData[index];
+        newData[index] = { 
+          ...item, 
+          [field]: date ? date.format('YYYY-MM-DD') : null 
+        };
+      }
+      return newData;
+    });
+  }, []);
 
   const handleAddNew = () => {
     form.validateFields()
@@ -434,35 +439,16 @@ const Review = () => {
       dataIndex: "NGAY_THIET_KE",
       key: "ngay_thiet_ke",
       width: 160,
-      render: (text, record) => {
-        const isDeleted = record.IS_DELETED === 1;
-        return (
-          <div style={{ position: 'relative' }}>
-            <DatePicker
-              value={text ? moment(text) : null}
-              onChange={(date, dateString) => handleDateChange(date, dateString, record, 'NGAY_THIET_KE')}
-              style={{ width: '100%' }}
-              disabled={isDeleted}
-            />
-            {!isDeleted && (
-              <HistoryOutlined 
-                style={{
-                  position: 'absolute',
-                  right: '28px',
-                  top: '8px',
-                  fontSize: '14px',
-                  color: '#1890ff',
-                  opacity: 0.6,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s',
-                  zIndex: 1
-                }}
-                onClick={() => fetchEditHistory(record.COLUMN_ID, 'NGAY_THIET_KE')}
-              />
-            )}
-          </div>
-        );
-      }
+      render: (text, record) => (
+        <DatePickerCell
+          value={text ? moment(text) : null}
+          onChange={handleDateChange}
+          record={record}
+          field="NGAY_THIET_KE"
+          isDeleted={record.IS_DELETED === 1}
+          fetchEditHistory={fetchEditHistory}
+        />
+      )
     },
     {
       title: "Cong vênh",
@@ -551,10 +537,13 @@ const Review = () => {
       key: "ngay",
       width: 160,
       render: (text, record) => (
-        <DatePicker
+        <DatePickerCell
           value={text ? moment(text) : null}
-          onChange={(date, dateString) => handleDateChange(date, dateString, record, 'NGAY')}
-          style={{ width: '100%' }}
+          onChange={handleDateChange}
+          record={record}
+          field="NGAY"
+          isDeleted={record.IS_DELETED === 1}
+          fetchEditHistory={fetchEditHistory}
         />
       )
     },
@@ -888,6 +877,43 @@ const Review = () => {
       </div>
     );
   };
+
+  const DatePickerCell = React.memo(({ value, onChange, record, field, isDeleted, fetchEditHistory }) => {
+    const handleChange = (date) => {
+      onChange(date, record, field);
+    };
+
+    return (
+      <div style={{ position: 'relative' }}>
+        <DatePicker
+          value={value ? moment(value) : null}
+          onChange={handleChange}
+          format="DD/MM/YYYY"
+          style={{ width: '100%' }}
+          disabled={isDeleted}
+        />
+        {!isDeleted && (
+          <HistoryOutlined 
+            style={{
+              position: 'absolute',
+              right: '28px',
+              top: '8px',
+              fontSize: '14px',
+              color: '#1890ff',
+              opacity: 0.6,
+              cursor: 'pointer',
+              transition: 'all 0.3s',
+              zIndex: 1
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              fetchEditHistory(record.COLUMN_ID, field);
+            }}
+          />
+        )}
+      </div>
+    );
+  });
 
   return (
     <MainLayout username={currentUser?.username} onLogout={() => console.log('Logout')}>
