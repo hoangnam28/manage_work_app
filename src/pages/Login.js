@@ -10,7 +10,7 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleLogin = async (values) => {
-    setLoading(true); // Bật loading khi bắt đầu đăng nhập
+    setLoading(true);
     try {
       const loginData = {
         company_id: values.company_id.trim(),
@@ -22,16 +22,11 @@ const Login = () => {
       const response = await axios.post('http://192.84.105.173:5000/api/auth/login', loginData);
 
       if (response.data.accessToken) {
-        // Lưu token
         localStorage.setItem('accessToken', response.data.accessToken);
-        // Lưu thông tin user nếu cần
         localStorage.setItem('userInfo', JSON.stringify(response.data.user));
 
         toast.success('Đăng nhập thành công');
-
-        // Đợi một chút để toast hiển thị
         setTimeout(() => {
-          // Chuyển hướng sau khi đăng nhập thành công
           navigate('/review_tasks', { replace: true });
         }, 1000);
       }
@@ -40,7 +35,7 @@ const Login = () => {
       const errorMessage = error.response?.data?.message || 'Lỗi đăng nhập';
       toast.error(errorMessage);
     } finally {
-      setLoading(false); // Tắt loading khi hoàn thành
+      setLoading(false);
     }
   };
 

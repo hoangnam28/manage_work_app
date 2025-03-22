@@ -18,13 +18,16 @@ const Review = () => {
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [hasEditPermission, setHasEditPermission] = useState(false);
 
   const { Text } = Typography;
   
   const fetchUserInfo = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      if (!token) {
+      const userInfo = JSON.parse(localStorage.getItem('userInfo')); // Lấy thông tin user từ localStorage
+
+      if (!token || !userInfo) {
         toast.error('Vui lòng đăng nhập lại');
         return;
       }
@@ -36,6 +39,19 @@ const Review = () => {
       });
 
       setCurrentUser(response.data);
+      
+      const authorizedIds = ['017965', '006065', '003524', '008247', '006064'];
+      console.log('User company_id:', response.data.company_id);
+      console.log('Authorized IDs:', authorizedIds);
+      
+      const userCompanyId = response.data.company_id ? response.data.company_id.toString().trim() : '';
+      const hasPermission = authorizedIds.includes(userCompanyId);
+      
+      console.log('User company_id after trim:', userCompanyId);
+      console.log('Has permission:', hasPermission);
+
+      setHasEditPermission(hasPermission);
+
     } catch (error) {
       console.error('Error fetching user info:', error);
       if (error.response?.status === 401) {
@@ -122,13 +138,14 @@ const Review = () => {
   };
 
   const handleUpload = async (info, record, field) => {
-    if (!info.file || !info.file.originFileObj) {
-      toast.error('Không tìm thấy file để tải lên');
+    if (!hasEditPermission) {
+      toast.error('Bạn không có quyền tải lên hình ảnh');
       return;
     }
   
-    if (!record.COLUMN_ID) {
-      toast.error('Không tìm thấy ID của bản ghi');
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      toast.error('Vui lòng đăng nhập lại');
       return;
     }
   
@@ -144,7 +161,12 @@ const Review = () => {
       const response = await axios.post(
         `http://192.84.105.173:5000/api/document/upload-images/${record.COLUMN_ID}/${field}`,
         formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        { 
+          headers: { 
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`
+          } 
+        }
       );
   
       if (response.data) {
@@ -169,6 +191,10 @@ const Review = () => {
   };
 
   const handleSaveRow = async (record) => {
+    if (!hasEditPermission) {
+      toast.error('Bạn không có quyền chỉnh sửa dữ liệu');
+      return;
+    }
     try {
       const token = localStorage.getItem('accessToken');
       if (!token || !currentUser) {
@@ -216,16 +242,19 @@ const Review = () => {
   
 
   // Hàm xử lý thay đổi giá trị trong bảng
-  const handleCellChange = useCallback((value, record, field) => {
+  const handleCellChange = (value, record, field) => {
     setData(prevData => {
-      const index = prevData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
-      if (index === -1 || prevData[index][field] === value) return prevData;
-      
       const newData = [...prevData];
-      newData[index] = { ...newData[index], [field]: value };
+      const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
+      if (index > -1) {
+        const item = newData[index];
+        if (item[field] !== value) { // Chỉ cập nhật nếu giá trị thực sự thay đổi
+          newData[index] = { ...item, [field]: value };
+        }
+      }
       return newData;
     });
-  }, []);
+  };
   // Hàm xử lý thay đổi ngày tháng
   const handleDateChange = useCallback((date, record, field) => {
     setData(prevData => {
@@ -263,6 +292,10 @@ const Review = () => {
   };
 
   const handleDelete = async (column_id) => {
+    if (!hasEditPermission) {
+      toast.error('Bạn không có quyền xóa dữ liệu');
+      return;
+    }
     try {
       await axios.put(`http://192.84.105.173:5000/api/document/soft-delete/${column_id}`, {
         username: currentUser.username,
@@ -336,8 +369,26 @@ const Review = () => {
   };
 
   const handleDeleteImage = async (columnId, field, imageName) => {
+    if (!hasEditPermission) {
+      toast.error('Bạn không có quyền xóa hình ảnh');
+      return;
+    }
+  
+    const token = localStorage.getItem('accessToken');
+    if (!token) {
+      toast.error('Vui lòng đăng nhập lại');
+      return;
+    }
+  
     try {
-      await axios.delete(`http://192.84.105.173:5000/api/document/delete-image/${columnId}/${field}/${imageName}`);
+      await axios.delete(
+        `http://192.84.105.173:5000/api/document/delete-image/${columnId}/${field}/${imageName}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
+      );
       toast.success('Xóa ảnh thành công');
       
       const updatedImages = await fetchImages(columnId, field);
@@ -369,6 +420,10 @@ const Review = () => {
   };
 
   const handleRestore = async (column_id) => {
+    if (!hasEditPermission) {
+      toast.error('Bạn không có quyền khôi phục dữ liệu');
+      return;
+    }
     try {
       await axios.put(`http://192.84.105.173:5000/api/document/restore/${column_id}`, {
         username: currentUser.username
@@ -487,37 +542,46 @@ const Review = () => {
                         </div>
                       }}
                     />
-                    <Popconfirm
-                      title="Bạn có chắc chắn muốn xóa?"
-                      onConfirm={() => handleDeleteImage(record.COLUMN_ID, "hinh_anh1", img)}
-                    >
-                      <Button icon={<DeleteOutlined />} danger size="small" style={{ position: 'absolute', top: 0, right: 0 }} />
-                    </Popconfirm>
+                    {hasEditPermission && !record.IS_DELETED && (
+                      <Popconfirm
+                        title="Bạn có chắc chắn muốn xóa?"
+                        onConfirm={() => handleDeleteImage(record.COLUMN_ID, "hinh_anh1", img)}
+                      >
+                        <Button 
+                          icon={<DeleteOutlined />} 
+                          danger 
+                          size="small" 
+                          style={{ position: 'absolute', top: 0, right: 0 }} 
+                        />
+                      </Popconfirm>
+                    )}
                   </div>
                 ))}
               </div>
             ) : (
               <p>Chưa có hình ảnh</p>
             )}
-            <Upload
-              name="images"
-              customRequest={({ file, onSuccess }) => {
-                const info = { file: { originFileObj: file } };
-                handleUpload(info, record, "hinh_anh1");
-                setTimeout(() => onSuccess("ok"), 0);
-              }}
-              showUploadList={false}
-              accept="image/*"
-              disabled={isLoading}
-            >
-              <Button 
-                icon={<UploadOutlined />} 
-                style={{ width: '100%' }}
-                loading={isLoading}
+            {hasEditPermission && !record.IS_DELETED && (
+              <Upload
+                name="images"
+                customRequest={({ file, onSuccess }) => {
+                  const info = { file: { originFileObj: file } };
+                  handleUpload(info, record, "hinh_anh1");
+                  setTimeout(() => onSuccess("ok"), 0);
+                }}
+                showUploadList={false}
+                accept="image/*"
+                disabled={isLoading}
               >
-                {isLoading ? 'Đang tải lên...' : 'Tải lên'}
-              </Button>
-            </Upload>
+                <Button 
+                  icon={<UploadOutlined />} 
+                  style={{ width: '100%' }}
+                  loading={isLoading}
+                >
+                  {isLoading ? 'Đang tải lên...' : 'Tải lên'}
+                </Button>
+              </Upload>
+            )}
           </Space>
         );
       }
@@ -577,30 +641,44 @@ const Review = () => {
                         </div>
                       }}
                     />
-                    <Popconfirm
-                      title="Bạn có chắc chắn muốn xóa?"
-                      onConfirm={() => handleDeleteImage(record.COLUMN_ID, "hinh_anh2", img)}
-                    >
-                      <Button icon={<DeleteOutlined />} danger size="small" style={{ position: 'absolute', top: 0, right: 0 }} />
-                    </Popconfirm>
+                    {hasEditPermission && !record.IS_DELETED && (
+                      <Popconfirm
+                        title="Bạn có chắc chắn muốn xóa?"
+                        onConfirm={() => handleDeleteImage(record.COLUMN_ID, "hinh_anh2", img)}
+                      >
+                        <Button 
+                          icon={<DeleteOutlined />} 
+                          danger 
+                          size="small" 
+                          style={{ position: 'absolute', top: 0, right: 0 }} 
+                        />
+                      </Popconfirm>
+                    )}
                   </div>
                 ))}
               </div>
             ) : (
               <p>Chưa có hình ảnh</p>
             )}
-            <Upload
-              name="images"
-              customRequest={({ file, onSuccess }) => {
-                const info = { file: { originFileObj: file } };
-                handleUpload(info, record, "hinh_anh2");
-                setTimeout(() => onSuccess("ok"), 0);
-              }}
-              showUploadList={false}
-              accept="image/*"
-            >
-              <Button icon={<UploadOutlined />} style={{ width: '100%' }}>Tải lên</Button>
-            </Upload>
+            {hasEditPermission && !record.IS_DELETED && (
+              <Upload
+                name="images"
+                customRequest={({ file, onSuccess }) => {
+                  const info = { file: { originFileObj: file } };
+                  handleUpload(info, record, "hinh_anh2");
+                  setTimeout(() => onSuccess("ok"), 0);
+                }}
+                showUploadList={false}
+                accept="image/*"
+              >
+                <Button 
+                  icon={<UploadOutlined />} 
+                  style={{ width: '100%' }}
+                >
+                  Tải lên
+                </Button>
+              </Upload>
+            )}
           </Space>
         );
       }
@@ -635,30 +713,44 @@ const Review = () => {
                         </div>
                       }}
                     />
-                    <Popconfirm
-                      title="Bạn có chắc chắn muốn xóa?"
-                      onConfirm={() => handleDeleteImage(record.COLUMN_ID, "hinh_anh3", img)}
-                    >
-                      <Button icon={<DeleteOutlined />} danger size="small" style={{ position: 'absolute', top: 0, right: 0 }} />
-                    </Popconfirm>
+                    {hasEditPermission && !record.IS_DELETED && (
+                      <Popconfirm
+                        title="Bạn có chắc chắn muốn xóa?"
+                        onConfirm={() => handleDeleteImage(record.COLUMN_ID, "hinh_anh3", img)}
+                      >
+                        <Button 
+                          icon={<DeleteOutlined />} 
+                          danger 
+                          size="small" 
+                          style={{ position: 'absolute', top: 0, right: 0 }} 
+                        />
+                      </Popconfirm>
+                    )}
                   </div>
                 ))}
               </div>
             ) : (
               <p>Chưa có hình ảnh</p>
             )}
-            <Upload
-              name="images"
-              customRequest={({ file, onSuccess }) => {
-                const info = { file: { originFileObj: file } };
-                handleUpload(info, record, "hinh_anh3");
-                setTimeout(() => onSuccess("ok"), 0);
-              }}
-              showUploadList={false}
-              accept="image/*"
-            >
-              <Button icon={<UploadOutlined />} style={{ width: '100%' }}>Tải lên</Button>
-            </Upload>
+            {hasEditPermission && !record.IS_DELETED && (
+              <Upload
+                name="images"
+                customRequest={({ file, onSuccess }) => {
+                  const info = { file: { originFileObj: file } };
+                  handleUpload(info, record, "hinh_anh3");
+                  setTimeout(() => onSuccess("ok"), 0);
+                }}
+                showUploadList={false}
+                accept="image/*"
+              >
+                <Button 
+                  icon={<UploadOutlined />} 
+                  style={{ width: '100%' }}
+                >
+                  Tải lên
+                </Button>
+              </Upload>
+            )}
           </Space>
         );
       }
@@ -703,44 +795,50 @@ const Review = () => {
       key: "action",
       fixed: 'right',
       width: 250,
-      render: (text, record) => (
-        <Space direction="vertical">
-          {record.IS_DELETED === 1 ? (
-            <>
-              <div style={{ color: '#ff4d4f' }}>
-                <div>Đã xóa bởi: {record.DELETED_BY}</div>
-                <div>Thời gian: {record.DELETED_AT}</div>
-              </div>
-              <Button
-                icon={<UndoOutlined />}
-                onClick={() => handleRestore(record.COLUMN_ID)}
-                type="primary"
-                size="small"
-                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-              >
-                Khôi phục
-              </Button>
-            </>
-          ) : (
-            <Space>
-              <Button
-                icon={<SaveOutlined />}
-                onClick={() => handleSaveRow(record)}
-                type="primary"
-                size="small"
-              >
-                Lưu
-              </Button>
-              <Popconfirm
-                title="Bạn có chắc chắn muốn xóa?"
-                onConfirm={() => handleDelete(record.COLUMN_ID)}
-              >
-                <Button icon={<DeleteOutlined />} danger size="small" />
-              </Popconfirm>
-            </Space>
-          )}
-        </Space>
-      )
+      render: (text, record) => {
+        if (!hasEditPermission) {
+          return null;
+        }
+
+        return (
+          <Space direction="vertical">
+            {record.IS_DELETED === 1 ? (
+              <>
+                <div style={{ color: '#ff4d4f' }}>
+                  <div>Đã xóa bởi: {record.DELETED_BY}</div>
+                  <div>Thời gian: {record.DELETED_AT}</div>
+                </div>
+                <Button
+                  icon={<UndoOutlined />}
+                  onClick={() => handleRestore(record.COLUMN_ID)}
+                  type="primary"
+                  size="small"
+                  style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                >
+                  Khôi phục
+                </Button>
+              </>
+            ) : (
+              <Space>
+                <Button
+                  icon={<SaveOutlined />}
+                  onClick={() => handleSaveRow(record)}
+                  type="primary"
+                  size="small"
+                >
+                  Lưu
+                </Button>
+                <Popconfirm
+                  title="Bạn có chắc chắn muốn xóa?"
+                  onConfirm={() => handleDelete(record.COLUMN_ID)}
+                >
+                  <Button icon={<DeleteOutlined />} danger size="small" />
+                </Popconfirm>
+              </Space>
+            )}
+          </Space>
+        );
+      }
     }
   ];
 
@@ -831,12 +929,13 @@ const Review = () => {
 
   const renderEditableCell = (text, record, field) => {
     const isDeleted = record.IS_DELETED === 1;
+    const isDisabled = !hasEditPermission || isDeleted;
     
     return (
       <div
-        onClick={() => !isDeleted && fetchEditHistory(record.COLUMN_ID, field)}
+        onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, field)}
         style={{
-          cursor: isDeleted ? 'not-allowed' : 'pointer',
+          cursor: isDisabled ? 'not-allowed' : 'pointer',
           padding: '4px',
           position: 'relative',
         }}
@@ -848,15 +947,15 @@ const Review = () => {
           style={{ 
             width: '100%', 
             resize: 'none',
-            backgroundColor: isDeleted ? '#f5f5f5' : 'white',
-            color: isDeleted ? '#999' : 'inherit',
-            cursor: isDeleted ? 'not-allowed' : 'text',
+            backgroundColor: isDisabled ? '#f5f5f5' : 'white',
+            color: isDisabled ? '#999' : 'inherit',
+            cursor: isDisabled ? 'not-allowed' : 'text',
             paddingRight: '24px'
           }}
           onClick={e => e.stopPropagation()}
-          disabled={isDeleted}
+          disabled={isDisabled}
         />
-        {!isDeleted && (
+        {!isDisabled && (
           <HistoryOutlined 
             style={{
               position: 'absolute',
@@ -918,8 +1017,23 @@ const Review = () => {
   return (
     <MainLayout username={currentUser?.username} onLogout={() => console.log('Logout')}>
       <Toaster position="top-right" richColors />
+      {!hasEditPermission && (
+        <div style={{ 
+          marginBottom: 16, 
+          padding: 8, 
+          background: '#fffbe6', 
+          border: '1px solid #ffe58f',
+          borderRadius: 4 
+        }}>
+          <Text type="warning">Bạn đang ở chế độ chỉ xem. Chỉ người dùng được ủy quyền mới có thể chỉnh sửa dữ liệu.</Text>
+        </div>
+      )}
       <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
-        <Button type="primary" onClick={() => setIsModalVisible(true)}>Tạo mới</Button>
+        {hasEditPermission && (
+          <Button type="primary" onClick={() => setIsModalVisible(true)}>
+            Tạo mới
+          </Button>
+        )}
         <Button 
           icon={<DownloadOutlined />} 
           onClick={handleExportExcel}
