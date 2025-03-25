@@ -25,7 +25,7 @@ const Review = () => {
   const fetchUserInfo = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const userInfo = JSON.parse(localStorage.getItem('userInfo')); // Lấy thông tin user từ localStorage
+      const userInfo = JSON.parse(localStorage.getItem('userInfo')); 
 
       if (!token || !userInfo) {
         toast.error('Vui lòng đăng nhập lại');
@@ -40,7 +40,7 @@ const Review = () => {
 
       setCurrentUser(response.data);
       
-      const authorizedIds = ['017965', '006065', '003524', '008247', '006064'];
+      const authorizedIds = ['017965', '006065', '003524', '008247', '006064', '030516'];
       console.log('User company_id:', response.data.company_id);
       console.log('Authorized IDs:', authorizedIds);
       
@@ -257,6 +257,10 @@ const Review = () => {
   };
   // Hàm xử lý thay đổi ngày tháng
   const handleDateChange = useCallback((date, record, field) => {
+    if (!hasEditPermission) {
+      toast.error('Bạn không có quyền chỉnh sửa dữ liệu');
+      return;
+    }
     setData(prevData => {
       const newData = [...prevData];
       const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
@@ -269,7 +273,7 @@ const Review = () => {
       }
       return newData;
     });
-  }, []);
+  }, [hasEditPermission]);
 
   const handleAddNew = () => {
     form.validateFields()
