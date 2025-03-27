@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Table, Input, DatePicker, Upload, Button, Modal, Form, Popconfirm, Image, Space, List, Spin } from "antd";
+import { Table, Input, Upload, Button, Modal, Form, Popconfirm, Image, Space, List, Spin } from "antd";
 import { Typography } from 'antd';
 import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined, DownloadOutlined, UndoOutlined, HistoryOutlined } from "@ant-design/icons";
 import axios from "axios";
@@ -7,6 +7,7 @@ import moment from 'moment';
 import MainLayout from "../components/layout/MainLayout";
 import { Toaster, toast } from 'sonner';
 import * as XLSX from 'xlsx';
+import './Review.css';
 
 const Review = () => {
   const [data, setData] = useState([]);
@@ -26,30 +27,19 @@ const Review = () => {
     try {
       const token = localStorage.getItem('accessToken');
       const userInfo = JSON.parse(localStorage.getItem('userInfo')); 
-
       if (!token || !userInfo) {
         toast.error('Vui lòng đăng nhập lại');
         return;
       }
-
       const response = await axios.get('http://192.84.105.173:5000/api/auth/profile', {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-
       setCurrentUser(response.data);
-      
       const authorizedIds = ['017965', '006065', '003524', '008247', '006064', '030516'];
-      console.log('User company_id:', response.data.company_id);
-      console.log('Authorized IDs:', authorizedIds);
-      
       const userCompanyId = response.data.company_id ? response.data.company_id.toString().trim() : '';
       const hasPermission = authorizedIds.includes(userCompanyId);
-      
-      console.log('User company_id after trim:', userCompanyId);
-      console.log('Has permission:', hasPermission);
-
       setHasEditPermission(hasPermission);
 
     } catch (error) {
@@ -207,11 +197,7 @@ const Review = () => {
         khach_hang: record.KHACH_HANG,
         ma_tai_lieu: record.MA_TAI_LIEU,
         rev: record.REV,
-        phu_trach_thiet_ke: record.PHU_TRACH_THIET_KE,
-        ngay_thiet_ke: record.NGAY_THIET_KE,
         cong_venh: record.CONG_VENH,
-        phu_trach_review: record.PHU_TRACH_REVIEW,
-        ngay: record.NGAY,
         v_cut: record.V_CUT,
         xu_ly_be_mat: record.XU_LY_BE_MAT,
         ghi_chu: record.GHI_CHU,
@@ -239,47 +225,31 @@ const Review = () => {
       }
     }
   };
-  
-
-  // Hàm xử lý thay đổi giá trị trong bảng
   const handleCellChange = (value, record, field) => {
     setData(prevData => {
       const newData = [...prevData];
       const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
       if (index > -1) {
         const item = newData[index];
-        if (item[field] !== value) { // Chỉ cập nhật nếu giá trị thực sự thay đổi
+        if (item[field] !== value) {
           newData[index] = { ...item, [field]: value };
         }
       }
       return newData;
     });
   };
-  // Hàm xử lý thay đổi ngày tháng
-  const handleDateChange = useCallback((date, record, field) => {
-    if (!hasEditPermission) {
-      toast.error('Bạn không có quyền chỉnh sửa dữ liệu');
-      return;
-    }
-    setData(prevData => {
-      const newData = [...prevData];
-      const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
-      if (index > -1) {
-        const item = newData[index];
-        newData[index] = { 
-          ...item, 
-          [field]: date ? date.format('YYYY-MM-DD') : null 
-        };
-      }
-      return newData;
-    });
-  }, [hasEditPermission]);
 
   const handleAddNew = () => {
     form.validateFields()
       .then(async values => {
         try {
-          await axios.post('http://192.84.105.173:5000/api/document/add', values);
+          const dataToAdd = {
+            ...values,
+            created_by: currentUser.username,
+            created_at: new Date().toISOString()
+          };
+
+          await axios.post('http://192.84.105.173:5000/api/document/add', dataToAdd);
           toast.success('Thêm dữ liệu thành công');
           fetchData();
           setIsModalVisible(false);
@@ -333,21 +303,8 @@ const Review = () => {
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(exportData);
 
-      // Điều chỉnh độ rộng cột
       const columnWidths = [
-        { wch: 5 },  
-        { wch: 15 }, 
-        { wch: 20 }, 
-        { wch: 25 }, 
-        { wch: 8 },  
-        { wch: 20 }, 
-        { wch: 15 }, 
-        { wch: 15 }, 
-        { wch: 20 }, 
-        { wch: 15 }, 
-        { wch: 10 }, 
-        { wch: 20 }, 
-        { wch: 30 }  
+        { wch: 5 }, { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 8 },  { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 10 }, { wch: 20 }, { wch: 30 }  
       ];
       ws['!cols'] = columnWidths;
       const range = XLSX.utils.decode_range(ws['!ref']);
@@ -485,31 +442,6 @@ const Review = () => {
       )
     },
     {
-      title: "Phụ trách thiết kế",
-      dataIndex: "PHU_TRACH_THIET_KE",
-      key: "phu_trach_thiet_ke",
-      width: 150,
-      render: (text, record) => (
-        renderEditableCell(text, record, 'PHU_TRACH_THIET_KE')
-      )
-    },
-    {
-      title: "Ngày thiết kế",
-      dataIndex: "NGAY_THIET_KE",
-      key: "ngay_thiet_ke",
-      width: 160,
-      render: (text, record) => (
-        <DatePickerCell
-          value={text ? moment(text) : null}
-          onChange={handleDateChange}
-          record={record}
-          field="NGAY_THIET_KE"
-          isDeleted={record.IS_DELETED === 1}
-          fetchEditHistory={fetchEditHistory}
-        />
-      )
-    },
-    {
       title: "Cong vênh",
       dataIndex: "CONG_VENH",
       key: "cong_venh",
@@ -589,31 +521,6 @@ const Review = () => {
           </Space>
         );
       }
-    },
-    {
-      title: "Phụ trách review",
-      dataIndex: "PHU_TRACH_REVIEW",
-      key: "phu_trach_review",
-      width: 180,
-      render: (text, record) => (
-        renderEditableCell(text, record, 'PHU_TRACH_REVIEW')
-      )
-    },
-    {
-      title: "Ngày",
-      dataIndex: "NGAY",
-      key: "ngay",
-      width: 160,
-      render: (text, record) => (
-        <DatePickerCell
-          value={text ? moment(text) : null}
-          onChange={handleDateChange}
-          record={record}
-          field="NGAY"
-          isDeleted={record.IS_DELETED === 1}
-          fetchEditHistory={fetchEditHistory}
-        />
-      )
     },
     {
       title: "V-Cut",
@@ -795,6 +702,17 @@ const Review = () => {
       }
     },
     {
+      title: "Người tạo",
+      key: "user_info",
+      width: 200,
+      render: (text, record) => (
+        <div>
+          <div><strong>Người tạo:</strong> {record.CREATED_BY}</div>
+          <div><strong>Ngày tạo:</strong> {record.CREATED_AT}</div>
+        </div>
+      )
+    },
+    {
       title: "Hành động",
       key: "action",
       fixed: 'right',
@@ -876,13 +794,17 @@ const Review = () => {
           renderItem={item => (
             <List.Item>
               <List.Item.Meta
-                title={`${item.EDITED_BY} đã chỉnh sửa lúc - ${item.EDIT_TIME}`}
+                title={
+                  <Space>
+                    <span>{item.EDITED_BY} đã chỉnh sửa lúc: {item.EDIT_TIME}</span>   
+                  </Space>
+                }
                 description={
                   <Space direction="vertical">
                     <Text type="secondary">Nội dung cũ: {item.OLD_VALUE || '(trống)'}</Text>
                     <Text>Nội dung mới: {item.NEW_VALUE}</Text>
                   </Space>
-                } 
+                }
               />
             </List.Item>
           )}
@@ -981,42 +903,6 @@ const Review = () => {
     );
   };
 
-  const DatePickerCell = React.memo(({ value, onChange, record, field, isDeleted, fetchEditHistory }) => {
-    const handleChange = (date) => {
-      onChange(date, record, field);
-    };
-
-    return (
-      <div style={{ position: 'relative' }}>
-        <DatePicker
-          value={value ? moment(value) : null}
-          onChange={handleChange}
-          format="DD/MM/YYYY"
-          style={{ width: '100%' }}
-          disabled={isDeleted}
-        />
-        {!isDeleted && (
-          <HistoryOutlined 
-            style={{
-              position: 'absolute',
-              right: '28px',
-              top: '8px',
-              fontSize: '14px',
-              color: '#1890ff',
-              opacity: 0.6,
-              cursor: 'pointer',
-              transition: 'all 0.3s',
-              zIndex: 1
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              fetchEditHistory(record.COLUMN_ID, field);
-            }}
-          />
-        )}
-      </div>
-    );
-  });
 
   return (
     <MainLayout username={currentUser?.username} onLogout={() => console.log('Logout')}>
@@ -1059,137 +945,6 @@ const Review = () => {
         rowClassName={getRowClassName}
         loading={loading}
       />
-
-      <style jsx global>{`
-        .custom-table-row td {
-          white-space: pre-wrap;
-          word-break: break-word;
-          vertical-align: top;
-          padding: 8px;
-        }
-        .ant-table-cell {
-          vertical-align: top;
-        }
-        .ant-input {
-          white-space: pre-wrap;
-        }
-        .ant-table-thead > tr > th {
-          background-color: #f0f2f5;
-          font-weight: bold;
-        }
-        .ant-table-tbody > tr:hover > td {
-          background-color: #e6f7ff;
-        }
-        .image-loading {
-          position: relative;
-        }
-        
-        .image-loading::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(255, 255, 255, 0.7);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        
-        .ant-upload-disabled {
-          cursor: not-allowed;
-        }
-        .cell-new {
-          border: 1px solid #1890ff !important;
-        }
-        .cell-edited {
-          border: 1px solid #52c41a !important;
-        }
-        .history-cell {
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-        .history-cell:hover {
-          background-color: rgba(24, 144, 255, 0.1);
-        }
-        .editable-cell {
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-        .editable-cell:hover {
-          background-color: rgba(24, 144, 255, 0.1);
-        }
-        .deleted-row td {
-          background-color: #f5f5f5 !important;
-          color: #999;
-          position: relative;
-        }
-        
-        .deleted-row td::after {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 0;
-          right: 0;
-          border-top: 1px solid #ff4d4f;
-          pointer-events: none;
-        }
-        
-        .deleted-row:hover td {
-          background-color: #f0f0f0 !important;
-        }
-        
-        .deleted-row .ant-input-textarea,
-        .deleted-row .ant-picker,
-        .deleted-row .ant-upload {
-          pointer-events: none;
-          background-color: #f5f5f5;
-          color: #999;
-        }
-        
-        .deleted-row .ant-input-textarea textarea {
-          color: #999;
-        }
-        
-        .deleted-row .ant-picker-input input {
-          cursor: not-allowed;
-          color: #999;
-        }
-        
-        .deleted-row .ant-upload button,
-        .deleted-row .ant-picker,
-        .deleted-row .ant-btn:not(.ant-btn-primary) {
-          display: none;
-        }
-
-        .ant-input-textarea-wrapper {
-          position: relative;
-        }
-        
-        .ant-input-textarea-wrapper:hover .anticon-history {
-          opacity: 1;
-        }
-        
-        .ant-picker-wrapper {
-          position: relative;
-        }
-        
-        .ant-picker-wrapper .anticon-history {
-          position: absolute;
-          right: 8px;
-          top: 8px;
-          font-size: 14px;
-          color: #1890ff;
-          opacity: 0.6;
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-        
-        .ant-picker-wrapper:hover .anticon-history {
-          opacity: 1;
-        }
-      `}</style>
       <CreateDocument />
       <HistoryModal />
     </MainLayout>
