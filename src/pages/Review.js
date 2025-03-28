@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Table, Input, Upload, Button, Modal, Form, Popconfirm, Image, Space, List, Spin } from "antd";
+import { Table, Input, Upload, Button, Modal, Form, Popconfirm, Image, Space, List, Spin, Checkbox } from "antd";
 import { Typography } from 'antd';
 import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined, DownloadOutlined, UndoOutlined, HistoryOutlined } from "@ant-design/icons";
 import axios from "axios";
@@ -20,6 +20,13 @@ const Review = () => {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [hasEditPermission, setHasEditPermission] = useState(false);
+  const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
+  const [currentReviewRow, setCurrentReviewRow] = useState(null);
+  const [selectedReviewTypes, setSelectedReviewTypes] = useState({
+    CI: false,
+    Design: false
+  });
+  const [reviewStatus, setReviewStatus] = useState({});
 
   const { Text } = Typography;
   
@@ -54,6 +61,16 @@ const Review = () => {
     fetchUserInfo();
   }, []);
 
+  const fetchReviewStatus = async (columnId) => {
+    try {
+      const response = await axios.get(`http://192.84.105.173:5000/api/document/review-status/${columnId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching review status:', error);
+      return null;
+    }
+  };
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -82,11 +99,21 @@ const Review = () => {
         }
         return processedItem;
       });
+      
       const dataWithImages = await Promise.all(
         processedData.map(async (record) => {
           const hinh_anh1 = await fetchImages(record.COLUMN_ID, "hinh_anh1");
           const hinh_anh2 = await fetchImages(record.COLUMN_ID, "hinh_anh2");
           const hinh_anh3 = await fetchImages(record.COLUMN_ID, "hinh_anh3");
+          
+          // Fetch review status for each record
+          const status = await fetchReviewStatus(record.COLUMN_ID);
+          if (status) {
+            setReviewStatus(prev => ({
+              ...prev,
+              [record.COLUMN_ID]: status
+            }));
+          }
         
           return { 
             ...record, 
@@ -180,6 +207,23 @@ const Review = () => {
     }
   };
 
+  const handleCellChange = (value, record, field) => {
+    setData(prevData => {
+      const newData = [...prevData];
+      const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
+      if (index > -1) {
+        const item = newData[index];
+        if (item[field] !== value) {
+          newData[index] = { ...item, [field]: value };
+          if (field === 'REV') {
+            newData[index].oldREV = item.REV;
+          }
+        }
+      }
+      return newData;
+    });
+  };
+
   const handleSaveRow = async (record) => {
     if (!hasEditPermission) {
       toast.error('Bạn không có quyền chỉnh sửa dữ liệu');
@@ -204,18 +248,21 @@ const Review = () => {
         edited_by: currentUser.username
       };
 
-      await axios.put(
-        `http://192.84.105.173:5000/api/document/update/${record.COLUMN_ID}`,
-        dataToUpdate,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
+      // Lưu dữ liệu vào database trước
+      await axios.put(`http://192.84.105.173:5000/api/document/update/${record.COLUMN_ID}`, dataToUpdate, {
+        headers: {
+          Authorization: `Bearer ${token}`
         }
-      );
+      });
 
-      toast.success('Lưu thành công');
-      fetchData();
+      const hasRevChanged = record.oldREV !== undefined && record.oldREV !== record.REV;
+      if (hasRevChanged) {
+        setCurrentReviewRow(record);
+        setIsReviewModalVisible(true);
+      } else {
+        toast.success('Lưu thành công');
+        fetchData();
+      }
     } catch (error) {
       console.error(error);
       if (error.response?.status === 401) {
@@ -224,19 +271,6 @@ const Review = () => {
         toast.error('Lỗi khi lưu dữ liệu');
       }
     }
-  };
-  const handleCellChange = (value, record, field) => {
-    setData(prevData => {
-      const newData = [...prevData];
-      const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
-      if (index > -1) {
-        const item = newData[index];
-        if (item[field] !== value) {
-          newData[index] = { ...item, [field]: value };
-        }
-      }
-      return newData;
-    });
   };
 
   const handleAddNew = () => {
@@ -397,6 +431,82 @@ const Review = () => {
     }
   };
 
+  const handleReviewTypeSubmit = async () => {
+    if (!currentReviewRow) return;
+
+    try {
+      console.log('Selected Review Types:', selectedReviewTypes); // Debugging
+
+      // Create a new object to store the updated review status
+      const newStatus = {
+        CI_REVIEWED: selectedReviewTypes.CI ? 0 : 1,
+        DESIGN_REVIEWED: selectedReviewTypes.Design ? 1 : 0,
+        CI_REVIEWED_BY: selectedReviewTypes.CI ? currentUser.username : null,
+        DESIGN_REVIEWED_BY: selectedReviewTypes.Design ? currentUser.username : null,
+        CI_REVIEWED_AT: selectedReviewTypes.CI ? new Date().toISOString() : null,
+        DESIGN_REVIEWED_AT: selectedReviewTypes.Design ? new Date().toISOString() : null
+      };
+
+      console.log('New Status:', newStatus); // Debugging
+
+      // Update the reviewStatus state
+      setReviewStatus(prev => {
+        const updatedStatus = {
+          ...prev,
+          [currentReviewRow.COLUMN_ID]: newStatus
+        };
+        console.log('Updated Review Status:', updatedStatus); // Debugging
+        return updatedStatus;
+      });
+
+      // Confirm the review types
+      if (selectedReviewTypes.CI) {
+        console.log('Confirming CI Review'); // Debugging
+        await handleReviewConfirm(currentReviewRow.COLUMN_ID, 'CI');
+      }
+      if (selectedReviewTypes.Design) {
+        console.log('Confirming Design Review'); // Debugging
+        await handleReviewConfirm(currentReviewRow.COLUMN_ID, 'Design');
+      }
+
+      // Reset modal state
+      setIsReviewModalVisible(false);
+      setSelectedReviewTypes({ CI: false, Design: false });
+      setCurrentReviewRow(null);
+
+      toast.success('Lưu thông tin thành công!');
+      fetchData(); // Refresh data to ensure consistency
+    } catch (error) {
+      console.error('Error updating review types:', error);
+      toast.error('Lỗi khi cập nhật loại review');
+    }
+  };
+
+  const handleReviewConfirm = async (columnId, type) => {
+    try {
+      console.log('Confirming Review:', { columnId, type }); // Debugging
+
+      const response = await axios.post('http://192.84.105.173:5000/api/document/confirm-review', {
+        column_id: columnId,
+        review_type: type,
+        reviewed_by: currentUser.username
+      });
+
+      console.log('Response from Confirm Review:', response.data); // Debugging
+
+      // Update reviewStatus state with new data
+      setReviewStatus(prev => ({
+        ...prev,
+        [columnId]: response.data.status
+      }));
+
+      toast.success(`Đã xác nhận ${type} review thành công`);
+    } catch (error) {
+      console.error('Error confirming review:', error);
+      toast.error('Lỗi khi xác nhận review');
+    }
+  };
+
   const columns = [
     {
       title: "STT",
@@ -436,10 +546,55 @@ const Review = () => {
       title: "Rev.",
       dataIndex: "REV",
       key: "rev",
-      width: 100,
-      render: (text, record) => (
-        renderEditableCell(text, record, 'REV')
-      )
+      width: 150,
+      render: (text, record) => {
+        const isDisabled = !hasEditPermission || record.IS_DELETED === 1;
+        return (
+          <div
+            onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, 'REV')}
+            style={{
+              cursor: isDisabled ? 'not-allowed' : 'pointer',
+              padding: '4px',
+              position: 'relative',
+            }}
+          >
+            <Input.TextArea
+              value={text}
+              onChange={e => {
+                handleCellChange(e.target.value, record, 'REV');
+              }}
+              autoSize={{ minRows: 1, maxRows: 50 }}
+              style={{ 
+                width: '100%', 
+                resize: 'none',
+                backgroundColor: isDisabled ? '#f5f5f5' : 'white',
+                color: isDisabled ? '#999' : 'inherit',
+                paddingRight: '24px'
+              }}
+              onClick={e => e.stopPropagation()}
+              disabled={isDisabled}
+            />
+            {!isDisabled && (
+              <HistoryOutlined 
+                style={{
+                  position: 'absolute',
+                  right: '8px',
+                  top: '8px',
+                  fontSize: '14px',
+                  color: '#1890ff',
+                  opacity: 0.6,
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fetchEditHistory(record.COLUMN_ID, 'REV');
+                }}
+              />
+            )}
+          </div>
+        );
+      }
     },
     {
       title: "Cong vênh",
@@ -856,7 +1011,47 @@ const Review = () => {
   const renderEditableCell = (text, record, field) => {
     const isDeleted = record.IS_DELETED === 1;
     const isDisabled = !hasEditPermission || isDeleted;
-    
+    const status = reviewStatus[record.COLUMN_ID] || {};
+
+    console.log('Review Status:', status); // Debugging
+
+    // Determine styles and notification text based on review status
+    const getStylesAndNotification = () => {
+      if (isDisabled) return { styles: { borderColor: '#d9d9d9', backgroundColor: '#f5f5f5' }, notification: null };
+
+      if ((field === 'V_CUT' || field === 'XU_LY_BE_MAT') && status.CI_REVIEWED) {
+        return {
+          styles: {
+            borderColor: 'red',
+            borderWidth: '3px',
+            backgroundColor: '#ffd6d6',
+            color: 'red',
+            fontWeight: 'bold',
+            boxShadow: '0 0 8px rgba(255, 0, 0, 0.5)'
+          },
+          notification: 'CI Review lại'
+        };
+      }
+
+      if (field === 'CONG_VENH' && status.DESIGN_REVIEWED) {
+        return {
+          styles: {
+            borderColor: 'blue',
+            borderWidth: '3px',
+            backgroundColor: '#d6e4ff',
+            color: 'blue',
+            fontWeight: 'bold',
+            boxShadow: '0 0 8px rgba(0, 0, 255, 0.5)'
+          },
+          notification: 'Thiết kế Review lại'
+        };
+      }
+
+      return { styles: { borderColor: '#d9d9d9', backgroundColor: 'white' }, notification: null };
+    };
+
+    const { styles, notification } = getStylesAndNotification();
+
     return (
       <div
         onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, field)}
@@ -870,19 +1065,25 @@ const Review = () => {
           value={text}
           onChange={e => handleCellChange(e.target.value, record, field)}
           autoSize={{ minRows: 1, maxRows: 50 }}
-          style={{ 
-            width: '100%', 
+          style={{
+            width: '100%',
             resize: 'none',
-            backgroundColor: isDisabled ? '#f5f5f5' : 'white',
-            color: isDisabled ? '#999' : 'inherit',
+            backgroundColor: styles.backgroundColor,
+            color: styles.color || (isDisabled ? '#999' : 'inherit'),
             cursor: isDisabled ? 'not-allowed' : 'text',
-            paddingRight: '24px'
+            paddingRight: '24px',
+            borderColor: styles.borderColor,
+            borderWidth: styles.borderWidth || '1px',
+            borderStyle: 'solid',
+            boxShadow: styles.boxShadow,
+            fontWeight: styles.fontWeight || 'normal',
+            transition: 'all 0.3s'
           }}
           onClick={e => e.stopPropagation()}
           disabled={isDisabled}
         />
         {!isDisabled && (
-          <HistoryOutlined 
+          <HistoryOutlined
             style={{
               position: 'absolute',
               right: '8px',
@@ -899,10 +1100,58 @@ const Review = () => {
             }}
           />
         )}
+        {notification && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '-20px',
+              left: '0',
+              color: styles.color,
+              fontWeight: 'bold',
+              fontSize: '12px',
+            }}
+          >
+            {notification}
+          </div>
+        )}
       </div>
     );
   };
 
+  const ReviewTypeModal = () => (
+    <Modal
+      title="Chọn loại Review"
+      open={isReviewModalVisible}
+      onOk={handleReviewTypeSubmit}
+      onCancel={() => {
+        setIsReviewModalVisible(false);
+        setSelectedReviewTypes({ CI: false, Design: false });
+      }}
+      okText="Xác nhận"
+      cancelText="Hủy"
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <Checkbox
+          checked={selectedReviewTypes.CI}
+          onChange={(e) => setSelectedReviewTypes(prev => ({
+            ...prev,
+            CI: e.target.checked
+          }))}
+        >
+          CI Review
+        </Checkbox>
+        <Checkbox
+          checked={selectedReviewTypes.Design}
+          onChange={(e) => setSelectedReviewTypes(prev => ({
+            ...prev,
+            Design: e.target.checked
+          }))}
+        >
+          Thiết kế Review
+        </Checkbox>
+      </div>
+    </Modal>
+  );
 
   return (
     <MainLayout username={currentUser?.username} onLogout={() => console.log('Logout')}>
@@ -947,6 +1196,7 @@ const Review = () => {
       />
       <CreateDocument />
       <HistoryModal />
+      <ReviewTypeModal />
     </MainLayout>
   );
 };
