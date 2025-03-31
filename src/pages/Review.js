@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Table, Input, Upload, Button, Modal, Form, Popconfirm, Image, Space, List, Spin, Checkbox } from "antd";
 import { Typography } from 'antd';
-import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined, DownloadOutlined, UndoOutlined, HistoryOutlined } from "@ant-design/icons";
+import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined, DownloadOutlined, UndoOutlined, HistoryOutlined, CheckOutlined } from "@ant-design/icons";
 import axios from "axios";
 import moment from 'moment';
 import MainLayout from "../components/layout/MainLayout";
 import { Toaster, toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import './Review.css';
+import ConfirmReviewResetButton from "../components/button/ConfirmReviewResetButton ";
 
 const Review = () => {
   const [data, setData] = useState([]);
@@ -505,6 +506,149 @@ const Review = () => {
       console.error('Error confirming review:', error);
       toast.error('Lỗi khi xác nhận review');
     }
+  };
+
+  const renderConfirmReviewButton = (field, record, status) => {
+    if (field === 'V_CUT' && status.CI_REVIEWED) {
+      return (
+        <ConfirmReviewResetButton
+          columnId={record.COLUMN_ID}
+          field={field}
+          onResetSuccess={fetchData}
+        />
+      );
+    }
+
+    if (field === 'XU_LY_BE_MAT' && status.CI_REVIEWED) {
+      return (
+        <ConfirmReviewResetButton
+          columnId={record.COLUMN_ID}
+          field={field}
+          onResetSuccess={fetchData}
+        />
+      );
+    }
+
+    if (field === 'CONG_VENH' && status.DESIGN_REVIEWED) {
+      return (
+        <ConfirmReviewResetButton
+          columnId={record.COLUMN_ID}
+          field={field}
+          onResetSuccess={fetchData}
+        />
+      );
+    }
+
+    return null;
+  };
+
+  const renderEditableCell = (text, record, field) => {
+    const isDeleted = record.IS_DELETED === 1;
+    const isDisabled = !hasEditPermission || isDeleted;
+    const status = reviewStatus[record.COLUMN_ID] || {};
+
+    // Determine styles and notification text based on review status
+    const getStylesAndNotification = () => {
+      if (isDisabled) return { styles: { borderColor: '#d9d9d9', backgroundColor: '#f5f5f5' }, notification: null };
+
+      if ((field === 'V_CUT' || field === 'XU_LY_BE_MAT') && status.CI_REVIEWED) {
+        return {
+          styles: {
+            borderColor: 'red',
+            borderWidth: '3px',
+            backgroundColor: '#ffd6d6',
+            color: 'red',
+            fontWeight: 'bold',
+            boxShadow: '0 0 8px rgba(255, 0, 0, 0.5)'
+          },
+          notification: 'CI Review lại'
+        };
+      }
+
+      if (field === 'CONG_VENH' && status.DESIGN_REVIEWED) {
+        return {
+          styles: {
+            borderColor: 'blue',
+            borderWidth: '3px',
+            backgroundColor: '#d6e4ff',
+            color: 'blue',
+            fontWeight: 'bold',
+            boxShadow: '0 0 8px rgba(0, 0, 255, 0.5)'
+          },
+          notification: 'Thiết kế Review lại'
+        };
+      }
+
+      return { styles: { borderColor: '#d9d9d9', backgroundColor: 'white' }, notification: null };
+    };
+
+    const { styles, notification } = getStylesAndNotification();
+
+    return (
+      <div
+        onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, field)}
+        style={{
+          cursor: isDisabled ? 'not-allowed' : 'pointer',
+          padding: '4px',
+          position: 'relative',
+        }}
+      >
+        <Input.TextArea
+          value={text}
+          onChange={e => handleCellChange(e.target.value, record, field)}
+          autoSize={{ minRows: 1, maxRows: 50 }}
+          style={{
+            width: '100%',
+            resize: 'none',
+            backgroundColor: styles.backgroundColor,
+            color: styles.color || (isDisabled ? '#999' : 'inherit'),
+            cursor: isDisabled ? 'not-allowed' : 'text',
+            paddingRight: '24px',
+            borderColor: styles.borderColor,
+            borderWidth: styles.borderWidth || '1px',
+            borderStyle: 'solid',
+            boxShadow: styles.boxShadow,
+            fontWeight: styles.fontWeight || 'normal',
+            transition: 'all 0.3s'
+          }}
+          onClick={e => e.stopPropagation()}
+          disabled={isDisabled}
+        />
+        {!isDisabled && (
+          <HistoryOutlined
+            style={{
+              position: 'absolute',
+              right: '8px',
+              top: '8px',
+              fontSize: '14px',
+              color: '#1890ff',
+              opacity: 0.6,
+              cursor: 'pointer',
+              transition: 'all 0.3s'
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              fetchEditHistory(record.COLUMN_ID, field);
+            }}
+          />
+        )}
+        {notification && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '-20px',
+              left: '0',
+              color: styles.color,
+              fontWeight: 'bold',
+              fontSize: '12px',
+            }}
+          >
+            {notification}
+          </div>
+        )}
+        {!isDisabled && renderConfirmReviewButton(field, record, status)}
+      </div>
+    );
   };
 
   const columns = [
@@ -1006,116 +1150,6 @@ const Review = () => {
       return 'deleted-row';
     }
     return 'custom-table-row';
-  };
-
-  const renderEditableCell = (text, record, field) => {
-    const isDeleted = record.IS_DELETED === 1;
-    const isDisabled = !hasEditPermission || isDeleted;
-    const status = reviewStatus[record.COLUMN_ID] || {};
-
-    console.log('Review Status:', status); // Debugging
-
-    // Determine styles and notification text based on review status
-    const getStylesAndNotification = () => {
-      if (isDisabled) return { styles: { borderColor: '#d9d9d9', backgroundColor: '#f5f5f5' }, notification: null };
-
-      if ((field === 'V_CUT' || field === 'XU_LY_BE_MAT') && status.CI_REVIEWED) {
-        return {
-          styles: {
-            borderColor: 'red',
-            borderWidth: '3px',
-            backgroundColor: '#ffd6d6',
-            color: 'red',
-            fontWeight: 'bold',
-            boxShadow: '0 0 8px rgba(255, 0, 0, 0.5)'
-          },
-          notification: 'CI Review lại'
-        };
-      }
-
-      if (field === 'CONG_VENH' && status.DESIGN_REVIEWED) {
-        return {
-          styles: {
-            borderColor: 'blue',
-            borderWidth: '3px',
-            backgroundColor: '#d6e4ff',
-            color: 'blue',
-            fontWeight: 'bold',
-            boxShadow: '0 0 8px rgba(0, 0, 255, 0.5)'
-          },
-          notification: 'Thiết kế Review lại'
-        };
-      }
-
-      return { styles: { borderColor: '#d9d9d9', backgroundColor: 'white' }, notification: null };
-    };
-
-    const { styles, notification } = getStylesAndNotification();
-
-    return (
-      <div
-        onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, field)}
-        style={{
-          cursor: isDisabled ? 'not-allowed' : 'pointer',
-          padding: '4px',
-          position: 'relative',
-        }}
-      >
-        <Input.TextArea
-          value={text}
-          onChange={e => handleCellChange(e.target.value, record, field)}
-          autoSize={{ minRows: 1, maxRows: 50 }}
-          style={{
-            width: '100%',
-            resize: 'none',
-            backgroundColor: styles.backgroundColor,
-            color: styles.color || (isDisabled ? '#999' : 'inherit'),
-            cursor: isDisabled ? 'not-allowed' : 'text',
-            paddingRight: '24px',
-            borderColor: styles.borderColor,
-            borderWidth: styles.borderWidth || '1px',
-            borderStyle: 'solid',
-            boxShadow: styles.boxShadow,
-            fontWeight: styles.fontWeight || 'normal',
-            transition: 'all 0.3s'
-          }}
-          onClick={e => e.stopPropagation()}
-          disabled={isDisabled}
-        />
-        {!isDisabled && (
-          <HistoryOutlined
-            style={{
-              position: 'absolute',
-              right: '8px',
-              top: '8px',
-              fontSize: '14px',
-              color: '#1890ff',
-              opacity: 0.6,
-              cursor: 'pointer',
-              transition: 'all 0.3s'
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              fetchEditHistory(record.COLUMN_ID, field);
-            }}
-          />
-        )}
-        {notification && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '-20px',
-              left: '0',
-              color: styles.color,
-              fontWeight: 'bold',
-              fontSize: '12px',
-            }}
-          >
-            {notification}
-          </div>
-        )}
-      </div>
-    );
   };
 
   const ReviewTypeModal = () => (
