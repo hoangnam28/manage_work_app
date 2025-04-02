@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import SideBar from './SideBar';
 import './MainLayout.css';
 
-const { Header, Content, Footer } = Layout;
+const { Content } = Layout;
 
 const MainLayout = ({ children }) => {
   const navigate = useNavigate();
@@ -18,16 +18,14 @@ const MainLayout = ({ children }) => {
   const username = localStorage.getItem('username');
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout style={{ height: '100vh', overflow: 'hidden' }}>
       <SideBar username={username} onLogout={handleLogout} />
       <Layout>
-        <Header style={{ background: '#fff', padding: 0 }} />
-        <Content style={{ margin: '24px 16px 0' }}>
-          <div style={{ padding: 24, background: '#fff', minHeight: 360 }}>
+        <Content style={{ margin: '24px 16px 0', overflow: 'auto', height: 'calc(100vh - 24px)' }}>
+          <div className="main-content">
             {children}
           </div>
         </Content>
-        <Footer style={{ textAlign: 'center' }}></Footer>
       </Layout>
     </Layout>
   );

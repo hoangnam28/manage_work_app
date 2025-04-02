@@ -1,11 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Layout, Menu, Dropdown, Button, Avatar } from 'antd';
-import { UserOutlined, DownOutlined, LogoutOutlined } from '@ant-design/icons';
+import { UserOutlined, DownOutlined, LogoutOutlined, RightOutlined, LeftOutlined } from '@ant-design/icons';
 import './SideBar.css';
 
 const { Sider } = Layout;
 
 const SideBar = ({ onLogout, userId }) => {
+  const [collapsed, setCollapsed] = useState(false); // State to manage sidebar collapse
+
   const menu1 = {
     items: [
       { key: '1', label: 'Option 1' },
@@ -67,14 +69,26 @@ const SideBar = ({ onLogout, userId }) => {
   ];
 
   return (
-    <Sider width={200} className="site-layout-background">
+    <Sider
+      width={200} // Full width when expanded
+      collapsible
+      collapsed={collapsed}
+      collapsedWidth={0} // Fully collapse the sidebar
+      onCollapse={setCollapsed}
+      className="site-layout-background"
+      trigger={null} // Disable default trigger
+    >
       <div className="sidebar-header">
-        <Avatar
-          size={32}
-          icon={<UserOutlined />}
-          src={userId ? `http://192.84.105.173:5000/api/auth/avatar/${userId}` : null}
-        />
-        <span style={{ marginLeft: '8px' }}>{user?.username}</span>
+        {!collapsed && (
+          <>
+            <Avatar
+              size={32}
+              icon={<UserOutlined />}
+              src={userId ? `http://192.84.105.173:5000/api/auth/avatar/${userId}` : null}
+            />
+            <span style={{ marginLeft: '8px' }}>{user?.username}</span>
+          </>
+        )}
       </div>
       <Menu
         mode="inline"
@@ -84,8 +98,17 @@ const SideBar = ({ onLogout, userId }) => {
       />
       <div className="sidebar-footer">
         <Button type="primary" icon={<LogoutOutlined />} onClick={onLogout}>
-          Logout
+          {!collapsed && 'Logout'}
         </Button>
+      </div>
+      {/* Toggle Button với className mới */}
+      <div className={`sidebar-toggle-container ${collapsed ? 'collapsed' : ''}`}>
+        <Button
+          type="primary"
+          shape="circle"
+          icon={collapsed ? <RightOutlined /> : <LeftOutlined />}
+          onClick={() => setCollapsed(!collapsed)}
+        />
       </div>
     </Sider>
   );

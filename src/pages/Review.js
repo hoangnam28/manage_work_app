@@ -8,7 +8,6 @@ import MainLayout from "../components/layout/MainLayout";
 import { Toaster, toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import './Review.css';
-import ConfirmReviewResetButton from "../components/button/ConfirmReviewResetButton ";
 
 const Review = () => {
   const [data, setData] = useState([]);
@@ -508,49 +507,17 @@ const Review = () => {
     }
   };
 
-  const renderConfirmReviewButton = (field, record, status) => {
-    if (field === 'V_CUT' && status.CI_REVIEWED) {
-      return (
-        <ConfirmReviewResetButton
-          columnId={record.COLUMN_ID}
-          field={field}
-          onResetSuccess={fetchData}
-        />
-      );
-    }
-
-    if (field === 'XU_LY_BE_MAT' && status.CI_REVIEWED) {
-      return (
-        <ConfirmReviewResetButton
-          columnId={record.COLUMN_ID}
-          field={field}
-          onResetSuccess={fetchData}
-        />
-      );
-    }
-
-    if (field === 'CONG_VENH' && status.DESIGN_REVIEWED) {
-      return (
-        <ConfirmReviewResetButton
-          columnId={record.COLUMN_ID}
-          field={field}
-          onResetSuccess={fetchData}
-        />
-      );
-    }
-
-    return null;
-  };
-
   const renderEditableCell = (text, record, field) => {
     const isDeleted = record.IS_DELETED === 1;
-    const isDisabled = !hasEditPermission || isDeleted;
+    const isDisabled = isDeleted; // Only disable if the record is deleted
     const status = reviewStatus[record.COLUMN_ID] || {};
-
+  
     // Determine styles and notification text based on review status
     const getStylesAndNotification = () => {
-      if (isDisabled) return { styles: { borderColor: '#d9d9d9', backgroundColor: '#f5f5f5' }, notification: null };
-
+      if (isDeleted) {
+        return { styles: { borderColor: '#d9d9d9', backgroundColor: '#f5f5f5' }, notification: null };
+      }
+  
       if ((field === 'V_CUT' || field === 'XU_LY_BE_MAT') && status.CI_REVIEWED) {
         return {
           styles: {
@@ -564,7 +531,7 @@ const Review = () => {
           notification: 'CI Review lại'
         };
       }
-
+  
       if (field === 'CONG_VENH' && status.DESIGN_REVIEWED) {
         return {
           styles: {
@@ -578,12 +545,12 @@ const Review = () => {
           notification: 'Thiết kế Review lại'
         };
       }
-
+  
       return { styles: { borderColor: '#d9d9d9', backgroundColor: 'white' }, notification: null };
     };
-
+  
     const { styles, notification } = getStylesAndNotification();
-
+  
     return (
       <div
         onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, field)}
@@ -601,7 +568,7 @@ const Review = () => {
             width: '100%',
             resize: 'none',
             backgroundColor: styles.backgroundColor,
-            color: styles.color || (isDisabled ? '#999' : 'inherit'),
+            color: styles.color || 'inherit', // Use default text color
             cursor: isDisabled ? 'not-allowed' : 'text',
             paddingRight: '24px',
             borderColor: styles.borderColor,
@@ -646,7 +613,7 @@ const Review = () => {
             {notification}
           </div>
         )}
-        {!isDisabled && renderConfirmReviewButton(field, record, status)}
+        {!isDisabled }
       </div>
     );
   };
@@ -672,7 +639,7 @@ const Review = () => {
       title: "Khách hàng",
       dataIndex: "KHACH_HANG",
       key: "khach_hang",
-      width: 150,
+      width: 200,
       render: (text, record) => (
         renderEditableCell(text, record, 'KHACH_HANG')
       )
@@ -711,8 +678,8 @@ const Review = () => {
               style={{ 
                 width: '100%', 
                 resize: 'none',
-                backgroundColor: isDisabled ? '#f5f5f5' : 'white',
-                color: isDisabled ? '#999' : 'inherit',
+                backgroundColor: isDisabled ? 'white' : 'white',
+                color: isDisabled ? 'inherit' : 'inherit',
                 paddingRight: '24px'
               }}
               onClick={e => e.stopPropagation()}
@@ -750,7 +717,7 @@ const Review = () => {
       )
     },
     {
-      title: "Hình ảnh",
+      title: "Hình ảnh Cong Vênh",
       key: "hinh_anh1",
       width: 180,
       render: (record) => {
@@ -831,7 +798,7 @@ const Review = () => {
       )
     },
     {
-      title: "Hình ảnh",
+      title: "Hình ảnh V-Cut",
       key: "hinh_anh2",
       width: 180,
       render: (record) => { 
@@ -903,7 +870,7 @@ const Review = () => {
       )
     },
     {
-      title: "Hình ảnh",
+      title: "Hình ảnh xử lý bề mặt",
       key: "hinh_anh3",
       width: 180,
       render: (record) => {
@@ -1001,21 +968,10 @@ const Review = () => {
       }
     },
     {
-      title: "Người tạo",
-      key: "user_info",
-      width: 200,
-      render: (text, record) => (
-        <div>
-          <div><strong>Người tạo:</strong> {record.CREATED_BY}</div>
-          <div><strong>Ngày tạo:</strong> {record.CREATED_AT}</div>
-        </div>
-      )
-    },
-    {
       title: "Hành động",
       key: "action",
       fixed: 'right',
-      width: 250,
+      width: 120,
       render: (text, record) => {
         if (!hasEditPermission) {
           return null;
@@ -1220,7 +1176,7 @@ const Review = () => {
         dataSource={data}
         columns={columns}
         rowKey="column_id"
-        scroll={{ x: 'max-content', y: 600 }}
+        scroll={{ x: 'max-content', y: 760 }}
         pagination={pagination}
         onChange={handleTableChange}
         bordered
