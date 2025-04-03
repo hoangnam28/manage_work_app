@@ -236,7 +236,12 @@ const Review = () => {
         toast.error('Vui lòng đăng nhập lại');
         return;
       }
-
+  
+      if (!record.COLUMN_ID) {
+        toast.error('Không tìm thấy ID của bản ghi');
+        return;
+      }
+  
       const dataToUpdate = {
         ma: record.MA,
         khach_hang: record.KHACH_HANG,
@@ -248,14 +253,11 @@ const Review = () => {
         ghi_chu: record.GHI_CHU,
         edited_by: currentUser.username
       };
-
-      // Lưu dữ liệu vào database trước
       await axios.put(`http://192.84.105.173:5000/api/document/update/${record.COLUMN_ID}`, dataToUpdate, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-
       const hasRevChanged = record.oldREV !== undefined && record.oldREV !== record.REV;
       if (hasRevChanged) {
         setCurrentReviewRow(record);
@@ -265,28 +267,34 @@ const Review = () => {
         fetchData();
       }
     } catch (error) {
-      console.error(error);
+      console.error('Error saving row:', error);
       if (error.response?.status === 401) {
         toast.error('Phiên đăng nhập hết hạn');
+      } else if (error.response?.status === 404) {
+        toast.error('Không tìm thấy bản ghi');
       } else {
         toast.error('Lỗi khi lưu dữ liệu');
       }
     }
   };
-
   const handleAddNew = () => {
     form.validateFields()
-      .then(async values => {
+      .then(async (values) => {
         try {
           const dataToAdd = {
             ...values,
+            REV: '',
+            CONG_VENH: '',
+            V_CUT: '',
+            XU_LY_BE_MAT: '',
+            GHI_CHU: '',
             created_by: currentUser.username,
-            created_at: new Date().toISOString()
+            created_at: new Date().toISOString(),
           };
-
+  
           await axios.post('http://192.84.105.173:5000/api/document/add', dataToAdd);
           toast.success('Thêm dữ liệu thành công');
-          fetchData();
+          fetchData(); // Refresh the table data
           setIsModalVisible(false);
           form.resetFields();
         } catch (error) {
@@ -294,12 +302,11 @@ const Review = () => {
           toast.error('Lỗi khi thêm dữ liệu');
         }
       })
-      .catch(errorInfo => {
+      .catch((errorInfo) => {
         console.error('Validation Failed:', errorInfo);
         toast.error('Vui lòng nhập đầy đủ các trường thông tin!');
       });
   };
-
   const handleDelete = async (column_id) => {
     if (!hasEditPermission) {
       toast.error('Bạn không có quyền xóa dữ liệu');
@@ -404,8 +411,12 @@ const Review = () => {
     setHistoryLoading(true);
     try {
       const response = await axios.get(`http://192.84.105.173:5000/api/document/edit-history/${columnId}/${field}`);
-      console.log('History response:', response.data);
-      setEditHistory(response.data);
+      const { creator, history } = response.data;
+  
+      setEditHistory({
+        creator, // Include creator information
+        history, // Include edit history
+      });
       setHistoryModalVisible(true);
     } catch (error) {
       console.error('Error fetching history:', error);
@@ -544,7 +555,8 @@ const Review = () => {
 
   const renderEditableCell = (text, record, field) => {
     const isDeleted = record.IS_DELETED === 1; // Disable if the record is marked as deleted
-    // const isDisabled = isDeleted || !hasEditPermission; // Disable editing if the user doesn't have edit permissions
+    const isDisabled = isDeleted || !hasEditPermission; // Disable editing if the user doesn't have edit permissions
+  
     const status = reviewStatus[record.COLUMN_ID] || {};
   
     // Determine styles and notification text based on review status
@@ -588,15 +600,16 @@ const Review = () => {
   
     return (
       <div
-        onClick={() => fetchEditHistory(record.COLUMN_ID, field)} // Always allow fetching history
+        onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, field)} // Allow fetching history only if not disabled
         style={{
-          cursor: 'pointer', // Always allow pointer cursor for history icon
+          cursor: isDisabled ? 'not-allowed' : 'pointer', // Show pointer cursor only if editable
           padding: '4px',
           position: 'relative',
         }}
       >
         <Input.TextArea
           value={text}
+          onChange={(e) => handleCellChange(e.target.value, record, field)}
           autoSize={{ minRows: 1, maxRows: 50 }}
           style={{
             width: '100%',
@@ -612,7 +625,7 @@ const Review = () => {
             transition: 'all 0.3s',
           }}
           onClick={(e) => e.stopPropagation()} // Prevent triggering the history fetch on text area click
-          disabled={true} // Always disable editing
+          disabled={isDisabled} // Disable editing if the user doesn't have permissions
         />
         <HistoryOutlined
           style={{
@@ -689,13 +702,13 @@ const Review = () => {
       key: "rev",
       width: 150,
       render: (text, record) => {
-        const isDisabled = record.IS_DELETED === 1 || !hasEditPermission; // Disable editing if the record is deleted or the user lacks permissions
+        const isDisabled = record.IS_DELETED === 1 || !hasEditPermission; 
     
         return (
           <div
-            onClick={() => fetchEditHistory(record.COLUMN_ID, "REV")} // Always allow fetching history
+            onClick={() => fetchEditHistory(record.COLUMN_ID, "REV")} 
             style={{
-              cursor: "pointer", // Always allow pointer cursor for history icon
+              cursor: "pointer", 
               padding: "4px",
               position: "relative",
             }}
@@ -1092,27 +1105,37 @@ const Review = () => {
           <Spin />
         </div>
       ) : (
-        <List
-          dataSource={editHistory}
-          renderItem={item => (
-            <List.Item>
-              <List.Item.Meta
-                title={
-                  <Space>
-                    <span>{item.EDITED_BY} đã chỉnh sửa lúc: {item.EDIT_TIME}</span>   
-                  </Space>
-                }
-                description={
-                  <Space direction="vertical">
-                    <Text type="secondary">Nội dung cũ: {item.OLD_VALUE || '(trống)'}</Text>
-                    <Text>Nội dung mới: {item.NEW_VALUE}</Text>
-                  </Space>
-                }
-              />
-            </List.Item>
+        <>
+          {/* Display created_by and created_at */}
+          {editHistory.creator && (
+            <div style={{ marginBottom: '16px', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
+              <p><strong>Người tạo:</strong> {editHistory.creator.CREATED_BY || 'Không xác định'}</p>
+              <p><strong>Thời gian tạo:</strong> {editHistory.creator.CREATED_AT || 'Không xác định'}</p>
+            </div>
           )}
-          locale={{ emptyText: 'Chưa có lịch sử chỉnh sửa' }}
-        />
+          {/* Display edit history */}
+          <List
+            dataSource={editHistory.history}
+            renderItem={(item) => (
+              <List.Item>
+                <List.Item.Meta
+                  title={
+                    <Space>
+                      <span>{item.EDITED_BY} đã chỉnh sửa lúc: {item.EDIT_TIME}</span>
+                    </Space>
+                  }
+                  description={
+                    <Space direction="vertical">
+                      <Text type="secondary">Nội dung cũ: {item.OLD_VALUE || '(trống)'}</Text>
+                      <Text>Nội dung mới: {item.NEW_VALUE}</Text>
+                    </Space>
+                  }
+                />
+              </List.Item>
+            )}
+            locale={{ emptyText: 'Chưa có lịch sử chỉnh sửa' }}
+          />
+        </>
       )}
     </Modal>
   );
