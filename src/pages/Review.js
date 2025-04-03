@@ -8,6 +8,7 @@ import MainLayout from "../components/layout/MainLayout";
 import { Toaster, toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import './Review.css';
+import ConfirmReviewResetButton from "../components/button/ConfirmReviewResetButton ";
 
 const Review = () => {
   const [data, setData] = useState([]);
@@ -507,9 +508,43 @@ const Review = () => {
     }
   };
 
+  const renderConfirmReviewButton = (field, record, status) => {
+    if (field === 'V_CUT' && status.CI_REVIEWED) {
+      return (
+        <ConfirmReviewResetButton
+          columnId={record.COLUMN_ID}
+          field={field}
+          onResetSuccess={fetchData}
+        />
+      );
+    }
+
+    if (field === 'XU_LY_BE_MAT' && status.CI_REVIEWED) {
+      return (
+        <ConfirmReviewResetButton
+          columnId={record.COLUMN_ID}
+          field={field}
+          onResetSuccess={fetchData}
+        />
+      );
+    }
+
+    if (field === 'CONG_VENH' && status.DESIGN_REVIEWED) {
+      return (
+        <ConfirmReviewResetButton
+          columnId={record.COLUMN_ID}
+          field={field}
+          onResetSuccess={fetchData}
+        />
+      );
+    }
+
+    return null;
+  };
+
   const renderEditableCell = (text, record, field) => {
-    const isDeleted = record.IS_DELETED === 1;
-    const isDisabled = isDeleted; // Only disable if the record is deleted
+    const isDeleted = record.IS_DELETED === 1; // Disable if the record is marked as deleted
+    // const isDisabled = isDeleted || !hasEditPermission; // Disable editing if the user doesn't have edit permissions
     const status = reviewStatus[record.COLUMN_ID] || {};
   
     // Determine styles and notification text based on review status
@@ -526,9 +561,9 @@ const Review = () => {
             backgroundColor: '#ffd6d6',
             color: 'red',
             fontWeight: 'bold',
-            boxShadow: '0 0 8px rgba(255, 0, 0, 0.5)'
+            boxShadow: '0 0 8px rgba(255, 0, 0, 0.5)',
           },
-          notification: 'CI Review lại'
+          notification: 'CI Review lại',
         };
       }
   
@@ -540,9 +575,9 @@ const Review = () => {
             backgroundColor: '#d6e4ff',
             color: 'blue',
             fontWeight: 'bold',
-            boxShadow: '0 0 8px rgba(0, 0, 255, 0.5)'
+            boxShadow: '0 0 8px rgba(0, 0, 255, 0.5)',
           },
-          notification: 'Thiết kế Review lại'
+          notification: 'Thiết kế Review lại',
         };
       }
   
@@ -553,52 +588,48 @@ const Review = () => {
   
     return (
       <div
-        onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, field)}
+        onClick={() => fetchEditHistory(record.COLUMN_ID, field)} // Always allow fetching history
         style={{
-          cursor: isDisabled ? 'not-allowed' : 'pointer',
+          cursor: 'pointer', // Always allow pointer cursor for history icon
           padding: '4px',
           position: 'relative',
         }}
       >
         <Input.TextArea
           value={text}
-          onChange={e => handleCellChange(e.target.value, record, field)}
           autoSize={{ minRows: 1, maxRows: 50 }}
           style={{
             width: '100%',
             resize: 'none',
-            backgroundColor: styles.backgroundColor,
-            color: styles.color || 'inherit', // Use default text color
-            cursor: isDisabled ? 'not-allowed' : 'text',
+            backgroundColor: styles.backgroundColor, // Normal white background
+            color: styles.color || 'inherit', // Normal black text
             paddingRight: '24px',
             borderColor: styles.borderColor,
             borderWidth: styles.borderWidth || '1px',
             borderStyle: 'solid',
             boxShadow: styles.boxShadow,
             fontWeight: styles.fontWeight || 'normal',
-            transition: 'all 0.3s'
+            transition: 'all 0.3s',
           }}
-          onClick={e => e.stopPropagation()}
-          disabled={isDisabled}
+          onClick={(e) => e.stopPropagation()} // Prevent triggering the history fetch on text area click
+          disabled={true} // Always disable editing
         />
-        {!isDisabled && (
-          <HistoryOutlined
-            style={{
-              position: 'absolute',
-              right: '8px',
-              top: '8px',
-              fontSize: '14px',
-              color: '#1890ff',
-              opacity: 0.6,
-              cursor: 'pointer',
-              transition: 'all 0.3s'
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              fetchEditHistory(record.COLUMN_ID, field);
-            }}
-          />
-        )}
+        <HistoryOutlined
+          style={{
+            position: 'absolute',
+            right: '8px',
+            top: '8px',
+            fontSize: '14px',
+            color: '#1890ff',
+            opacity: 0.6,
+            cursor: 'pointer',
+            transition: 'all 0.3s',
+          }}
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent triggering parent click
+            fetchEditHistory(record.COLUMN_ID, field); // Always allow fetching history
+          }}
+        />
         {notification && (
           <div
             style={{
@@ -613,7 +644,6 @@ const Review = () => {
             {notification}
           </div>
         )}
-        {!isDisabled }
       </div>
     );
   };
@@ -624,22 +654,22 @@ const Review = () => {
       dataIndex: "STT",
       key: "stt",
       width: 60,
-      align: 'center'
+      align: "center",
+      fixed: "left",
     },
     {
       title: "Đầu mã",
       dataIndex: "MA",
       key: "ma",
       width: 150,
-      render: (text, record) => (
-        renderEditableCell(text, record, 'MA')
-      )
+      fixed: "left",
+      render: (text, record) => renderEditableCell(text, record, "MA"),
     },
     {
       title: "Khách hàng",
       dataIndex: "KHACH_HANG",
       key: "khach_hang",
-      width: 200,
+      width: 150,
       render: (text, record) => (
         renderEditableCell(text, record, 'KHACH_HANG')
       )
@@ -659,65 +689,71 @@ const Review = () => {
       key: "rev",
       width: 150,
       render: (text, record) => {
-        const isDisabled = !hasEditPermission || record.IS_DELETED === 1;
+        const isDisabled = record.IS_DELETED === 1 || !hasEditPermission; // Disable editing if the record is deleted or the user lacks permissions
+    
         return (
           <div
-            onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, 'REV')}
+            onClick={() => fetchEditHistory(record.COLUMN_ID, "REV")} // Always allow fetching history
             style={{
-              cursor: isDisabled ? 'not-allowed' : 'pointer',
-              padding: '4px',
-              position: 'relative',
+              cursor: "pointer", // Always allow pointer cursor for history icon
+              padding: "4px",
+              position: "relative",
             }}
           >
             <Input.TextArea
               value={text}
-              onChange={e => {
-                handleCellChange(e.target.value, record, 'REV');
-              }}
+              onChange={(e) => handleCellChange(e.target.value, record, "REV")}
               autoSize={{ minRows: 1, maxRows: 50 }}
-              style={{ 
-                width: '100%', 
-                resize: 'none',
-                backgroundColor: isDisabled ? 'white' : 'white',
-                color: isDisabled ? 'inherit' : 'inherit',
-                paddingRight: '24px'
+              style={{
+                width: "100%",
+                resize: "none",
+                backgroundColor: isDisabled ? "white" : "white", 
+                color: isDisabled ? "inherit" : "inherit", 
+                paddingRight: "24px",
+                borderColor: "#d9d9d9",
+                borderWidth: "1px",
+                borderStyle: "solid",
               }}
-              onClick={e => e.stopPropagation()}
-              disabled={isDisabled}
+              onClick={(e) => e.stopPropagation()} 
+              disabled={isDisabled} 
             />
-            {!isDisabled && (
-              <HistoryOutlined 
-                style={{
-                  position: 'absolute',
-                  right: '8px',
-                  top: '8px',
-                  fontSize: '14px',
-                  color: '#1890ff',
-                  opacity: 0.6,
-                  cursor: 'pointer',
-                  transition: 'all 0.3s'
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  fetchEditHistory(record.COLUMN_ID, 'REV');
-                }}
-              />
-            )}
+            <HistoryOutlined
+              style={{
+                position: "absolute",
+                right: "8px",
+                top: "8px",
+                fontSize: "14px",
+                color: "#1890ff",
+                opacity: 0.6,
+                cursor: "pointer",
+                transition: "all 0.3s",
+              }}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent triggering parent click
+                fetchEditHistory(record.COLUMN_ID, "REV"); // Always allow fetching history
+              }}
+            />
           </div>
         );
-      }
+      },
     },
     {
       title: "Cong vênh",
       dataIndex: "CONG_VENH",
       key: "cong_venh",
       width: 220,
-      render: (text, record) => (
-        renderEditableCell(text, record, 'CONG_VENH')
-      )
+      render: (text, record) => {
+        const status = reviewStatus[record.COLUMN_ID] || {};
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {renderEditableCell(text, record, 'CONG_VENH')}
+            {renderConfirmReviewButton('CONG_VENH', record, status)}
+          </div>
+        );
+      },
     },
     {
-      title: "Hình ảnh Cong Vênh",
+      title: "Hình ảnh Cong vênh",
       key: "hinh_anh1",
       width: 180,
       render: (record) => {
@@ -793,9 +829,15 @@ const Review = () => {
       dataIndex: "V_CUT",
       key: "v_cut",
       width: 250,
-      render: (text, record) => (
-        renderEditableCell(text, record, 'V_CUT')
-      )
+      render: (text, record) => {
+        const status = reviewStatus[record.COLUMN_ID] || {};
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {renderEditableCell(text, record, 'V_CUT')}
+            {renderConfirmReviewButton('V_CUT', record, status)}
+          </div>
+        );
+      },
     },
     {
       title: "Hình ảnh V-Cut",
@@ -865,12 +907,18 @@ const Review = () => {
       dataIndex: "XU_LY_BE_MAT",
       key: "xu_ly_be_mat",
       width: 400,
-      render: (text, record) => (
-        renderEditableCell(text, record, 'XU_LY_BE_MAT')
-      )
+      render: (text, record) => {
+        const status = reviewStatus[record.COLUMN_ID] || {};
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {renderEditableCell(text, record, 'XU_LY_BE_MAT')}
+            {renderConfirmReviewButton('XU_LY_BE_MAT', record, status)}
+          </div>
+        );
+      },
     },
     {
-      title: "Hình ảnh xử lý bề mặt",
+      title: "Hình ảnh Xử lý bề mặt",
       key: "hinh_anh3",
       width: 180,
       render: (record) => {
@@ -971,7 +1019,7 @@ const Review = () => {
       title: "Hành động",
       key: "action",
       fixed: 'right',
-      width: 120,
+      width: 150,
       render: (text, record) => {
         if (!hasEditPermission) {
           return null;
