@@ -414,8 +414,8 @@ const Review = () => {
       const { creator, history } = response.data;
   
       setEditHistory({
-        creator, // Include creator information
-        history, // Include edit history
+        creator, 
+        history, 
       });
       setHistoryModalVisible(true);
     } catch (error) {
@@ -447,9 +447,6 @@ const Review = () => {
     if (!currentReviewRow) return;
 
     try {
-      console.log('Selected Review Types:', selectedReviewTypes); // Debugging
-
-      // Create a new object to store the updated review status
       const newStatus = {
         CI_REVIEWED: selectedReviewTypes.CI ? 0 : 1,
         DESIGN_REVIEWED: selectedReviewTypes.Design ? 1 : 0,
@@ -458,26 +455,17 @@ const Review = () => {
         CI_REVIEWED_AT: selectedReviewTypes.CI ? new Date().toISOString() : null,
         DESIGN_REVIEWED_AT: selectedReviewTypes.Design ? new Date().toISOString() : null
       };
-
-      console.log('New Status:', newStatus); // Debugging
-
-      // Update the reviewStatus state
       setReviewStatus(prev => {
         const updatedStatus = {
           ...prev,
           [currentReviewRow.COLUMN_ID]: newStatus
         };
-        console.log('Updated Review Status:', updatedStatus); // Debugging
         return updatedStatus;
       });
-
-      // Confirm the review types
       if (selectedReviewTypes.CI) {
-        console.log('Confirming CI Review'); // Debugging
         await handleReviewConfirm(currentReviewRow.COLUMN_ID, 'CI');
       }
       if (selectedReviewTypes.Design) {
-        console.log('Confirming Design Review'); // Debugging
         await handleReviewConfirm(currentReviewRow.COLUMN_ID, 'Design');
       }
 
@@ -496,17 +484,11 @@ const Review = () => {
 
   const handleReviewConfirm = async (columnId, type) => {
     try {
-      console.log('Confirming Review:', { columnId, type }); // Debugging
-
       const response = await axios.post('http://192.84.105.173:5000/api/document/confirm-review', {
         column_id: columnId,
         review_type: type,
         reviewed_by: currentUser.username
       });
-
-      console.log('Response from Confirm Review:', response.data); // Debugging
-
-      // Update reviewStatus state with new data
       setReviewStatus(prev => ({
         ...prev,
         [columnId]: response.data.status
@@ -554,12 +536,9 @@ const Review = () => {
   };
 
   const renderEditableCell = (text, record, field) => {
-    const isDeleted = record.IS_DELETED === 1; // Disable if the record is marked as deleted
-    const isDisabled = isDeleted || !hasEditPermission; // Disable editing if the user doesn't have edit permissions
-  
+    const isDeleted = record.IS_DELETED === 1;
+    const isDisabled = isDeleted || !hasEditPermission;
     const status = reviewStatus[record.COLUMN_ID] || {};
-  
-    // Determine styles and notification text based on review status
     const getStylesAndNotification = () => {
       if (isDeleted) {
         return { styles: { borderColor: '#d9d9d9', backgroundColor: '#f5f5f5' }, notification: null };
@@ -600,9 +579,9 @@ const Review = () => {
   
     return (
       <div
-        onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, field)} // Allow fetching history only if not disabled
+        onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, field)} 
         style={{
-          cursor: isDisabled ? 'not-allowed' : 'pointer', // Show pointer cursor only if editable
+          cursor: isDisabled ? 'not-allowed' : 'pointer', 
           padding: '4px',
           position: 'relative',
         }}
@@ -614,8 +593,8 @@ const Review = () => {
           style={{
             width: '100%',
             resize: 'none',
-            backgroundColor: styles.backgroundColor, // Normal white background
-            color: styles.color || 'inherit', // Normal black text
+            backgroundColor: styles.backgroundColor, 
+            color: styles.color || 'inherit', 
             paddingRight: '24px',
             borderColor: styles.borderColor,
             borderWidth: styles.borderWidth || '1px',
@@ -624,8 +603,8 @@ const Review = () => {
             fontWeight: styles.fontWeight || 'normal',
             transition: 'all 0.3s',
           }}
-          onClick={(e) => e.stopPropagation()} // Prevent triggering the history fetch on text area click
-          disabled={isDisabled} // Disable editing if the user doesn't have permissions
+          onClick={(e) => e.stopPropagation()} 
+          disabled={isDisabled} 
         />
         <HistoryOutlined
           style={{
@@ -639,8 +618,8 @@ const Review = () => {
             transition: 'all 0.3s',
           }}
           onClick={(e) => {
-            e.stopPropagation(); // Prevent triggering parent click
-            fetchEditHistory(record.COLUMN_ID, field); // Always allow fetching history
+            e.stopPropagation(); 
+            fetchEditHistory(record.COLUMN_ID, field); 
           }}
         />
         {notification && (
@@ -703,7 +682,6 @@ const Review = () => {
       width: 150,
       render: (text, record) => {
         const isDisabled = record.IS_DELETED === 1 || !hasEditPermission; 
-    
         return (
           <div
             onClick={() => fetchEditHistory(record.COLUMN_ID, "REV")} 
@@ -742,8 +720,8 @@ const Review = () => {
                 transition: "all 0.3s",
               }}
               onClick={(e) => {
-                e.stopPropagation(); // Prevent triggering parent click
-                fetchEditHistory(record.COLUMN_ID, "REV"); // Always allow fetching history
+                e.stopPropagation(); 
+                fetchEditHistory(record.COLUMN_ID, "REV"); 
               }}
             />
           </div>
@@ -1106,14 +1084,12 @@ const Review = () => {
         </div>
       ) : (
         <>
-          {/* Display created_by and created_at */}
           {editHistory.creator && (
             <div style={{ marginBottom: '16px', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
               <p><strong>Người tạo:</strong> {editHistory.creator.CREATED_BY || 'Không xác định'}</p>
               <p><strong>Thời gian tạo:</strong> {editHistory.creator.CREATED_AT || 'Không xác định'}</p>
             </div>
           )}
-          {/* Display edit history */}
           <List
             dataSource={editHistory.history}
             renderItem={(item) => (
