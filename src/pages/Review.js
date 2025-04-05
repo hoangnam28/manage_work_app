@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Table, Input, Upload, Button, Modal, Form, Popconfirm, Image, Space, List, Spin, Checkbox } from "antd";
 import { Typography } from 'antd';
-import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined, DownloadOutlined, UndoOutlined, HistoryOutlined} from "@ant-design/icons";
+import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined, DownloadOutlined, UndoOutlined, HistoryOutlined } from "@ant-design/icons";
 import axios from "axios";
 import moment from 'moment';
 import MainLayout from "../components/layout/MainLayout";
@@ -9,6 +9,7 @@ import { Toaster, toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import './Review.css';
 import ConfirmReviewResetButton from "../components/button/ConfirmReviewResetButton ";
+
 
 const Review = () => {
   const [data, setData] = useState([]);
@@ -27,14 +28,15 @@ const Review = () => {
     CI: false,
     Design: false
   });
+  const [filteredData, setFilteredData] = useState([]);
   const [reviewStatus, setReviewStatus] = useState({});
 
   const { Text } = Typography;
-  
+
   const fetchUserInfo = async () => {
     try {
       const token = localStorage.getItem('accessToken');
-      const userInfo = JSON.parse(localStorage.getItem('userInfo')); 
+      const userInfo = JSON.parse(localStorage.getItem('userInfo'));
       if (!token || !userInfo) {
         toast.error('Vui lòng đăng nhập lại');
         return;
@@ -61,6 +63,22 @@ const Review = () => {
   useEffect(() => {
     fetchUserInfo();
   }, []);
+
+  const handleSearch = (value) => {
+    if (value.trim() === '') {
+      setFilteredData(data); // Reset to original data if search is cleared
+    } else {
+      const filtered = data.filter((item) =>
+        item.MA?.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredData(filtered);
+    }
+  };
+
+  // Update filteredData whenever the original data changes
+  useEffect(() => {
+    setFilteredData(data);
+  }, [data]);
 
   const fetchReviewStatus = async (columnId) => {
     try {
@@ -100,13 +118,13 @@ const Review = () => {
         }
         return processedItem;
       });
-      
+
       const dataWithImages = await Promise.all(
         processedData.map(async (record) => {
           const hinh_anh1 = await fetchImages(record.COLUMN_ID, "hinh_anh1");
           const hinh_anh2 = await fetchImages(record.COLUMN_ID, "hinh_anh2");
           const hinh_anh3 = await fetchImages(record.COLUMN_ID, "hinh_anh3");
-          
+
           // Fetch review status for each record
           const status = await fetchReviewStatus(record.COLUMN_ID);
           if (status) {
@@ -115,12 +133,12 @@ const Review = () => {
               [record.COLUMN_ID]: status
             }));
           }
-        
-          return { 
-            ...record, 
-            hinh_anh1, 
-            hinh_anh2, 
-            hinh_anh3 
+
+          return {
+            ...record,
+            hinh_anh1,
+            hinh_anh2,
+            hinh_anh3
           };
         })
       );
@@ -140,11 +158,11 @@ const Review = () => {
       if (!columnId) {
         return [];
       }
-      
+
       const response = await axios.get(
         `http://192.84.105.173:5000/api/document/get-images/${columnId}/${field}`
       );
-      
+
       if (response.data && Array.isArray(response.data.images)) {
         return response.data.images;
       } else {
@@ -160,36 +178,36 @@ const Review = () => {
       toast.error('Bạn không có quyền tải lên hình ảnh');
       return;
     }
-  
+
     const token = localStorage.getItem('accessToken');
     if (!token) {
       toast.error('Vui lòng đăng nhập lại');
       return;
     }
-  
+
     setImageLoadingStates(prev => ({
       ...prev,
       [`${record.COLUMN_ID}-${field}`]: true
     }));
-  
+
     const formData = new FormData();
     formData.append('images', info.file.originFileObj);
-  
-    try { 
+
+    try {
       const response = await axios.post(
         `http://192.84.105.173:5000/api/document/upload-images/${record.COLUMN_ID}/${field}`,
         formData,
-        { 
-          headers: { 
+        {
+          headers: {
             'Content-Type': 'multipart/form-data',
             'Authorization': `Bearer ${token}`
-          } 
+          }
         }
       );
-  
+
       if (response.data) {
         toast.success('Tải ảnh thành công');
-        const updatedImages = await fetchImages(record.COLUMN_ID, field);        
+        const updatedImages = await fetchImages(record.COLUMN_ID, field);
         const newData = [...data];
         const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
         if (index > -1) {
@@ -236,12 +254,12 @@ const Review = () => {
         toast.error('Vui lòng đăng nhập lại');
         return;
       }
-  
+
       if (!record.COLUMN_ID) {
         toast.error('Không tìm thấy ID của bản ghi');
         return;
       }
-  
+
       const dataToUpdate = {
         ma: record.MA,
         khach_hang: record.KHACH_HANG,
@@ -291,7 +309,7 @@ const Review = () => {
             created_by: currentUser.username,
             created_at: new Date().toISOString(),
           };
-  
+
           await axios.post('http://192.84.105.173:5000/api/document/add', dataToAdd);
           toast.success('Thêm dữ liệu thành công');
           fetchData(); // Refresh the table data
@@ -346,7 +364,7 @@ const Review = () => {
       const ws = XLSX.utils.json_to_sheet(exportData);
 
       const columnWidths = [
-        { wch: 5 }, { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 8 },  { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 10 }, { wch: 20 }, { wch: 30 }  
+        { wch: 5 }, { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 8 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 10 }, { wch: 20 }, { wch: 30 }
       ];
       ws['!cols'] = columnWidths;
       const range = XLSX.utils.decode_range(ws['!ref']);
@@ -376,13 +394,13 @@ const Review = () => {
       toast.error('Bạn không có quyền xóa hình ảnh');
       return;
     }
-  
+
     const token = localStorage.getItem('accessToken');
     if (!token) {
       toast.error('Vui lòng đăng nhập lại');
       return;
     }
-  
+
     try {
       await axios.delete(
         `http://192.84.105.173:5000/api/document/delete-image/${columnId}/${field}/${imageName}`,
@@ -393,7 +411,7 @@ const Review = () => {
         }
       );
       toast.success('Xóa ảnh thành công');
-      
+
       const updatedImages = await fetchImages(columnId, field);
       const newData = [...data];
       const index = newData.findIndex(item => item.COLUMN_ID === columnId);
@@ -412,10 +430,10 @@ const Review = () => {
     try {
       const response = await axios.get(`http://192.84.105.173:5000/api/document/edit-history/${columnId}/${field}`);
       const { creator, history } = response.data;
-  
+
       setEditHistory({
-        creator, 
-        history, 
+        creator,
+        history,
       });
       setHistoryModalVisible(true);
     } catch (error) {
@@ -543,7 +561,7 @@ const Review = () => {
       if (isDeleted) {
         return { styles: { borderColor: '#d9d9d9', backgroundColor: '#f5f5f5' }, notification: null };
       }
-  
+
       if ((field === 'V_CUT' || field === 'XU_LY_BE_MAT') && status.CI_REVIEWED) {
         return {
           styles: {
@@ -557,7 +575,7 @@ const Review = () => {
           notification: 'CI Review lại',
         };
       }
-  
+
       if (field === 'CONG_VENH' && status.DESIGN_REVIEWED) {
         return {
           styles: {
@@ -571,17 +589,17 @@ const Review = () => {
           notification: 'Thiết kế Review lại',
         };
       }
-  
+
       return { styles: { borderColor: '#d9d9d9', backgroundColor: 'white' }, notification: null };
     };
-  
+
     const { styles, notification } = getStylesAndNotification();
-  
+
     return (
       <div
-        onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, field)} 
+        onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, field)}
         style={{
-          cursor: isDisabled ? 'not-allowed' : 'pointer', 
+          cursor: isDisabled ? 'not-allowed' : 'pointer',
           padding: '4px',
           position: 'relative',
         }}
@@ -593,8 +611,8 @@ const Review = () => {
           style={{
             width: '100%',
             resize: 'none',
-            backgroundColor: styles.backgroundColor, 
-            color: styles.color || 'inherit', 
+            backgroundColor: styles.backgroundColor,
+            color: styles.color || 'inherit',
             paddingRight: '24px',
             borderColor: styles.borderColor,
             borderWidth: styles.borderWidth || '1px',
@@ -603,8 +621,8 @@ const Review = () => {
             fontWeight: styles.fontWeight || 'normal',
             transition: 'all 0.3s',
           }}
-          onClick={(e) => e.stopPropagation()} 
-          disabled={isDisabled} 
+          onClick={(e) => e.stopPropagation()}
+          disabled={isDisabled}
         />
         <HistoryOutlined
           style={{
@@ -618,8 +636,8 @@ const Review = () => {
             transition: 'all 0.3s',
           }}
           onClick={(e) => {
-            e.stopPropagation(); 
-            fetchEditHistory(record.COLUMN_ID, field); 
+            e.stopPropagation();
+            fetchEditHistory(record.COLUMN_ID, field);
           }}
         />
         {notification && (
@@ -645,7 +663,7 @@ const Review = () => {
       title: "STT",
       dataIndex: "STT",
       key: "stt",
-      width: 60,
+      width: 45,
       align: "center",
       fixed: "left",
     },
@@ -679,14 +697,14 @@ const Review = () => {
       title: "Rev.",
       dataIndex: "REV",
       key: "rev",
-      width: 150,
+      width: 130,
       render: (text, record) => {
-        const isDisabled = record.IS_DELETED === 1 || !hasEditPermission; 
+        const isDisabled = record.IS_DELETED === 1 || !hasEditPermission;
         return (
           <div
-            onClick={() => fetchEditHistory(record.COLUMN_ID, "REV")} 
+            onClick={() => fetchEditHistory(record.COLUMN_ID, "REV")}
             style={{
-              cursor: "pointer", 
+              cursor: "pointer",
               padding: "4px",
               position: "relative",
             }}
@@ -698,15 +716,15 @@ const Review = () => {
               style={{
                 width: "100%",
                 resize: "none",
-                backgroundColor: isDisabled ? "white" : "white", 
-                color: isDisabled ? "inherit" : "inherit", 
+                backgroundColor: isDisabled ? "white" : "white",
+                color: isDisabled ? "inherit" : "inherit",
                 paddingRight: "24px",
                 borderColor: "#d9d9d9",
                 borderWidth: "1px",
                 borderStyle: "solid",
               }}
-              onClick={(e) => e.stopPropagation()} 
-              disabled={isDisabled} 
+              onClick={(e) => e.stopPropagation()}
+              disabled={isDisabled}
             />
             <HistoryOutlined
               style={{
@@ -720,8 +738,8 @@ const Review = () => {
                 transition: "all 0.3s",
               }}
               onClick={(e) => {
-                e.stopPropagation(); 
-                fetchEditHistory(record.COLUMN_ID, "REV"); 
+                e.stopPropagation();
+                fetchEditHistory(record.COLUMN_ID, "REV");
               }}
             />
           </div>
@@ -754,9 +772,9 @@ const Review = () => {
             {Array.isArray(record.hinh_anh1) && record.hinh_anh1.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {record.hinh_anh1.map((img, index) => (
-                  <div key={index} style={{ 
-                    border: '1px solid #f0f0f0', 
-                    padding: '4px', 
+                  <div key={index} style={{
+                    border: '1px solid #f0f0f0',
+                    padding: '4px',
                     borderRadius: '4px',
                     position: 'relative',
                     marginBottom: '8px'
@@ -776,11 +794,11 @@ const Review = () => {
                         title="Bạn có chắc chắn muốn xóa?"
                         onConfirm={() => handleDeleteImage(record.COLUMN_ID, "hinh_anh1", img)}
                       >
-                        <Button 
-                          icon={<DeleteOutlined />} 
-                          danger 
-                          size="small" 
-                          style={{ position: 'absolute', top: 0, right: 0 }} 
+                        <Button
+                          icon={<DeleteOutlined />}
+                          danger
+                          size="small"
+                          style={{ position: 'absolute', top: 0, right: 0 }}
                         />
                       </Popconfirm>
                     )}
@@ -802,8 +820,8 @@ const Review = () => {
                 accept="image/*"
                 disabled={isLoading}
               >
-                <Button 
-                  icon={<UploadOutlined />} 
+                <Button
+                  icon={<UploadOutlined />}
                   style={{ width: '100%' }}
                   loading={isLoading}
                 >
@@ -834,7 +852,7 @@ const Review = () => {
       title: "Hình ảnh V-Cut",
       key: "hinh_anh2",
       width: 180,
-      render: (record) => { 
+      render: (record) => {
         return (
           <Space direction="vertical" style={{ width: '100%' }}>
             {Array.isArray(record.hinh_anh2) && record.hinh_anh2.length > 0 ? (
@@ -856,11 +874,11 @@ const Review = () => {
                         title="Bạn có chắc chắn muốn xóa?"
                         onConfirm={() => handleDeleteImage(record.COLUMN_ID, "hinh_anh2", img)}
                       >
-                        <Button 
-                          icon={<DeleteOutlined />} 
-                          danger 
-                          size="small" 
-                          style={{ position: 'absolute', top: 0, right: 0 }} 
+                        <Button
+                          icon={<DeleteOutlined />}
+                          danger
+                          size="small"
+                          style={{ position: 'absolute', top: 0, right: 0 }}
                         />
                       </Popconfirm>
                     )}
@@ -881,8 +899,8 @@ const Review = () => {
                 showUploadList={false}
                 accept="image/*"
               >
-                <Button 
-                  icon={<UploadOutlined />} 
+                <Button
+                  icon={<UploadOutlined />}
                   style={{ width: '100%' }}
                 >
                   Tải lên
@@ -934,11 +952,11 @@ const Review = () => {
                         title="Bạn có chắc chắn muốn xóa?"
                         onConfirm={() => handleDeleteImage(record.COLUMN_ID, "hinh_anh3", img)}
                       >
-                        <Button 
-                          icon={<DeleteOutlined />} 
-                          danger 
-                          size="small" 
-                          style={{ position: 'absolute', top: 0, right: 0 }} 
+                        <Button
+                          icon={<DeleteOutlined />}
+                          danger
+                          size="small"
+                          style={{ position: 'absolute', top: 0, right: 0 }}
                         />
                       </Popconfirm>
                     )}
@@ -959,8 +977,8 @@ const Review = () => {
                 showUploadList={false}
                 accept="image/*"
               >
-                <Button 
-                  icon={<UploadOutlined />} 
+                <Button
+                  icon={<UploadOutlined />}
                   style={{ width: '100%' }}
                 >
                   Tải lên
@@ -1010,7 +1028,7 @@ const Review = () => {
       title: "Hành động",
       key: "action",
       fixed: 'right',
-      width: 150,
+      width: 120,
       render: (text, record) => {
         if (!hasEditPermission) {
           return null;
@@ -1194,12 +1212,12 @@ const Review = () => {
     <MainLayout username={currentUser?.username} onLogout={() => console.log('Logout')}>
       <Toaster position="top-right" richColors />
       {!hasEditPermission && (
-        <div style={{ 
-          marginBottom: 16, 
-          padding: 8, 
-          background: '#fffbe6', 
+        <div style={{
+          marginBottom: 16,
+          padding: 8,
+          background: '#fffbe6',
           border: '1px solid #ffe58f',
-          borderRadius: 4 
+          borderRadius: 4
         }}>
           <Text type="warning">Bạn đang ở chế độ chỉ xem. Chỉ người dùng được ủy quyền mới có thể chỉnh sửa dữ liệu.</Text>
         </div>
@@ -1210,17 +1228,23 @@ const Review = () => {
             Tạo mới
           </Button>
         )}
-        <Button 
-          icon={<DownloadOutlined />} 
+        <Button
+          icon={<DownloadOutlined />}
           onClick={handleExportExcel}
           type="primary"
           style={{ background: '#52c41a', borderColor: '#52c41a' }}
         >
           Xuất Excel
         </Button>
+        <Input
+          placeholder="Tìm kiếm theo Đầu mã"
+          allowClear
+          onChange={(e) => handleSearch(e.target.value)}
+          style={{ width: 300 }}
+        />
       </div>
       <Table
-        dataSource={data}
+        dataSource={filteredData} // Use filteredData instead of data
         columns={columns}
         rowKey="column_id"
         scroll={{ x: 'max-content', y: 760 }}
