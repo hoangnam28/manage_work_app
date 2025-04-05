@@ -101,7 +101,6 @@ const SideBar = ({ onLogout, userId }) => {
           {!collapsed && 'Logout'}
         </Button>
       </div>
-      {/* Toggle Button với className mới */}
       <div className={`sidebar-toggle-container ${collapsed ? 'collapsed' : ''}`}>
         <Button
           type="primary"

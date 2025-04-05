@@ -1236,6 +1236,14 @@ const Review = () => {
         >
           Xuất Excel
         </Button>
+        <Button
+          type="primary"
+          icon={<DownloadOutlined />}
+          onClick={() => window.open('/user_guide.docx', '_blank')}
+          style={{ background: '#1890ff', borderColor: '#1890ff' }}
+        >
+          Hướng dẫn sử dụng
+        </Button>
         <Input
           placeholder="Tìm kiếm theo Đầu mã"
           allowClear
