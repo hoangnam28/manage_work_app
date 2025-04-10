@@ -1,70 +1,26 @@
 import React, { useState } from 'react';
-import { Layout, Menu, Dropdown, Button, Avatar } from 'antd';
-import { UserOutlined, DownOutlined, LogoutOutlined, RightOutlined, LeftOutlined } from '@ant-design/icons';
+import { Layout, Menu, Button, Avatar } from 'antd';
+import { UserOutlined, LogoutOutlined, RightOutlined, LeftOutlined } from '@ant-design/icons';
+import { Link, useLocation } from 'react-router-dom';
 import './SideBar.css';
 
 const { Sider } = Layout;
 
 const SideBar = ({ onLogout, userId }) => {
   const [collapsed, setCollapsed] = useState(false); // State to manage sidebar collapse
-
-  const menu1 = {
-    items: [
-      { key: '1', label: 'Option 1' },
-      { key: '2', label: 'Option 2' },
-      { key: '3', label: 'Option 3' },
-    ]
-  };
-
-  const menu2 = {
-    items: [
-      { key: '1', label: 'Option 1' },
-      { key: '2', label: 'Option 2' },
-      { key: '3', label: 'Option 3' },
-    ]
-  };
-
-  const menu3 = {
-    items: [
-      { key: '1', label: 'Option 1' },
-      { key: '2', label: 'Option 2' },
-      { key: '3', label: 'Option 3' },
-    ]
-  };
+  const location = useLocation(); // Get the current route
 
   const storedUser = localStorage.getItem("userInfo");
   const user = storedUser ? JSON.parse(storedUser) : null;
 
   const menuItems = [
     {
-      key: '1',
-      label: (
-        <Dropdown menu={menu1} trigger={['click']}>
-          <span className="ant-dropdown-link">
-            Menu 1 <DownOutlined />
-          </span>
-        </Dropdown>
-      ),
+      key: '/review_tasks',
+      label: <Link to="/review_tasks">Review Tasks</Link>,
     },
     {
-      key: '2',
-      label: (
-        <Dropdown menu={menu2} trigger={['click']}>
-          <span className="ant-dropdown-link">
-            Menu 2 <DownOutlined />
-          </span>
-        </Dropdown>
-      ),
-    },
-    {
-      key: '3',
-      label: (
-        <Dropdown menu={menu3} trigger={['click']}>
-          <span className="ant-dropdown-link">
-            Menu 3 <DownOutlined />
-          </span>
-        </Dropdown>
-      ),
+      key: '/impedance',
+      label: <Link to="/impedance">Impedance</Link>,
     },
   ];
 
@@ -92,7 +48,7 @@ const SideBar = ({ onLogout, userId }) => {
       </div>
       <Menu
         mode="inline"
-        defaultSelectedKeys={['1']}
+        selectedKeys={[location.pathname]} 
         style={{ height: '100%', borderRight: 0 }}
         items={menuItems}
       />

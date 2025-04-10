@@ -1167,10 +1167,10 @@ const Review = () => {
   );
 
   const getRowClassName = (record) => {
-    if (record.IS_DELETED) {
+    if (record.IS_DELETED === 1) {
       return 'deleted-row';
     }
-    return 'custom-table-row';
+    return '';
   };
 
   const ReviewTypeModal = () => (

@@ -2,6 +2,7 @@ import './App.css';
 import { Routes, Route } from 'react-router-dom';
 import Login from './pages/Login';
 import ReviewPage from './pages/Review';
+import Impedance from './pages/Impedance';
 import PrivateRoute from './routes/PrivateRoute';
 
 function App() {
@@ -14,6 +15,14 @@ function App() {
           element={
             <PrivateRoute>
               <ReviewPage />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/impedance" 
+          element={
+            <PrivateRoute>
+              <Impedance />
             </PrivateRoute>
           } 
         />
