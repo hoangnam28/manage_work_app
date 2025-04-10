@@ -9,6 +9,7 @@ const UpdateDocumentModal = ({ visible, onCancel, onOk, record }) => {
       form.setFieldsValue({
         ma: record.MA,
         khach_hang: record.KHACH_HANG,
+        doi_tuong: record.DOI_TUONG,
         ma_tai_lieu: record.MA_TAI_LIEU,
         rev: record.REV,
         cong_venh: record.CONG_VENH,
@@ -43,6 +44,7 @@ const UpdateDocumentModal = ({ visible, onCancel, onOk, record }) => {
         initialValues={{
           ma: record?.MA,
           khach_hang: record?.KHACH_HANG,
+          doi_tuong: record?.DOI_TUONG,
           ma_tai_lieu: record?.MA_TAI_LIEU,
           rev: record?.REV,
           cong_venh: record?.CONG_VENH,
@@ -66,6 +68,15 @@ const UpdateDocumentModal = ({ visible, onCancel, onOk, record }) => {
               name="khach_hang"
               label="Khách hàng"
               rules={[{ required: true, message: 'Vui lòng nhập Khách hàng!' }]}
+            >
+              <Input />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="doi_tuong"
+              label="Đối Tượng"
+              rules={[{ required: true, message: 'Vui lòng nhập Đối Tượng!' }]}
             >
               <Input />
             </Form.Item>

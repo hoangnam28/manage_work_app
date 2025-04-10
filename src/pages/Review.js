@@ -228,24 +228,6 @@ const Review = () => {
       }));
     }
   };
-
-  const handleCellChange = (value, record, field) => {
-    setData(prevData => {
-      const newData = [...prevData];
-      const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
-      if (index > -1) {
-        const item = newData[index];
-        if (item[field] !== value) {
-          newData[index] = { ...item, [field]: value };
-          if (field === 'REV') {
-            newData[index].oldREV = item.REV;
-          }
-        }
-      }
-      return newData;
-    });
-  };
-
   const handleEdit = (record) => {
     setSelectedRecord(record);
     setUpdateModalVisible(true);
@@ -682,6 +664,14 @@ const Review = () => {
       width: 150,
       fixed: "left",
       render: (text, record) => renderEditableCell(text, record, "MA"),
+    },
+    {
+      title: "Đối tượng",
+      dataIndex: "DOI_TUONG",
+      key: "doi_tuong",  
+      width: 150,
+      fixed: "left",
+      render: (text, record) => renderEditableCell(text, record, "DOI_TUONG"),
     },
     {
       title: "Khách hàng",
