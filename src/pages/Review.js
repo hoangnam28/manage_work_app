@@ -9,6 +9,7 @@ import { Toaster, toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import './Review.css';
 import ConfirmReviewResetButton from "../components/button/ConfirmReviewResetButton ";
+import UpdateDocumentModal from '../components/modal/UpdateDocumentModal';
 
 
 const Review = () => {
@@ -30,6 +31,8 @@ const Review = () => {
   });
   const [filteredData, setFilteredData] = useState([]);
   const [reviewStatus, setReviewStatus] = useState({});
+  const [updateModalVisible, setUpdateModalVisible] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState(null);
 
   const { Text } = Typography;
 
@@ -243,11 +246,17 @@ const Review = () => {
     });
   };
 
-  const handleSaveRow = async (record) => {
+  const handleEdit = (record) => {
+    setSelectedRecord(record);
+    setUpdateModalVisible(true);
+  };
+
+  const handleUpdateModalOk = async (values) => {
     if (!hasEditPermission) {
       toast.error('Bạn không có quyền chỉnh sửa dữ liệu');
       return;
     }
+
     try {
       const token = localStorage.getItem('accessToken');
       if (!token || !currentUser) {
@@ -255,35 +264,35 @@ const Review = () => {
         return;
       }
 
-      if (!record.COLUMN_ID) {
+      if (!selectedRecord.COLUMN_ID) {
         toast.error('Không tìm thấy ID của bản ghi');
         return;
       }
 
       const dataToUpdate = {
-        ma: record.MA,
-        khach_hang: record.KHACH_HANG,
-        ma_tai_lieu: record.MA_TAI_LIEU,
-        rev: record.REV,
-        cong_venh: record.CONG_VENH,
-        v_cut: record.V_CUT,
-        xu_ly_be_mat: record.XU_LY_BE_MAT,
-        ghi_chu: record.GHI_CHU,
+        ...values,
         edited_by: currentUser.username
       };
-      await axios.put(`http://192.84.105.173:5000/api/document/update/${record.COLUMN_ID}`, dataToUpdate, {
-        headers: {
-          Authorization: `Bearer ${token}`
+
+      await axios.put(
+        `http://192.84.105.173:5000/api/document/update/${selectedRecord.COLUMN_ID}`,
+        dataToUpdate,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
         }
-      });
-      const hasRevChanged = record.oldREV !== undefined && record.oldREV !== record.REV;
+      );
+
+      const hasRevChanged = selectedRecord.REV !== values.rev;
       if (hasRevChanged) {
-        setCurrentReviewRow(record);
+        setCurrentReviewRow(selectedRecord);
         setIsReviewModalVisible(true);
       } else {
         toast.success('Lưu thành công');
         fetchData();
       }
+      setUpdateModalVisible(false);
     } catch (error) {
       console.error('Error saving row:', error);
       if (error.response?.status === 401) {
@@ -295,6 +304,7 @@ const Review = () => {
       }
     }
   };
+
   const handleAddNew = () => {
     form.validateFields()
       .then(async (values) => {
@@ -597,33 +607,31 @@ const Review = () => {
 
     return (
       <div
-        onClick={() => !isDisabled && fetchEditHistory(record.COLUMN_ID, field)}
+        onClick={() => !isDisabled && handleEdit(record)}
         style={{
           cursor: isDisabled ? 'not-allowed' : 'pointer',
           padding: '4px',
           position: 'relative',
         }}
       >
-        <Input.TextArea
-          value={text}
-          onChange={(e) => handleCellChange(e.target.value, record, field)}
-          autoSize={{ minRows: 1, maxRows: 50 }}
+        <div
           style={{
             width: '100%',
-            resize: 'none',
+            minHeight: '32px',
+            padding: '4px 11px',
             backgroundColor: styles.backgroundColor,
             color: styles.color || 'inherit',
-            paddingRight: '24px',
-            borderColor: styles.borderColor,
-            borderWidth: styles.borderWidth || '1px',
-            borderStyle: 'solid',
+            border: `1px solid ${styles.borderColor}`,
+            borderRadius: '2px',
             boxShadow: styles.boxShadow,
             fontWeight: styles.fontWeight || 'normal',
             transition: 'all 0.3s',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word'
           }}
-          onClick={(e) => e.stopPropagation()}
-          disabled={isDisabled}
-        />
+        >
+          {text || ''}
+        </div>
         <HistoryOutlined
           style={{
             position: 'absolute',
@@ -698,53 +706,48 @@ const Review = () => {
       dataIndex: "REV",
       key: "rev",
       width: 130,
-      render: (text, record) => {
-        const isDisabled = record.IS_DELETED === 1 || !hasEditPermission;
-        return (
+      render: (text, record) => (
+        <div
+          onClick={() => handleEdit(record)}
+          style={{
+            cursor: "pointer",
+            padding: "4px",
+            position: "relative",
+          }}
+        >
           <div
-            onClick={() => fetchEditHistory(record.COLUMN_ID, "REV")}
             style={{
-              cursor: "pointer",
-              padding: "4px",
-              position: "relative",
+              width: "100%",
+              minHeight: "32px",
+              padding: "4px 11px",
+              backgroundColor: "white",
+              border: "1px solid #d9d9d9",
+              borderRadius: "2px",
+              transition: "all 0.3s",
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word"
             }}
           >
-            <Input.TextArea
-              value={text}
-              onChange={(e) => handleCellChange(e.target.value, record, "REV")}
-              autoSize={{ minRows: 1, maxRows: 50 }}
-              style={{
-                width: "100%",
-                resize: "none",
-                backgroundColor: isDisabled ? "white" : "white",
-                color: isDisabled ? "inherit" : "inherit",
-                paddingRight: "24px",
-                borderColor: "#d9d9d9",
-                borderWidth: "1px",
-                borderStyle: "solid",
-              }}
-              onClick={(e) => e.stopPropagation()}
-              disabled={isDisabled}
-            />
-            <HistoryOutlined
-              style={{
-                position: "absolute",
-                right: "8px",
-                top: "8px",
-                fontSize: "14px",
-                color: "#1890ff",
-                opacity: 0.6,
-                cursor: "pointer",
-                transition: "all 0.3s",
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                fetchEditHistory(record.COLUMN_ID, "REV");
-              }}
-            />
+            {text || ''}
           </div>
-        );
-      },
+          <HistoryOutlined
+            style={{
+              position: "absolute",
+              right: "8px",
+              top: "8px",
+              fontSize: "14px",
+              color: "#1890ff",
+              opacity: 0.6,
+              cursor: "pointer",
+              transition: "all 0.3s",
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              fetchEditHistory(record.COLUMN_ID, "REV");
+            }}
+          />
+        </div>
+      ),
     },
     {
       title: "Cong vênh",
@@ -1056,7 +1059,7 @@ const Review = () => {
               <Space>
                 <Button
                   icon={<SaveOutlined />}
-                  onClick={() => handleSaveRow(record)}
+                  onClick={() => handleEdit(record)}
                   type="primary"
                   size="small"
                 >
@@ -1266,6 +1269,12 @@ const Review = () => {
       <CreateDocument />
       <HistoryModal />
       <ReviewTypeModal />
+      <UpdateDocumentModal
+        visible={updateModalVisible}
+        onCancel={() => setUpdateModalVisible(false)}
+        onOk={handleUpdateModalOk}
+        record={selectedRecord}
+      />
     </MainLayout>
   );
 };
