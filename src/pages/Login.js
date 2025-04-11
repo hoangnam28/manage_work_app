@@ -40,9 +40,9 @@ const Login = () => {
   };
 
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+    <div className="login-container">
       <Toaster position="top-right" richColors />
-      <Card title="Đăng nhập" style={{ width: 400 }}>
+      <Card title="Đăng nhập" className="login-card">
         <Form
           layout="vertical"
           onFinish={handleLogin}

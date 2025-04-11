@@ -50,7 +50,7 @@ const Review = () => {
         }
       });
       setCurrentUser(response.data);
-      const authorizedIds = ['017965', '006065', '003524', '008247', '006064', '030516', '005322', '003216','012967', '024432','007787'];
+      const authorizedIds = ['017965', '006065', '003524', '008247', '006064', '030516', '005322', '003216','012967', '024432','007787', '016763', '016809', '017970', '018218', '023578', '023872'];
       const userCompanyId = response.data.company_id ? response.data.company_id.toString().trim() : '';
       const hasPermission = authorizedIds.includes(userCompanyId);
       setHasEditPermission(hasPermission);
@@ -696,48 +696,56 @@ const Review = () => {
       dataIndex: "REV",
       key: "rev",
       width: 130,
-      render: (text, record) => (
-        <div
-          onClick={() => handleEdit(record)}
-          style={{
-            cursor: "pointer",
-            padding: "4px",
-            position: "relative",
-          }}
-        >
+      render: (text, record) => {
+        const isDisabled = !hasEditPermission;
+    
+        return (
           <div
+            onClick={() => {
+              if (!isDisabled) {
+                handleEdit(record); // Chỉ mở modal nếu có quyền chỉnh sửa
+              }
+            }}
             style={{
-              width: "100%",
-              minHeight: "32px",
-              padding: "4px 11px",
-              backgroundColor: "white",
-              border: "1px solid #d9d9d9",
-              borderRadius: "2px",
-              transition: "all 0.3s",
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word"
+              cursor: isDisabled ? "not-allowed" : "pointer",
+              padding: "4px",
+              position: "relative",
             }}
           >
-            {text || ''}
+            <div
+              style={{
+                width: "100%",
+                minHeight: "32px",
+                padding: "4px 11px",
+                backgroundColor: "white",
+                border: "1px solid #d9d9d9",
+                borderRadius: "2px",
+                transition: "all 0.3s",
+                whiteSpace: "pre-wrap",
+                wordBreak: "break-word",
+              }}
+            >
+              {text || ""}
+            </div>
+            <HistoryOutlined
+              style={{
+                position: "absolute",
+                right: "8px",
+                top: "8px",
+                fontSize: "14px",
+                color: "#1890ff",
+                opacity: 0.6,
+                cursor: "pointer",
+                transition: "all 0.3s",
+              }}
+              onClick={(e) => {
+                e.stopPropagation(); // Ngăn chặn sự kiện mở modal
+                fetchEditHistory(record.COLUMN_ID, "REV"); 
+              }}
+            />
           </div>
-          <HistoryOutlined
-            style={{
-              position: "absolute",
-              right: "8px",
-              top: "8px",
-              fontSize: "14px",
-              color: "#1890ff",
-              opacity: 0.6,
-              cursor: "pointer",
-              transition: "all 0.3s",
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-              fetchEditHistory(record.COLUMN_ID, "REV");
-            }}
-          />
-        </div>
-      ),
+        );
+      },
     },
     {
       title: "Cong vênh",

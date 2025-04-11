@@ -29,7 +29,7 @@ const Impedance = () => {
   return (
     <MainLayout>
       <div style={{ padding: '16px' }}>
-        <Title level={2}>Danh sách Impedance</Title>
+        <Title level={2}>Số liệu Impedance</Title>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '20px' }}>
             <Spin size="large" />
