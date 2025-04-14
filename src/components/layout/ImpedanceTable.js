@@ -1,27 +1,39 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Table } from 'antd';
 
 const ImpedanceTable = ({ data }) => {
+  const [tableData, setTableData] = useState([]);
+  const [newRowId, setNewRowId] = useState(null);
+  
+  useEffect(() => {
+    // When data changes, check if there's a new row added
+    if (data.length > tableData.length) {
+      // Set the newest row's ID to apply animation
+      const newRow = data[data.length - 1];
+      if (newRow && newRow.imp_id) {
+        setNewRowId(newRow.imp_id);
+        // Clear the newRowId after animation duration (1 second)
+        setTimeout(() => {
+          setNewRowId(null);
+        }, 1000);
+      }
+    }
+    
+    // Update the table data
+    setTableData(data);
+  }, [data]);
+
   const columns = [
-    {
-      title: 'ID',
-      dataIndex: 'IMP_ID',
-      key: 'imp_id',
-      width: 80,
-      align: 'center',
-    },
     {
       title: 'Imp 1',
       dataIndex: 'IMP_1',
       key: 'imp_1',
-      width: 100,
       align: 'center',
     },
     {
       title: 'Imp 2',
       dataIndex: 'IMP_2',
       key: 'imp_2',
-      width: 100,
       align: 'center',
     },
     {
@@ -202,7 +214,7 @@ const ImpedanceTable = ({ data }) => {
     {
       title: 'Imp 28',
       dataIndex: 'IMP_28',
-      key: 'imp_13',
+      key: 'imp_28',
       width: 100,
       align: 'center',
     },
@@ -228,15 +240,24 @@ const ImpedanceTable = ({ data }) => {
     },
   ];
 
+  // Add row class to highlight new rows
+  const rowClassName = (record) => {
+    return record.imp_id === newRowId ? 'ant-table-row-new' : '';
+  };
+
   return (
-    <Table
-      dataSource={data}
-      columns={columns}
-      rowKey="IMP_ID"
-      scroll={{ x: 'max-content', y: 600 }}
-      bordered
-      size="middle"
-    />
+    <>
+      <Table
+        dataSource={tableData}
+        columns={columns}
+        rowKey="imp_id"
+        rowClassName={rowClassName}
+        bordered
+        pagination={false}
+        size="middle"
+        scroll={{ x: 'max-content' }}
+      />
+    </>
   );
 };
 
