@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Table } from 'antd';
+import { Table, Button, Space } from 'antd';
+import { EditOutlined } from '@ant-design/icons';
 
-const ImpedanceTable = ({ data }) => {
+const ImpedanceTable = ({ data, onEdit }) => {
   const [tableData, setTableData] = useState([]);
   const [newRowId, setNewRowId] = useState(null);
   
@@ -24,6 +25,23 @@ const ImpedanceTable = ({ data }) => {
   }, [data]);
 
   const columns = [
+    {
+      title: 'Thao tác',
+      key: 'action',
+      fixed: 'left',
+      width: 100,
+      align: 'center',
+      render: (_, record) => (
+        <Space size="small">
+          <Button 
+            type="primary" 
+            icon={<EditOutlined />} 
+            size="small" 
+            onClick={() => onEdit(record)}
+          />
+        </Space>
+      ),
+    },
     {
       title: 'Imp 1',
       dataIndex: 'IMP_1',
