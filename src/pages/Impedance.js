@@ -37,20 +37,17 @@ const Impedance = () => {
 
   const handleCreate = async (values) => {
     try {
-      // Kiểm tra dữ liệu đầu vào
+
       if (!values.imp_1 || !values.imp_2 || !values.imp_3 || !values.imp_4) {
         throw new Error('Các trường Imp 1, Imp 2, Imp 3, và Imp 4 là bắt buộc.');
       }
-  
-      const response = await createImpedance(values); // Gửi dữ liệu lên server
+      const response = await createImpedance(values); 
   
       if (response && response.data) {
         const newRow = {
           ...response.data,
-          key: response.data.imp_id, // Sử dụng ID tự nhiên
+          key: response.data.imp_id, 
         };
-  
-        // Cập nhật bảng với dữ liệu mới
         setImpedanceData((prevData) => [...prevData, newRow]);
         setIsCreateModalVisible(false);
         toast.success('Thêm mới thành công');
@@ -68,32 +65,21 @@ const Impedance = () => {
 
   const handleUpdate = async (impId, values) => {
     try {
-      // Validate that we have a valid ID
       if (!impId || impId === 'undefined' || impId === 'null') {
         toast.error('Không thể cập nhật vì không có ID hợp lệ');
         return;
-      }
-      
-      console.log('Sending update for ID:', impId);
-      console.log('Update data:', values);
-      
+      }    
       const response = await updateImpedance(impId, values);
       
       if (response && response.data) {
-        // Update the data in the state
         setImpedanceData(prevData => {
           return prevData.map(item => {
-            if (item.imp_id == impId) { // Using loose equality to handle number/string conversion
-              console.log('Updating item in state:', item.imp_id);
-              
-              // Get the updated data directly from the response
+            if (item.imp_id === impId) {
               const updatedData = response.data;
-              
-              // Create a new object with all the updated fields
               return {
                 ...item,
                 ...updatedData,
-                key: item.imp_id // Preserve the key for table rendering
+                key: item.imp_id 
               };
             }
             return item;
@@ -103,14 +89,10 @@ const Impedance = () => {
         setIsUpdateModalVisible(false);
         setCurrentRecord(null);
         toast.success('Cập nhật thành công');
-        
-        // Refresh the data from the server to ensure we have the latest data
         loadData();
       }
     } catch (error) {
       console.error('Error updating impedance:', error);
-      
-      // Extract error message from the response if available
       const errorMessage = error.response?.data?.error || 'Lỗi khi cập nhật dữ liệu';
       toast.error(errorMessage);
     }

@@ -7,13 +7,10 @@ const ImpedanceTable = ({ data, onEdit }) => {
   const [newRowId, setNewRowId] = useState(null);
   
   useEffect(() => {
-    // When data changes, check if there's a new row added
     if (data.length > tableData.length) {
-      // Set the newest row's ID to apply animation
       const newRow = data[data.length - 1];
       if (newRow && newRow.imp_id) {
         setNewRowId(newRow.imp_id);
-        // Clear the newRowId after animation duration (1 second)
         setTimeout(() => {
           setNewRowId(null);
         }, 1000);
