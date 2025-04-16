@@ -8,12 +8,15 @@ import { fetchImpedanceData, createImpedance, updateImpedance } from '../utils/a
 import { toast } from 'sonner'; 
 import './Impedance.css';
 import { Toaster } from 'sonner';
+import { Input } from 'antd';
 
 const { Title } = Typography;
+const { Search } = Input;
 
 const Impedance = () => {
   const [impedanceData, setImpedanceData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [filteredData, setFilteredData] = useState([]); // Dữ liệu sau khi lọc
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
@@ -23,6 +26,7 @@ const Impedance = () => {
     try {
       const data = await fetchImpedanceData();
       setImpedanceData(data);
+      setFilteredData(data);
     } catch (error) {
       console.error('Error fetching impedance data:', error);
       toast.error('Lỗi khi tải dữ liệu');
@@ -97,19 +101,32 @@ const Impedance = () => {
       toast.error(errorMessage);
     }
   };
+  const handleSearch = (value) => {
+    const filtered = impedanceData.filter((item) =>
+      item.IMP_1.toLowerCase().includes(value.toLowerCase())
+    );
+    setFilteredData(filtered);
+  };
 
   return (
     <MainLayout>
       <Toaster position="top-right" richColors />
       <div className="impedance-container">
         <Title level={2} className="impedance-title">Số liệu Impedance</Title>
-        <Button
-          type="primary"
-          onClick={() => setIsCreateModalVisible(true)}
-          style={{ marginBottom: 16 }}
-        >
-          Thêm mới
-        </Button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+          <Search
+            placeholder="Tìm kiếm theo mã hàng"
+            allowClear
+            onSearch={handleSearch}
+            style={{ width: 300 }}
+          />
+          <Button
+            type="primary"
+            onClick={() => setIsCreateModalVisible(true)}
+          >
+            Thêm mới
+          </Button>
+        </div>
         {loading ? (
           <div className="impedance-loading">
             <Spin size="large" />
@@ -117,7 +134,7 @@ const Impedance = () => {
         ) : (
           <div className="impedance-table-container">
             <ImpedanceTable 
-              data={impedanceData}
+              data={filteredData} 
               onEdit={handleEdit}
             />
           </div>

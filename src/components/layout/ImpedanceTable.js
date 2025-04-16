@@ -40,7 +40,7 @@ const ImpedanceTable = ({ data, onEdit }) => {
       ),
     },
     {
-      title: 'Imp 1',
+      title: 'Mã hàng',
       dataIndex: 'IMP_1',
       key: 'imp_1',
       align: 'center',
