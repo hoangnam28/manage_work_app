@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space } from 'antd';
-import { EditOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Popconfirm } from 'antd';
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
-const ImpedanceTable = ({ data, onEdit }) => {
+const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
   const [tableData, setTableData] = useState([]);
   const [newRowId, setNewRowId] = useState(null);
   
@@ -26,18 +26,37 @@ const ImpedanceTable = ({ data, onEdit }) => {
       title: 'Thao tác',
       key: 'action',
       fixed: 'left',
-      width: 100,
+      width: 150,
       align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Button 
-            type="primary" 
-            icon={<EditOutlined />} 
-            size="small" 
-            onClick={() => onEdit(record)}
-          />
-        </Space>
-      ),
+      render: (_, record) => {
+        // Debug log to see what's in the record
+        console.log('Record for action:', record);
+        
+        return (
+          <Space size="small">
+            <Button 
+              type="primary" 
+              icon={<EditOutlined />} 
+              size="small" 
+              onClick={() => onEdit(record)}
+            />
+            <Popconfirm
+              title="Xóa dữ liệu"
+              description="Bạn có chắc chắn muốn xóa dữ liệu này?"
+              onConfirm={() => onSoftDelete(record)}
+              okText="Có"
+              cancelText="Không"
+            >
+              <Button 
+                type="primary" 
+                danger
+                icon={<DeleteOutlined />} 
+                size="small"
+              />
+            </Popconfirm>
+          </Space>
+        );
+      },
     },
     {
       title: 'Mã hàng',

@@ -41,3 +41,23 @@ export const updateImpedance = async (impId, data) => {
     throw error;
   }
 };
+
+export const softDeleteImpedance = async (impId) => {
+  // Convert to string and trim
+  const idStr = String(impId).trim();
+  
+  // Check if ID is valid
+  if (!idStr || idStr === 'undefined' || idStr === 'null' || idStr === 'NaN') {
+    console.error('Invalid impedance ID provided for soft delete:', impId);
+    throw new Error('ID không hợp lệ');
+  }
+  
+  try {
+    console.log(`Sending PUT request to soft delete impedance ID: ${idStr}`);
+    const response = await axios.put(`http://192.84.105.173:5000/api/impedance/soft-delete-impedance/${idStr}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error soft deleting impedance:', error);
+    throw error;
+  }
+};

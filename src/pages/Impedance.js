@@ -4,7 +4,7 @@ import ImpedanceTable from '../components/layout/ImpedanceTable';
 import MainLayout from '../components/layout/MainLayout';
 import CreateImpedanceModal from '../components/modal/CreateImpedanceModal';
 import UpdateImpedanceModal from '../components/modal/UpdateImpedanceModal';
-import { fetchImpedanceData, createImpedance, updateImpedance } from '../utils/api';
+import { fetchImpedanceData, createImpedance, updateImpedance, softDeleteImpedance } from '../utils/api';
 import { toast } from 'sonner'; 
 import './Impedance.css';
 import { Toaster } from 'sonner';
@@ -101,11 +101,39 @@ const Impedance = () => {
       toast.error(errorMessage);
     }
   };
+
   const handleSearch = (value) => {
     const filtered = impedanceData.filter((item) =>
       item.IMP_1.toLowerCase().includes(value.toLowerCase())
     );
     setFilteredData(filtered);
+  };
+
+  const handleSoftDelete = async (record) => {
+    try {
+      // Check for both uppercase and lowercase imp_id
+      const impId = record.imp_id || record.IMP_ID;
+      
+      if (!impId) {
+        toast.error('Không thể xóa: ID không hợp lệ');
+        return;
+      }
+      
+      const response = await softDeleteImpedance(impId);
+      if (response) {
+        setImpedanceData(prevData => prevData.filter(item => 
+          (item.imp_id !== impId && item.IMP_ID !== impId)
+        ));
+        setFilteredData(prevData => prevData.filter(item => 
+          (item.imp_id !== impId && item.IMP_ID !== impId)
+        ));
+        toast.success('Xóa thành công');
+      }
+    } catch (error) {
+      console.error('Error soft deleting impedance:', error);
+      const errorMessage = error.response?.data?.error || 'Lỗi khi xóa dữ liệu';
+      toast.error(errorMessage);
+    }
   };
 
   return (
@@ -136,6 +164,7 @@ const Impedance = () => {
             <ImpedanceTable 
               data={filteredData} 
               onEdit={handleEdit}
+              onSoftDelete={handleSoftDelete}
             />
           </div>
         )}
