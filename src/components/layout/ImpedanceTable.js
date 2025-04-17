@@ -5,7 +5,7 @@ import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
   const [tableData, setTableData] = useState([]);
   const [newRowId, setNewRowId] = useState(null);
-  
+
   useEffect(() => {
     if (data.length > tableData.length) {
       const newRow = data[data.length - 1];
@@ -16,8 +16,6 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
         }, 1000);
       }
     }
-    
-    // Update the table data
     setTableData(data);
   }, [data]);
 
@@ -28,35 +26,30 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
       fixed: 'left',
       width: 150,
       align: 'center',
-      render: (_, record) => {
-        // Debug log to see what's in the record
-        console.log('Record for action:', record);
-        
-        return (
-          <Space size="small">
-            <Button 
-              type="primary" 
-              icon={<EditOutlined />} 
-              size="small" 
-              onClick={() => onEdit(record)}
+      render: (_, record) => (
+        <Space size="small">
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            size="small"
+            onClick={() => onEdit(record)}
+          />
+          <Popconfirm
+            title="Xóa dữ liệu"
+            description="Bạn có chắc chắn muốn xóa dữ liệu này?"
+            onConfirm={() => onSoftDelete(record)}
+            okText="Có"
+            cancelText="Không"
+          >
+            <Button
+              type="primary"
+              danger
+              icon={<DeleteOutlined />}
+              size="small"
             />
-            <Popconfirm
-              title="Xóa dữ liệu"
-              description="Bạn có chắc chắn muốn xóa dữ liệu này?"
-              onConfirm={() => onSoftDelete(record)}
-              okText="Có"
-              cancelText="Không"
-            >
-              <Button 
-                type="primary" 
-                danger
-                icon={<DeleteOutlined />} 
-                size="small"
-              />
-            </Popconfirm>
-          </Space>
-        );
-      },
+          </Popconfirm>
+        </Space>
+      ),
     },
     {
       title: 'Mã hàng',
@@ -288,7 +281,11 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
         rowKey="imp_id"
         rowClassName={rowClassName}
         bordered
-        pagination={false}
+        pagination={{
+          pageSize: 10, 
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50'], 
+        }}
         size="middle"
         scroll={{ x: 'max-content' }}
       />
