@@ -149,12 +149,7 @@ const UserManagement = () => {
       title: 'ID Công ty',
       dataIndex: 'COMPANY_ID',
       key: 'company_id',
-    },
-    {
-      title: 'Phòng ban',
-      dataIndex: 'DEPARTMENT',
-      key: 'department',
-    },
+    },  
     {
       title: 'Ngày tạo',
       dataIndex: 'CREATED_AT',
