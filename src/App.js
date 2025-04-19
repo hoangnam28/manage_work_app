@@ -4,6 +4,7 @@ import Login from './pages/Login';
 import ReviewPage from './pages/Review';
 import Impedance from './pages/Impedance';
 import PrivateRoute from './routes/PrivateRoute';
+import UserManagement from './pages/UserManagement';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             </PrivateRoute>
           } 
         />
+        <Route path="/user-management" element={<UserManagement />} />
       </Routes>
     </div>
   );

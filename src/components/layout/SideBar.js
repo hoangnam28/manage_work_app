@@ -7,8 +7,8 @@ import './SideBar.css';
 const { Sider } = Layout;
 
 const SideBar = ({ onLogout, userId }) => {
-  const [collapsed, setCollapsed] = useState(false); // State to manage sidebar collapse
-  const location = useLocation(); // Get the current route
+  const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
 
   const storedUser = localStorage.getItem("userInfo");
   const user = storedUser ? JSON.parse(storedUser) : null;
@@ -22,17 +22,21 @@ const SideBar = ({ onLogout, userId }) => {
       key: '/impedance',
       label: <Link to="/impedance">Impedance</Link>,
     },
+    {
+      key: '/user-management',
+      label: <Link to="/user-management">User Management</Link>,
+    },
   ];
 
   return (
     <Sider
-      width={200} // Full width when expanded
+      width={200}
       collapsible
       collapsed={collapsed}
-      collapsedWidth={0} // Fully collapse the sidebar
+      collapsedWidth={0}
       onCollapse={setCollapsed}
       className="site-layout-background"
-      trigger={null} // Disable default trigger
+      trigger={null}
     >
       <div className="sidebar-header">
         {!collapsed && (
@@ -48,7 +52,7 @@ const SideBar = ({ onLogout, userId }) => {
       </div>
       <Menu
         mode="inline"
-        selectedKeys={[location.pathname]} 
+        selectedKeys={[location.pathname]}
         style={{ height: '100%', borderRight: 0 }}
         items={menuItems}
       />

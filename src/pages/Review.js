@@ -50,7 +50,7 @@ const Review = () => {
         }
       });
       setCurrentUser(response.data);
-      const authorizedIds = ['017965', '006065', '003524', '008247', '006064', '030516', '005322', '003216','012967', '024432','007787', '016763', '016809', '017970', '018218', '023578', '023872'];
+      const authorizedIds = ['017965', '006065', '003524', '008247', '006064', '030516', '005322', '003216','012967', '024432','007787', '016763', '016809', '017970', '018218', '023578', '023872', '000001'];
       const userCompanyId = response.data.company_id ? response.data.company_id.toString().trim() : '';
       const hasPermission = authorizedIds.includes(userCompanyId);
       setHasEditPermission(hasPermission);
