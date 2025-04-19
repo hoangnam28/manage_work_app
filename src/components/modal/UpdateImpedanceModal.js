@@ -10,26 +10,17 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
 
   useEffect(() => {
     if (visible && currentRecord) {
-      // Reset error state
       setError(null);
-      
-      // Initialize form with current values from the record
       const initialValues = {};
-      
-      // Extract all imp_1 to imp_30 values from lowercase or uppercase keys
       for (let i = 1; i <= 30; i++) {
         const lowerKey = `imp_${i}`;
         const upperKey = `IMP_${i}`;
-        
-        // Use lowercase key if available, otherwise try uppercase
         if (currentRecord[lowerKey] !== undefined) {
           initialValues[lowerKey] = currentRecord[lowerKey];
         } else if (currentRecord[upperKey] !== undefined) {
           initialValues[lowerKey] = currentRecord[upperKey];
         }
       }
-      
-      // Add note if available
       if (currentRecord.note) {
         initialValues.note = currentRecord.note;
       } else if (currentRecord.NOTE) {
@@ -41,7 +32,6 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
   }, [visible, currentRecord, form]);
 
   const handleOk = () => {
-    // Check if the currentRecord exists and has a valid ID
     if (!currentRecord || !currentRecord.IMP_ID) {
       setError('Không thể cập nhật do không tìm thấy ID hợp lệ');
       return;
@@ -52,13 +42,7 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
     
     form.validateFields()
       .then((values) => {
-        // Make sure we have an ID for the update
         const impId = currentRecord.IMP_ID;
-        
-        // Log for debugging
-        console.log('Updating record with ID:', impId);
-        console.log('Update values:', values);
-        
         onUpdate(impId, values);
       })
       .catch((info) => {
@@ -70,7 +54,6 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
       });
   };
 
-  // Helper function to create form items in batches
   const renderImpedanceFields = (start, end) => {
     let fields = [];
     for (let i = start; i <= end; i++) {
@@ -79,7 +62,6 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
           <Form.Item
             name={`imp_${i}`}
             label={`Imp ${i}`}
-            // No required validation - all fields are optional
           >
             <Input placeholder={`Nhập giá trị (số hoặc chữ)`} />
           </Form.Item>
