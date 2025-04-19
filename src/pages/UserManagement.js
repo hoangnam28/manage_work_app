@@ -258,14 +258,6 @@ const UserManagement = () => {
                 <Input.Password />
               </Form.Item>
             )}
-
-            <Form.Item
-              name="department"
-              label="Phòng ban"
-            >
-              <Input />
-            </Form.Item>
-
             <Form.Item>
               <Button type="primary" htmlType="submit">
                 {editingUser ? 'Cập nhật' : 'Tạo mới'}
