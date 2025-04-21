@@ -1,6 +1,14 @@
 import React, { useState } from 'react';
 import { Layout, Menu, Button, Avatar } from 'antd';
-import { UserOutlined, LogoutOutlined, RightOutlined, LeftOutlined } from '@ant-design/icons';
+import {
+  UserOutlined,
+  LogoutOutlined,
+  RightOutlined,
+  LeftOutlined,
+  FileSearchOutlined,
+  BarChartOutlined,
+  TeamOutlined,
+} from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
 import './SideBar.css';
 
@@ -16,18 +24,20 @@ const SideBar = ({ onLogout, userId }) => {
   const menuItems = [
     {
       key: '/review_tasks',
+      icon: <FileSearchOutlined />, 
       label: <Link to="/review_tasks">Review Tasks</Link>,
     },
     {
       key: '/impedance',
+      icon: <BarChartOutlined />,
       label: <Link to="/impedance">Impedance</Link>,
     },
     {
       key: '/user-management',
-      label: <Link to="/user-management">User Management</Link>,
+      icon: <TeamOutlined />, 
+      label: <Link to="/user-management">User List</Link>,
     },
   ];
-
   return (
     <Sider
       width={200}
