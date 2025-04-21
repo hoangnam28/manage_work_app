@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 import './Impedance.css';
 import { Toaster } from 'sonner';
 import { Input } from 'antd';
+import * as XLSX from 'xlsx'; 
 
 const { Title } = Typography;
 const { Search } = Input;
@@ -16,7 +17,7 @@ const { Search } = Input;
 const Impedance = () => {
   const [impedanceData, setImpedanceData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [filteredData, setFilteredData] = useState([]); // Dữ liệu sau khi lọc
+  const [filteredData, setFilteredData] = useState([]); 
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
@@ -115,6 +116,18 @@ const Impedance = () => {
     }
   };
 
+  const exportToExcel = () => {
+    if (filteredData.length === 0) {
+      toast.error('Không có dữ liệu để xuất');
+      return;
+    }
+    const worksheet = XLSX.utils.json_to_sheet(filteredData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Impedance Data');
+    XLSX.writeFile(workbook, 'ImpedanceData.xlsx');
+    toast.success('Xuất file Excel thành công');
+  };
+
   return (
     <MainLayout>
       <Toaster position="top-right" richColors />
@@ -127,12 +140,21 @@ const Impedance = () => {
             onSearch={handleSearch}
             style={{ width: 300 }}
           />
-          <Button
-            type="primary"
-            onClick={() => setIsCreateModalVisible(true)}
-          >
-            Thêm mới
-          </Button>
+          <div>
+            <Button
+              type="dashed"
+              style={{ marginRight: 8 }}
+              onClick={exportToExcel}
+            >
+              Export Excel
+            </Button>
+            <Button
+              type="primary"
+              onClick={() => setIsCreateModalVisible(true)}
+            >
+              Thêm mới
+            </Button>
+          </div>
         </div>
         {loading ? (
           <div className="impedance-loading">
