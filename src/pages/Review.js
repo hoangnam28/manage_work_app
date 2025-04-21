@@ -293,6 +293,7 @@ const Review = () => {
         try {
           const dataToAdd = {
             ...values,
+            doi_tuong: values.doi_tuong || '', // Truyền chuỗi rỗng nếu không có giá trị
             REV: '',
             CONG_VENH: '',
             V_CUT: '',
@@ -301,7 +302,7 @@ const Review = () => {
             created_by: currentUser.username,
             created_at: new Date().toISOString(),
           };
-
+  
           await axios.post('http://192.84.105.173:5000/api/document/add', dataToAdd);
           toast.success('Thêm dữ liệu thành công');
           fetchData(); // Refresh the table data
@@ -1146,6 +1147,12 @@ const Review = () => {
           name="ma"
           label="Đầu mã"
           rules={[{ required: true, message: 'Vui lòng nhập Đầu mã!' }]}
+        >
+          <Input />
+        </Form.Item>
+        <Form.Item
+          name="doi_tuong"
+          label="Đối tượng"
         >
           <Input />
         </Form.Item>
