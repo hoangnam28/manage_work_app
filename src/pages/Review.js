@@ -341,6 +341,7 @@ const Review = () => {
       const exportData = data.map(item => ({
         'STT': item.STT,
         'Đầu mã': item.MA,
+        'Đối tượng': item.DOI_TUONG,
         'Khách hàng': item.KHACH_HANG,
         'Mã tài liệu khách hàng': item.MA_TAI_LIEU,
         'Rev.': item.REV,
@@ -357,7 +358,7 @@ const Review = () => {
       const ws = XLSX.utils.json_to_sheet(exportData);
 
       const columnWidths = [
-        { wch: 5 }, { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 8 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 10 }, { wch: 20 }, { wch: 30 }
+        { wch: 5 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 8 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 10 }, { wch: 20 }, { wch: 30 }
       ];
       ws['!cols'] = columnWidths;
       const range = XLSX.utils.decode_range(ws['!ref']);
@@ -650,14 +651,6 @@ const Review = () => {
   };
 
   const columns = [
-    {
-      title: "STT",
-      dataIndex: "STT",
-      key: "stt",
-      width: 45,
-      align: "center",
-      fixed: "left",
-    },
     {
       title: "Đầu mã",
       dataIndex: "MA",
