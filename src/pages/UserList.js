@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Modal, Form, Input, Popconfirm, Space, Typography } from 'antd';
 import { EditOutlined, DeleteOutlined, UserAddOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -13,6 +13,8 @@ const UserManagement = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [editingUser, setEditingUser] = useState(null);
+  const [searchText, setSearchText] = useState('');
+
 
   // Fetch users data
   const fetchUsers = async () => {
@@ -125,6 +127,27 @@ const UserManagement = () => {
     }
   };
 
+  // Tạo dữ liệu đã được filter và search
+  const filteredUsers = useMemo(() => {
+    let result = users;
+    
+ 
+    // Filter by search text
+    if (searchText) {
+      const searchLower = searchText.toLowerCase();
+      result = result.filter(user => 
+        user.USERNAME?.toLowerCase().includes(searchLower) ||
+        user.COMPANY_ID?.toLowerCase().includes(searchLower)
+      );
+    }
+    
+    return result;
+  }, [users, searchText]);
+
+  const handleSearch = (e) => {
+    setSearchText(e.target.value);
+  };
+
   // Table columns
   const columns = [
     {
@@ -192,14 +215,28 @@ const UserManagement = () => {
           </Button>
         </div>
 
+        {/* Thêm section filter và search */}
+        <div style={{ 
+          marginBottom: '16px',
+          display: 'flex',
+          gap: '16px'
+        }}>
+          <Input.Search
+            placeholder="Tìm kiếm theo tên hoặc ID công ty"
+            allowClear
+            style={{ width: 300 }}
+            onChange={handleSearch}
+          />
+        </div>
+
         <Table
           columns={columns}
-          dataSource={users}
+          dataSource={filteredUsers}
           rowKey="USER_ID"
           loading={loading}
           pagination={{ pageSize: 10 }}
         />
-
+        
         <Modal
           title={editingUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
           open={isModalVisible}
@@ -263,4 +300,4 @@ const UserManagement = () => {
   );
 };
 
-export default UserManagement; 
+export default UserManagement;
