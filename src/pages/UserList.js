@@ -47,52 +47,69 @@ const UserManagement = () => {
   const handleSubmit = async (values) => {
     try {
       const token = localStorage.getItem('accessToken');
-      const userData = {
-        ...values,
-        is_admin: values.is_admin ? 1 : 0
+      if (!token) {
+        toast.error('Phiên đăng nhập đã hết hạn');
+        return;
+      }
+
+      // Add some basic validation
+      if (!values.username?.trim()) {
+        toast.error('Vui lòng nhập tên người dùng');
+        return;
+      }
+
+      if (!editingUser && !values.company_id?.trim()) {
+        toast.error('Vui lòng nhập ID công ty');
+        return;
+      }
+
+      // Prepare user data based on whether we're editing or creating
+      const userData = editingUser ? {
+        username: values.username.trim(),
+        // Only include password_hash if it's provided
+        ...(values.password_hash && { password_hash: values.password_hash })
+      } : {
+        username: values.username.trim(),
+        company_id: values.company_id.trim(),
+        password_hash: values.password_hash,
+        department: values.department?.trim()
       };
-  
+
       if (editingUser) {
-        setUsers(prevUsers => 
-          prevUsers.map(user => 
-            user.USER_ID === editingUser.USER_ID 
-              ? {
-                  ...user,
-                  USERNAME: values.username,
-                  COMPANY_ID: values.company_id || user.COMPANY_ID,
-                  // Thêm các trường khác nếu cần
-                }
-              : user
-          )
-        );
-        
-        toast.success('Cập nhật người dùng thành công');
-      } else {
-        // Tạo user mới
-        const response = await axios.post(
-          'http://192.84.105.173:5000/api/user/create',
+        // Update existing user
+        const response = await axios.put(
+          `http://192.84.105.173:5000/api/user/update/${editingUser.USER_ID}`,
           userData,
           {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
+            headers: { Authorization: `Bearer ${token}` }
           }
         );
-        
-        // Thêm user mới vào state
-        if (response.data && response.data.data) {
-          setUsers(prevUsers => [...prevUsers, response.data.data]);
+
+        if (response.data?.data) {
+          setUsers(prevUsers => 
+            prevUsers.map(user => 
+              user.USER_ID === editingUser.USER_ID 
+                ? { ...user, ...response.data.data }
+                : user
+            )
+          );
+          toast.success('Cập nhật người dùng thành công');
+          setIsModalVisible(false);
+          form.resetFields();
+          setEditingUser(null);
         }
-        
-        toast.success('Tạo người dùng thành công');
       }
-  
-      setIsModalVisible(false);
-      form.resetFields();
-      setEditingUser(null);
     } catch (error) {
       console.error('Error saving user:', error);
-      toast.error(error.response?.data?.message || 'Lỗi khi lưu người dùng');
+      
+      // Xử lý lỗi unique constraint
+      if (error.response?.data?.error?.includes('unique constraint')) {
+        toast.error('Tên người dùng đã tồn tại, vui lòng chọn tên khác');
+        return;
+      }
+      
+      const errorMessage = error.response?.data?.message || 'Lỗi khi lưu người dùng';
+      toast.error(errorMessage);
     }
   };
 
@@ -101,8 +118,6 @@ const UserManagement = () => {
     setEditingUser(user);
     form.setFieldsValue({
       username: user.USERNAME,
-      company_id: user.COMPANY_ID,
-      department: user.DEPARTMENT
     });
     setIsModalVisible(true);
   };
@@ -255,7 +270,33 @@ const UserManagement = () => {
             <Form.Item
               name="username"
               label="Tên người dùng"
-              rules={[{ required: true, message: 'Vui lòng nhập tên người dùng' }]}
+              rules={[
+                { required: true, message: 'Vui lòng nhập tên người dùng' },
+                { min: 3, message: 'Tên người dùng phải có ít nhất 3 ký tự' },
+                { max: 100, message: 'Tên người dùng không được vượt quá 100 ký tự' },
+                {
+                  validator: async (_, value) => {
+                    if (!value || value === editingUser?.USERNAME) {
+                      return Promise.resolve();
+                    }
+                    try {
+                      const token = localStorage.getItem('accessToken');
+                      const response = await axios.get(
+                        `http://192.84.105.173:5000/api/user/check-username?username=${value}`,
+                        {
+                          headers: { Authorization: `Bearer ${token}` }
+                        }
+                      );
+                      if (response.data.exists) {
+                        return Promise.reject('Tên người dùng đã tồn tại');
+                      }
+                      return Promise.resolve();
+                    } catch (error) {
+                      return Promise.resolve(); // Cho phép submit form nếu API check lỗi
+                    }
+                  }
+                }
+              ]}
             >
               <Input />
             </Form.Item>
@@ -264,30 +305,26 @@ const UserManagement = () => {
               <Form.Item
                 name="company_id"
                 label="ID Công ty"
-                rules={[{ required: true, message: 'Vui lòng nhập ID công ty' }]}
+                rules={[
+                  { required: true, message: 'Vui lòng nhập ID công ty' },
+                  { max: 50, message: 'ID công ty không được vượt quá 50 ký tự' }
+                ]}
               >
                 <Input />
               </Form.Item>
             )}
 
-            {!editingUser && (
-              <Form.Item
-                name="password_hash"
-                label="Mật khẩu"
-                rules={[{ required: true, message: 'Vui lòng nhập mật khẩu' }]}
-              >
-                <Input.Password />
-              </Form.Item>
-            )}
+            <Form.Item
+              name="password_hash"
+              label={editingUser ? "Mật khẩu mới (để trống nếu không muốn thay đổi)" : "Mật khẩu"}
+              rules={[
+                { required: !editingUser, message: 'Vui lòng nhập mật khẩu' },
+                { max: 255, message: 'Mật khẩu không được vượt quá 255 ký tự' }
+              ]}
+            >
+              <Input.Password />
+            </Form.Item>
 
-            {editingUser && (
-              <Form.Item
-                name="password_hash"
-                label="Mật khẩu mới (để trống nếu không muốn thay đổi)"
-              >
-                <Input.Password />
-              </Form.Item>
-            )}
             <Form.Item>
               <Button type="primary" htmlType="submit">
                 {editingUser ? 'Cập nhật' : 'Tạo mới'}
