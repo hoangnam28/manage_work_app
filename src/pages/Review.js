@@ -697,7 +697,7 @@ const Review = () => {
           <div
             onClick={() => {
               if (!isDisabled) {
-                handleEdit(record); // Chỉ mở modal nếu có quyền chỉnh sửa
+                handleEdit(record); 
               }
             }}
             style={{

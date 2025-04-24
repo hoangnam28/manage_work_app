@@ -49,31 +49,24 @@ const UserManagement = () => {
         ...values,
         is_admin: values.is_admin ? 1 : 0
       };
-
+  
       if (editingUser) {
-        // Update existing user
-        const response = await axios.put(
-          `http://192.84.105.173:5000/api/user/update/${editingUser.USER_ID}`,
-          userData,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
-        
-        // Update the user in the local state
         setUsers(prevUsers => 
           prevUsers.map(user => 
             user.USER_ID === editingUser.USER_ID 
-              ? { ...user, ...response.data.data } 
+              ? {
+                  ...user,
+                  USERNAME: values.username,
+                  COMPANY_ID: values.company_id || user.COMPANY_ID,
+                  // Thêm các trường khác nếu cần
+                }
               : user
           )
         );
         
         toast.success('Cập nhật người dùng thành công');
       } else {
-        // Create new user
+        // Tạo user mới
         const response = await axios.post(
           'http://192.84.105.173:5000/api/user/create',
           userData,
@@ -84,14 +77,14 @@ const UserManagement = () => {
           }
         );
         
-        // Add the new user to the local state
+        // Thêm user mới vào state
         if (response.data && response.data.data) {
           setUsers(prevUsers => [...prevUsers, response.data.data]);
         }
         
         toast.success('Tạo người dùng thành công');
       }
-
+  
       setIsModalVisible(false);
       form.resetFields();
       setEditingUser(null);

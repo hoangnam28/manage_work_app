@@ -4,7 +4,7 @@ import Login from './pages/Login';
 import ReviewPage from './pages/Review';
 import Impedance from './pages/Impedance';
 import PrivateRoute from './routes/PrivateRoute';
-import UserManagement from './pages/UserManagement';
+import UserManagement from './pages/UserList';
 
 function App() {
   return (
