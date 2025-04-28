@@ -16,7 +16,6 @@ const UserManagement = () => {
   const [searchText, setSearchText] = useState('');
 
 
-  // Fetch users data
   const fetchUsers = async () => {
     setLoading(true);
     try {
@@ -43,7 +42,6 @@ const UserManagement = () => {
     fetchUsers();
   }, []);
 
-  // Handle form submission
   const handleSubmit = async (values) => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -51,8 +49,6 @@ const UserManagement = () => {
         toast.error('Phiên đăng nhập đã hết hạn');
         return;
       }
-
-      // Add some basic validation
       if (!values.username?.trim()) {
         toast.error('Vui lòng nhập tên người dùng');
         return;
