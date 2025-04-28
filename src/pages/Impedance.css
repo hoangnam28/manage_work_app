@@ -1,21 +1,19 @@
-/* To center the content and add padding */
+
 .impedance-container {
     padding: 24px;
-    background: linear-gradient(135deg, #f0f2f5, #ffffff); /* Subtle gradient background */
+    background: linear-gradient(135deg, #f0f2f5, #ffffff); 
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Soft shadow */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
   }
-  
-  /* Title styling */
+
   .impedance-title {
     font-size: 24px;
     font-weight: bold;
-    color: #1890ff; /* Primary color */
+    color: #1890ff; 
     text-align: center;
     margin-bottom: 16px;
   }
   
-  /* Table container */
   .impedance-table-container {
     background: white;
     border-radius: 8px;
@@ -23,18 +21,15 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
   
-  /* Loading spinner */
   .impedance-loading {
     text-align: center;
     padding: 40px;
   }
-  
-  /* Add hover effect for table rows */
+ 
   .ant-table-row:hover > td {
-    background-color: #e6f7ff !important; /* Light blue hover effect */
+    background-color: #e6f7ff !important; 
   }
   
-  /* Add subtle animation to the page */
   @keyframes fadeIn {
     from {
       opacity: 0;
@@ -50,7 +45,6 @@
     animation: fadeIn 0.8s ease-in-out;
   }
 
-  /* Enhanced animation for newly added rows */
   .ant-table-row-new {
     animation: highlightNew 1s ease-out;
     background-color: #e6f7ff !important;

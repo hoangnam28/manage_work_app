@@ -1,14 +1,13 @@
-/* To center the login container */
+
 .login-container {
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background: linear-gradient(135deg, #74ebd5, #acb6e5); /* Gradient background */
-    animation: fadeIn 1.5s ease-in-out; /* Fade-in animation */
+    background: linear-gradient(135deg, #74ebd5, #acb6e5); 
+    animation: fadeIn 1.5s ease-in-out; 
 }
 
-/* Card animation */
 .login-card {
     width: 400px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
@@ -16,10 +15,9 @@
     overflow: hidden;
     background: white;
     transform: translateY(-50px);
-    animation: slideIn 1s ease-out forwards; /* Slide-in animation */
+    animation: slideIn 1s ease-out forwards;
 }
 
-/* Button hover effect */
 .ant-btn-primary {
     background: linear-gradient(135deg, #6a11cb, #2575fc);
     border: none;
@@ -28,16 +26,15 @@
 
 .ant-btn-primary:hover {
     background: linear-gradient(135deg, #2575fc, #6a11cb);
-    transform: scale(1.05); /* Slight zoom effect */
+    transform: scale(1.05); 
 }
 
-/* Input focus effect */
+
 .ant-input:focus, .ant-input-password:focus {
     border-color: #6a11cb;
     box-shadow: 0 0 5px rgba(106, 17, 203, 0.5);
 }
 
-/* Fade-in animation */
 @keyframes fadeIn {
     from {
         opacity: 0;
@@ -47,7 +44,6 @@
     }
 }
 
-/* Slide-in animation */
 @keyframes slideIn {
     from {
         transform: translateY(-50px);

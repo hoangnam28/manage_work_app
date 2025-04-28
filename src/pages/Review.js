@@ -318,7 +318,7 @@ const Review = () => {
         try {
           const dataToAdd = {
             ...values,
-            doi_tuong: values.doi_tuong || '', // Truyền chuỗi rỗng nếu không có giá trị
+            doi_tuong: values.doi_tuong || '', 
             REV: '',
             CONG_VENH: '',
             V_CUT: '',
@@ -330,7 +330,7 @@ const Review = () => {
   
           await axios.post('http://192.84.105.173:5000/api/document/add', dataToAdd);
           toast.success('Thêm dữ liệu thành công');
-          fetchData(); // Refresh the table data
+          fetchData(); 
           setIsModalVisible(false);
           form.resetFields();
         } catch (error) {
