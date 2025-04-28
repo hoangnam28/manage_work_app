@@ -33,6 +33,7 @@ const Review = () => {
   const [reviewStatus, setReviewStatus] = useState({});
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [searchKeyword, setSearchKeyword] = useState('');
 
   const { Text } = Typography;
 
@@ -50,7 +51,10 @@ const Review = () => {
         }
       });
       setCurrentUser(response.data);
-      const authorizedIds = ['017965', '006065', '003524', '008247', '006064', '030516', '005322', '003216','012967', '024432','007787', '016763', '016809', '017970', '018218', '023578', '023872', '000001'];
+      const authorizedIds = ['017965', '006065', '003524', '008247', '006064',
+                             '030516', '005322', '003216', '012967', '024432',
+                             '007787', '016763', '016809', '017970', '018218', 
+                             '023578', '023872', '000001', '006064'];
       const userCompanyId = response.data.company_id ? response.data.company_id.toString().trim() : '';
       const hasPermission = authorizedIds.includes(userCompanyId);
       setHasEditPermission(hasPermission);
@@ -68,8 +72,9 @@ const Review = () => {
   }, []);
 
   const handleSearch = (value) => {
+    setSearchKeyword(value); // Lưu từ khóa tìm kiếm
     if (value.trim() === '') {
-      setFilteredData(data); // Reset to original data if search is cleared
+      setFilteredData(data);
     } else {
       const filtered = data.filter((item) =>
         item.MA?.toLowerCase().includes(value.toLowerCase())
@@ -77,11 +82,17 @@ const Review = () => {
       setFilteredData(filtered);
     }
   };
-
   // Update filteredData whenever the original data changes
   useEffect(() => {
-    setFilteredData(data);
-  }, [data]);
+    if (searchKeyword.trim() === '') {
+      setFilteredData(data);
+    } else {
+      const filtered = data.filter((item) =>
+        item.MA?.toLowerCase().includes(searchKeyword.toLowerCase())
+      );
+      setFilteredData(filtered);
+    }
+  }, [data, searchKeyword]);
 
   const fetchReviewStatus = async (columnId) => {
     try {
@@ -181,21 +192,21 @@ const Review = () => {
       toast.error('Bạn không có quyền tải lên hình ảnh');
       return;
     }
-
+  
     const token = localStorage.getItem('accessToken');
     if (!token) {
       toast.error('Vui lòng đăng nhập lại');
       return;
     }
-
+  
     setImageLoadingStates(prev => ({
       ...prev,
       [`${record.COLUMN_ID}-${field}`]: true
     }));
-
+  
     const formData = new FormData();
     formData.append('images', info.file.originFileObj);
-
+  
     try {
       const response = await axios.post(
         `http://192.84.105.173:5000/api/document/upload-images/${record.COLUMN_ID}/${field}`,
@@ -207,16 +218,30 @@ const Review = () => {
           }
         }
       );
-
+  
       if (response.data) {
         toast.success('Tải ảnh thành công');
         const updatedImages = await fetchImages(record.COLUMN_ID, field);
-        const newData = [...data];
-        const index = newData.findIndex(item => item.COLUMN_ID === record.COLUMN_ID);
-        if (index > -1) {
-          newData[index][field] = updatedImages;
-          setData(newData);
-        }
+        
+        // Cập nhật data và giữ nguyên kết quả tìm kiếm
+        setData(prevData => {
+          const newData = prevData.map(item => 
+            item.COLUMN_ID === record.COLUMN_ID 
+              ? { ...item, [field]: updatedImages }
+              : item
+          );
+          return newData;
+        });
+  
+        // Cập nhật filteredData để giữ kết quả tìm kiếm
+        setFilteredData(prevFiltered => {
+          const newFiltered = prevFiltered.map(item =>
+            item.COLUMN_ID === record.COLUMN_ID
+              ? { ...item, [field]: updatedImages }
+              : item
+          );
+          return newFiltered;
+        });
       }
     } catch (error) {
       console.error('Upload error:', error);
