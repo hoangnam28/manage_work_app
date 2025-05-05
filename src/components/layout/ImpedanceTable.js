@@ -17,7 +17,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
       }
     }
     setTableData(data);
-  }, [data]);
+  }, [data, tableData.length]);
 
   const columns = [
     {

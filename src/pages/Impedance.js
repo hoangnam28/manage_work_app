@@ -5,7 +5,7 @@ import MainLayout from '../components/layout/MainLayout';
 import CreateImpedanceModal from '../components/modal/CreateImpedanceModal';
 import UpdateImpedanceModal from '../components/modal/UpdateImpedanceModal';
 import { fetchImpedanceData, createImpedance, updateImpedance, softDeleteImpedance } from '../utils/api';
-import { toast } from 'sonner';
+import { toast, Toaster } from 'sonner';
 import * as XLSX from 'xlsx';
 import './Impedance.css';
 
@@ -40,19 +40,18 @@ const Impedance = () => {
   const handleCreate = async (values) => {
     try {
       if (!values.imp_1 || !values.imp_2 || !values.imp_3 || !values.imp_4) {
-        throw new Error('Các trường Imp 1, Imp 2, Imp 3, và Imp 4 là bắt buộc.');
+        toast.error('Các trường Imp 1, Imp 2, Imp 3, và Imp 4 là bắt buộc.');
+        return;
       }
       const response = await createImpedance(values);
-
       if (response && response.data) {
-        await loadData();
-
         setIsCreateModalVisible(false);
         toast.success('Thêm mới thành công');
+        await loadData();
       }
     } catch (error) {
       console.error('Error creating impedance:', error);
-      toast.error('Lỗi khi thêm mới dữ liệu');
+      toast.error(error.response?.data?.message || 'Lỗi khi thêm mới dữ liệu');
     }
   };
 
@@ -68,25 +67,22 @@ const Impedance = () => {
         return;
       }
       const response = await updateImpedance(impId, values);
-
       if (response && response.data) {
-        await loadData();
-
         setIsUpdateModalVisible(false);
         setCurrentRecord(null);
         toast.success('Cập nhật thành công');
+        await loadData();
       }
     } catch (error) {
       console.error('Error updating impedance:', error);
-      const errorMessage = error.response?.data?.error || 'Lỗi khi cập nhật dữ liệu';
-      toast.error(errorMessage);
+      toast.error(error.response?.data?.message || 'Lỗi khi cập nhật dữ liệu');
     }
   };
 
   const handleSearch = (e) => {
     const value = e.target.value;
     if (value.trim() === '') {
-      setFilteredData(impedanceData); // Reset to original data if search is cleared
+      setFilteredData(impedanceData);
     } else {
       const filtered = impedanceData.filter((item) =>
         item.IMP_1?.toLowerCase().includes(value.toLowerCase())
@@ -97,7 +93,6 @@ const Impedance = () => {
 
   const handleSoftDelete = async (record) => {
     try {
-      // Check for both uppercase and lowercase imp_id
       const impId = record.imp_id || record.IMP_ID;
 
       if (!impId) {
@@ -132,13 +127,14 @@ const Impedance = () => {
 
   return (
     <MainLayout>
+      <Toaster position="top-right" richColors />
       <div className="impedance-container">
         <Title level={2} className="impedance-title">Số liệu Impedance</Title>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
           <Input
             placeholder="Tìm kiếm theo mã hàng"
             allowClear
-            onChange={handleSearch} // Thay đổi từ onSearch sang onChange
+            onChange={handleSearch} 
             style={{ width: 300 }}
           />
           <div>
