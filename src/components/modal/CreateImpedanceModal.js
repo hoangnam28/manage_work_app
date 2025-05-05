@@ -7,8 +7,8 @@ const CreateImpedanceModal = ({ visible, onCancel, onCreate }) => {
   const handleOk = () => {
     form.validateFields()
       .then((values) => {
-        onCreate(values); // Gửi dữ liệu lên server
-        form.resetFields(); // Reset form sau khi gửi
+        onCreate(values);
+        form.resetFields(); 
       })
       .catch((info) => {
         console.error('Validate Failed:', info);
@@ -27,8 +27,8 @@ const CreateImpedanceModal = ({ visible, onCancel, onCreate }) => {
       <Form form={form} layout="vertical">
         <Form.Item
           name="imp_1"
-          label="Imp 1"
-          rules={[{ required: true, message: 'Vui lòng nhập giá trị Imp 1!' }]}
+          label="Mã hàng"
+          rules={[{ required: true, message: 'Vui lòng nhập Mã hàng!' }]}
         >
           <Input placeholder="Nhập giá trị (số hoặc chữ)" />
         </Form.Item>
