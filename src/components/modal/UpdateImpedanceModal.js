@@ -12,7 +12,7 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
     if (visible && currentRecord) {
       setError(null);
       const initialValues = {};
-      for (let i = 1; i <= 30; i++) {
+      for (let i = 1; i <= 35; i++) {
         const lowerKey = `imp_${i}`;
         const upperKey = `IMP_${i}`;
         if (currentRecord[lowerKey] !== undefined) {
@@ -113,7 +113,12 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
                 {renderImpedanceFields(21, 30)}
               </Row>
             </TabPane>
-            <TabPane tab="Ghi chú" key="4">
+            <TabPane tab="Imp 31-35" key="4">
+              <Row gutter={16}>
+                {renderImpedanceFields(31, 35)}
+              </Row>
+            </TabPane>
+            <TabPane tab="Ghi chú" key="5">
               <Form.Item name="note" label="Ghi chú">
                 <Input.TextArea rows={4} placeholder="Nhập ghi chú (nếu có)" />
               </Form.Item>
