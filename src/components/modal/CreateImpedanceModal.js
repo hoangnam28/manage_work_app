@@ -27,28 +27,28 @@ const CreateImpedanceModal = ({ visible, onCancel, onCreate }) => {
       <Form form={form} layout="vertical">
         <Form.Item
           name="imp_1"
-          label="Mã hàng"
+          label="JobName"
           rules={[{ required: true, message: 'Vui lòng nhập Mã hàng!' }]}
         >
           <Input placeholder="Nhập giá trị (số hoặc chữ)" />
         </Form.Item>
         <Form.Item
           name="imp_2"
-          label="Imp 2"
+          label="Mã hàng "
           rules={[{ required: true, message: 'Vui lòng nhập giá trị Imp 2!' }]}
         >
           <Input placeholder="Nhập giá trị (số hoặc chữ)" />
         </Form.Item>
         <Form.Item
           name="imp_3"
-          label="Imp 3"
+          label="Mã hàng tham khảo" 
           rules={[{ required: true, message: 'Vui lòng nhập giá trị Imp 3!' }]}
         >
           <Input placeholder="Nhập giá trị (số hoặc chữ)" />
         </Form.Item>
         <Form.Item
           name="imp_4"
-          label="Imp 4"
+          label="Khách hàng"
           rules={[{ required: true, message: 'Vui lòng nhập giá trị Imp 4!' }]}
         >
           <Input placeholder="Nhập giá trị (số hoặc chữ)" />
