@@ -132,7 +132,7 @@ const Impedance = () => {
         <Title level={2} className="impedance-title">Số liệu Impedance</Title>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
           <Input
-            placeholder="Tìm kiếm theo mã hàng"
+            placeholder="Tìm kiếm theo JOBNAME"
             allowClear
             onChange={handleSearch} 
             style={{ width: 300 }}

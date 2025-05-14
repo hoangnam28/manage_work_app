@@ -138,8 +138,6 @@ const Review = () => {
           const hinh_anh1 = await fetchImages(record.COLUMN_ID, "hinh_anh1");
           const hinh_anh2 = await fetchImages(record.COLUMN_ID, "hinh_anh2");
           const hinh_anh3 = await fetchImages(record.COLUMN_ID, "hinh_anh3");
-
-          // Fetch review status for each record
           const status = await fetchReviewStatus(record.COLUMN_ID);
           if (status) {
             setReviewStatus(prev => ({
