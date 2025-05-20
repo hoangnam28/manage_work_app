@@ -1,76 +1,145 @@
-
 .impedance-container {
-    padding: 24px;
-    background: linear-gradient(135deg, #f0f2f5, #ffffff); 
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); 
-  }
+    padding: 16px;
+    background: #f0f2f5;
+    min-height: calc(100vh - 64px);
+    display: flex;
+    flex-direction: column;
+}
 
-  .impedance-title {
-    font-size: 24px;
-    font-weight: bold;
-    color: #1890ff; 
-    text-align: center;
+.impedance-header {
+    background: white;
+    padding: 16px 24px;
+    border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     margin-bottom: 16px;
-  }
-  
-  .impedance-table-container {
+}
+
+.impedance-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #262626;
+    margin-bottom: 16px;
+}
+
+.impedance-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.impedance-actions .search-input {
+    max-width: 300px;
+}
+
+.impedance-actions .action-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.impedance-table-container {
+    flex: 1;
     background: white;
     border-radius: 8px;
-    padding: 16px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-  
-  .impedance-loading {
-    text-align: center;
-    padding: 40px;
-  }
- 
-  .ant-table-row:hover > td {
-    background-color: #e6f7ff !important; 
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .impedance-container {
-    animation: fadeIn 0.8s ease-in-out;
-  }
+    padding: 0;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    overflow: hidden;
+}
 
-  .ant-table-row-new {
-    animation: highlightNew 1s ease-out;
-    background-color: #e6f7ff !important;
-  }
-  
-  @keyframes highlightNew {
+/* Table Styles */
+.ant-table {
+    font-size: 14px;
+}
+
+.ant-table-thead > tr > th {
+    background: #fafafa;
+    font-weight: 600;
+    color: #262626;
+    padding: 12px 16px;
+}
+
+.ant-table-tbody > tr > td {
+    padding: 12px 16px;
+}
+
+.ant-table-row:hover > td {
+    background-color: #fafafa !important;
+}
+
+.ant-table-row-new {
+    animation: highlightNew 2s ease-out;
+}
+
+/* Pagination Styles */
+.ant-pagination {
+    margin: 16px 0;
+    padding: 0 16px;
+}
+
+.ant-table-pagination {
+    background: white;
+    padding: 8px 0;
+    margin: 0 !important;
+    border-top: 1px solid #f0f0f0;
+}
+
+/* Button Styles */
+.ant-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 32px;
+    padding: 4px 16px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+.ant-btn-primary {
+    background: #1890ff;
+}
+
+.ant-btn-dashed {
+    color: #1890ff;
+}
+
+/* Loading State */
+.impedance-loading {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 48px;
+    background: white;
+    border-radius: 8px;
+}
+
+@keyframes highlightNew {
     0% {
-      background-color: #bae7ff !important;
-      transform: translateY(-5px);
-    }
-    50% {
-      background-color: #91d5ff !important;
+        background-color: #e6f7ff;
     }
     100% {
-      background-color: #e6f7ff !important;
-      transform: translateY(0);
+        background-color: transparent;
     }
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .impedance-actions {
+        flex-direction: column;
+        gap: 12px;
     }
-    to {
-      opacity: 1;
-      transform: translateY(0);
+    
+    .impedance-actions .search-input {
+        max-width: 100%;
     }
-  }
+    
+    .ant-table {
+        font-size: 13px;
+    }
+    
+    .ant-table-thead > tr > th,
+    .ant-table-tbody > tr > td {
+        padding: 8px 12px;
+    }
+}

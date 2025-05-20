@@ -18,7 +18,9 @@ const Impedance = () => {
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
-
+  useEffect(() => {
+    loadData();
+  }, []);
   const loadData = async () => {
     setLoading(true);
     try {
@@ -27,15 +29,15 @@ const Impedance = () => {
       setFilteredData(data);
     } catch (error) {
       console.error('Error fetching impedance data:', error);
-      toast.error('Lỗi khi tải dữ liệu');
+      if (error.response?.status === 403) {
+        toast.error('Bạn không có quyền truy cập vào trang này');
+      } else {
+        toast.error('Lỗi khi tải dữ liệu');
+      }
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    loadData();
-  }, []);
 
   const handleCreate = async (values) => {
     try {
@@ -112,13 +114,53 @@ const Impedance = () => {
       toast.error(errorMessage);
     }
   };
-
   const exportToExcel = () => {
     if (filteredData.length === 0) {
       toast.error('Không có dữ liệu để xuất');
       return;
     }
-    const worksheet = XLSX.utils.json_to_sheet(filteredData);
+
+    // Map data với tên cột phù hợp
+    const mappedData = filteredData.map(item => ({
+      'JobName': item.IMP_1,
+      'Mã Hàng': item.IMP_2,
+      'Mã hàng tham khảo': item.IMP_3,
+      'Khách hàng': item.IMP_4,
+      'Loại khách hàng': item.IMP_5,
+      'Ứng dụng': item.IMP_6,
+      'Phân loại sản xuất': item.IMP_7,
+      'Độ dày bo (µm)': item.IMP_8,
+      'Cấu trúc lớp': item.IMP_9,
+      'CCL': item.IMP_10,
+      'PP': item.IMP_11,
+      'Mực phủ sơn': item.IMP_12,
+      'Lấp lỗ vĩnh viễn BVH': item.IMP_13,
+      'Lấp lỗ vĩnh viễn TH': item.IMP_14,
+      'Lá đồng (µm)': item.IMP_15,
+      'Tỷ lệ đồng còn lại lớp IMP': item.IMP_16,
+      'Tỷ lệ đồng còn lại lớp GND1': item.IMP_17,
+      'Tỷ lệ đồng còn lại lớp GND2': item.IMP_18,
+      'Mắt lưới': item.IMP_19,
+      'Độ dày (µm)': item.IMP_20,
+      '% Nhựa': item.IMP_21,
+      'Mắt lưới_2': item.IMP_22,
+      'Độ dày (µm)_2': item.IMP_23,
+      '% Nhựa_2': item.IMP_24,
+      'Giá trị IMP': item.IMP_25,
+      'Dung sai IMP': item.IMP_26,
+      'Loại IMP': item.IMP_27,
+      'Lớp IMP': item.IMP_28,
+      'GAP': item.IMP_29,
+      'Lớp IMP_2': item.IMP_30,
+      'Lớp GND1': item.IMP_31,
+      'Lớp GND2': item.IMP_32,
+      'L (µm)': item.IMP_33,
+      'S (µm)': item.IMP_34,
+      'GAP ｺﾌﾟﾚﾅｰ (µm)': item.IMP_35,
+      'Ghi chú': item.NOTE || item.note
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(mappedData);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Impedance Data');
     XLSX.writeFile(workbook, 'ImpedanceData.xlsx');
@@ -129,30 +171,32 @@ const Impedance = () => {
     <MainLayout>
       <Toaster position="top-right" richColors />
       <div className="impedance-container">
-        <Title level={2} className="impedance-title">Số liệu Impedance</Title>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-          <Input
-            placeholder="Tìm kiếm theo JOBNAME"
-            allowClear
-            onChange={handleSearch} 
-            style={{ width: 300 }}
-          />
-          <div>
-            <Button
-              type="dashed"
-              style={{ marginRight: 8 }}
-              onClick={exportToExcel}
-            >
-              Export Excel
-            </Button>
-            <Button
-              type="primary"
-              onClick={() => setIsCreateModalVisible(true)}
-            >
-              Thêm mới
-            </Button>
+        <div className="impedance-header">
+          <Title level={2} className="impedance-title">Số liệu Impedance</Title>
+          <div className="impedance-actions">
+            <Input
+              className="search-input"
+              placeholder="Tìm kiếm theo JOBNAME"
+              allowClear
+              onChange={handleSearch}
+            />
+            <div className="action-buttons">
+              <Button
+                type="dashed"
+                onClick={exportToExcel}
+              >
+                Xuất Excel
+              </Button>
+              <Button
+                type="primary"
+                onClick={() => setIsCreateModalVisible(true)}
+              >
+                Thêm mới
+              </Button>
+            </div>
           </div>
         </div>
+
         {loading ? (
           <div className="impedance-loading">
             <Spin size="large" />
@@ -166,6 +210,7 @@ const Impedance = () => {
             />
           </div>
         )}
+
         <CreateImpedanceModal
           visible={isCreateModalVisible}
           onCancel={() => setIsCreateModalVisible(false)}
