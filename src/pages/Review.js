@@ -51,12 +51,8 @@ const Review = () => {
         }
       });
       setCurrentUser(response.data);
-      const authorizedIds = ['017965', '006065', '003524', '008247', '006064',
-                             '030516', '005322', '003216', '012967', '024432',
-                             '007787', '016763', '016809', '017970', '018218', 
-                             '023578', '023872', '000001', '006064'];
-      const userCompanyId = response.data.company_id ? response.data.company_id.toString().trim() : '';
-      const hasPermission = authorizedIds.includes(userCompanyId);
+      // Check if user has admin or editor role
+      const hasPermission = response.data.role === 'admin' || response.data.role === 'editor';
       setHasEditPermission(hasPermission);
 
     } catch (error) {
@@ -82,7 +78,7 @@ const Review = () => {
       setFilteredData(filtered);
     }
   };
-  // Update filteredData whenever the original data changes
+
   useEffect(() => {
     if (searchKeyword.trim() === '') {
       setFilteredData(data);
@@ -504,7 +500,6 @@ const Review = () => {
         await handleReviewConfirm(currentReviewRow.COLUMN_ID, 'Design');
       }
 
-      // Reset modal state
       setIsReviewModalVisible(false);
       setSelectedReviewTypes({ CI: false, Design: false });
       setCurrentReviewRow(null);

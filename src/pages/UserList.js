@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, Popconfirm, Space, Typography } from 'antd';
+import { Table, Button, Modal, Form, Input, Popconfirm, Space, Typography, Select } from 'antd';
 import { EditOutlined, DeleteOutlined, UserAddOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import MainLayout from '../components/layout/MainLayout';
 import { Toaster, toast } from 'sonner';
 
 const { Title } = Typography;
+const { Option } = Select;
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -63,12 +64,14 @@ const UserManagement = () => {
       const userData = editingUser ? {
         username: values.username.trim(),
         // Only include password_hash if it's provided
-        ...(values.password_hash && { password_hash: values.password_hash })
+        ...(values.password_hash && { password_hash: values.password_hash }),
+        ...(values.role && { role: values.role })
       } : {
         username: values.username.trim(),
         company_id: values.company_id.trim(),
         password_hash: values.password_hash,
-        department: values.department?.trim()
+        department: values.department?.trim(),
+        role: values.role
       };
 
       if (editingUser) {
@@ -94,11 +97,26 @@ const UserManagement = () => {
           form.resetFields();
           setEditingUser(null);
         }
+      } else {
+        // Create new user
+        const response = await axios.post(
+          'http://192.84.105.173:5000/api/user/create',
+          userData,
+          {
+            headers: { Authorization: `Bearer ${token}` }
+          }
+        );
+
+        if (response.data?.data) {
+          setUsers(prevUsers => [...prevUsers, response.data.data]);
+          toast.success('Tạo người dùng thành công');
+          setIsModalVisible(false);
+          form.resetFields();
+        }
       }
     } catch (error) {
       console.error('Error saving user:', error);
       
-      // Xử lý lỗi unique constraint
       if (error.response?.data?.error?.includes('unique constraint')) {
         toast.error('Tên người dùng đã tồn tại, vui lòng chọn tên khác');
         return;
@@ -114,6 +132,7 @@ const UserManagement = () => {
     setEditingUser(user);
     form.setFieldsValue({
       username: user.USERNAME,
+      role: user.ROLE
     });
     setIsModalVisible(true);
   };
@@ -176,7 +195,29 @@ const UserManagement = () => {
       title: 'ID Công ty',
       dataIndex: 'COMPANY_ID',
       key: 'company_id',
-    },  
+    },
+    {
+      title: 'Vai trò',
+      dataIndex: 'ROLE',
+      key: 'role',
+      render: (role) => {
+        const roleColors = {
+          admin: 'red',
+          editor: 'blue',
+          viewer: 'green'
+        };
+        const roleNames = {
+          admin: 'Admin',
+          editor: 'Editor',
+          viewer: 'Viewer'
+        };
+        return (
+          <span style={{ color: roleColors[role] }}>
+            {roleNames[role] || role}
+          </span>
+        );
+      }
+    },
     {
       title: 'Ngày tạo',
       dataIndex: 'CREATED_AT',
@@ -288,7 +329,7 @@ const UserManagement = () => {
                       }
                       return Promise.resolve();
                     } catch (error) {
-                      return Promise.resolve(); // Cho phép submit form nếu API check lỗi
+                      return Promise.resolve(); 
                     }
                   }
                 }
@@ -309,6 +350,18 @@ const UserManagement = () => {
                 <Input />
               </Form.Item>
             )}
+
+            <Form.Item
+              name="role"
+              label="Vai trò"
+              rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
+            >
+              <Select>
+                <Option value="admin">Admin</Option>
+                <Option value="editor">Editor</Option>
+                <Option value="viewer">Viewer</Option>
+              </Select>
+            </Form.Item>
 
             <Form.Item
               name="password_hash"
