@@ -6,6 +6,46 @@
     flex-direction: column;
 }
 
+/* Table header styles */
+.ant-table-thead > tr > th {
+    background: #fafafa !important;
+    font-weight: 600 !important;
+    border: 1px solid #f0f0f0 !important;
+    border-bottom: 2px solid #f0f0f0 !important;
+}
+
+/* Table cell styles */
+.ant-table-tbody > tr > td {
+    border: 1px solid #f0f0f0 !important;
+}
+
+/* Table row hover effect */
+.ant-table-tbody > tr:hover > td {
+    background-color: #e6f7ff !important;
+}
+
+/* Group header styles */
+.ant-table-thead > tr > th.ant-table-cell-fix-left,
+.ant-table-thead > tr > th.ant-table-cell-fix-right {
+    background: #fafafa !important;
+}
+
+/* Fixed columns border */
+.ant-table-cell-fix-left,
+.ant-table-cell-fix-right {
+    border-right: 1px solid #f0f0f0 !important;
+}
+
+/* Header group border */
+.ant-table-thead > tr:first-child > th {
+    border-top: 2px solid #f0f0f0 !important;
+}
+
+.ant-table-thead > tr > th[colspan] {
+    border-bottom: 1px solid #f0f0f0 !important;
+    background: #f5f5f5 !important;
+}
+
 .impedance-header {
     background: white;
     padding: 16px 24px;

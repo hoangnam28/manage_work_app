@@ -341,7 +341,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
       columns={columns}
       rowKey="imp_id"
       rowClassName={rowClassName}
-      bordered={false}
+      bordered={true}
       pagination={{
         current: 1,
         pageSize: pageSize,
@@ -363,7 +363,11 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
       size="middle"
       scroll={{ x: 'max-content' }}
       sticky
-      style={{ width: '100%' }}
+      style={{ 
+        width: '100%',
+        border: '1px solid #f0f0f0',
+        borderRadius: '8px'
+      }}
     />
   );
 };
