@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Input, Button, Spin, Typography } from 'antd';
+import { Input, Button, Spin, Typography, Alert } from 'antd';
 import ImpedanceTable from '../components/layout/ImpedanceTable';
 import MainLayout from '../components/layout/MainLayout';
 import CreateImpedanceModal from '../components/modal/CreateImpedanceModal';
@@ -18,7 +18,15 @@ const Impedance = () => {
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
+  const [hasEditPermission, setHasEditPermission] = useState(false);
+
   useEffect(() => {
+    // Kiểm tra quyền từ token
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      const decodedToken = JSON.parse(atob(token.split('.')[1]));
+      setHasEditPermission(['001507', '021253'].includes(decodedToken.company_id));
+    }
     loadData();
   }, []);
   const loadData = async () => {
@@ -87,7 +95,7 @@ const Impedance = () => {
       setFilteredData(impedanceData);
     } else {
       const filtered = impedanceData.filter((item) =>
-        item.IMP_1 && item.IMP_2?.toLowerCase().includes(value.toLowerCase())
+        item.IMP_1?.toLowerCase().includes(value.toLowerCase()) || item.IMP_2?.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredData(filtered);
     }
@@ -171,6 +179,15 @@ const Impedance = () => {
     <MainLayout>
       <Toaster position="top-right" richColors />
       <div className="impedance-container">
+        {!hasEditPermission && (
+          <Alert
+            message="Chế độ xem"
+            description="Bạn đang ở chế độ chỉ xem. Chỉ có thể xem và xuất dữ liệu."
+            type="info"
+            showIcon
+            style={{ marginBottom: '16px' }}
+          />
+        )}
         <div className="impedance-header">
           <Title level={2} className="impedance-title">Số liệu Impedance</Title>
           <div className="impedance-actions">
@@ -187,12 +204,14 @@ const Impedance = () => {
               >
                 Xuất Excel
               </Button>
-              <Button
-                type="primary"
-                onClick={() => setIsCreateModalVisible(true)}
-              >
-                Thêm mới
-              </Button>
+              {hasEditPermission && (
+                <Button
+                  type="primary"
+                  onClick={() => setIsCreateModalVisible(true)}
+                >
+                  Thêm mới
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -205,8 +224,8 @@ const Impedance = () => {
           <div className="impedance-table-container">
             <ImpedanceTable
               data={filteredData}
-              onEdit={handleEdit}
-              onSoftDelete={handleSoftDelete}
+              onEdit={hasEditPermission ? handleEdit : null}
+              onSoftDelete={hasEditPermission ? handleSoftDelete : null}
             />
           </div>
         )}

@@ -23,6 +23,14 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
 
   const columns = [
     {
+      title: 'STT',
+      key: 'index',
+      fixed: 'left',
+      width: 70,
+      align: 'center',
+      render: (_, __, index) => ((currentPage - 1) * pageSize) + index + 1,
+    },
+    ...(onEdit && onSoftDelete ? [{
       title: 'Thao tác',
       key: 'action',
       fixed: 'left',
@@ -52,7 +60,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
           </Popconfirm>
         </Space>
       ),
-    },
+    }] : []),
     {
       title: 'JobName',
       dataIndex: 'IMP_1',
