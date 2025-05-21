@@ -87,7 +87,7 @@ const Impedance = () => {
       setFilteredData(impedanceData);
     } else {
       const filtered = impedanceData.filter((item) =>
-        item.IMP_1?.toLowerCase().includes(value.toLowerCase())
+        item.IMP_1 && item.IMP_2?.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredData(filtered);
     }

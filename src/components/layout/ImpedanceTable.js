@@ -6,6 +6,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
   const [tableData, setTableData] = useState([]);
   const [newRowId, setNewRowId] = useState(null);
   const [pageSize, setPageSize] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (data.length > tableData.length) {
@@ -343,7 +344,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
       rowClassName={rowClassName}
       bordered={true}
       pagination={{
-        current: 1,
+        current: currentPage,
         pageSize: pageSize,
         total: tableData.length,
         showSizeChanger: true,
@@ -353,8 +354,10 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
         showQuickJumper: true,
         onShowSizeChange: (current, size) => {
           setPageSize(size);
+          setCurrentPage(1);
         },
         onChange: (page, size) => {
+          setCurrentPage(page);
           if (size !== pageSize) {
             setPageSize(size);
           }
