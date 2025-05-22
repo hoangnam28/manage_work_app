@@ -128,7 +128,6 @@ const Impedance = () => {
       return;
     }
 
-    // Map data với tên cột phù hợp
     const mappedData = filteredData.map(item => ({
       'JobName': item.IMP_1,
       'Mã Hàng': item.IMP_2,
@@ -165,6 +164,22 @@ const Impedance = () => {
       'L (µm)': item.IMP_33,
       'S (µm)': item.IMP_34,
       'GAP ｺﾌﾟﾚﾅｰ (µm)': item.IMP_35,
+      'Giá trị IMP ': item.IMP_36,
+      'Độ dày phủ sơn trên PP': item.IMP_37,
+      'Độ dày phủ sơn trên đồng': item.IMP_38,
+      'Độ dày phủ sơn trên PP ': item.IMP_39,
+      'DK': item.IMP_40,
+      'Độ dày đồng (µm)': item.IMP_41,
+      'Loại': item.IMP_42,
+      'Độ dày(µm)': item.IMP_43,
+      'DK ': item.IMP_44,
+      'Loại ': item.IMP_45,
+      'Độ dày(µm) ': item.IMP_46,
+      'DK  ': item.IMP_47,
+      'Đỉnh đường mạch': item.IMP_48,
+      'Chân đường mạch': item.IMP_49,
+      'S (µm) ': item.IMP_50,
+      'GAP ｺﾌﾟﾚﾅｰ (µm) ': item.IMP_51,
       'Ghi chú': item.NOTE || item.note
     }));
 

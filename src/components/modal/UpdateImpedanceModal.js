@@ -12,7 +12,7 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
     if (visible && currentRecord) {
       setError(null);
       const initialValues = {};
-      for (let i = 1; i <= 35; i++) {
+      for (let i = 1; i <= 51; i++) {
         const lowerKey = `imp_${i}`;
         const upperKey = `IMP_${i}`;
         if (currentRecord[lowerKey] !== undefined) {
@@ -90,7 +90,23 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
       case 32: return 'Lớp GND2';
       case 33: return 'L (µm)';
       case 34: return 'S (µm)';
-      case 35: return 'GAP ｺﾌﾟﾚﾅｰ (µm)';
+      case 35: return 'Giá trị IMP';
+      case 36: return 'Độ dày phủ sơn trên PP';
+      case 37: return 'Độ dày phủ sơn trên đồng';
+      case 38: return 'Độ dày phủ sơn trên PP';
+      case 39: return 'DK';
+      case 40: return 'Độ dày đồng (µm)';
+      case 41: return 'Loại';
+      case 42: return 'Độ dày(µm)';
+      case 43: return 'DK';
+      case 44: return 'Loại';
+      case 45: return 'Độ dày (µm)';
+      case 46: return 'DK';
+      case 47: return 'Đỉnh đường mạch';
+      case 48: return 'Chân đường mạch';
+      case 49: return 'S (µm)';
+      case 50: return 'GAP ｺﾌﾟﾚﾅｰ (µm)';
+      case 51: return 'Ghi chú';
       default: return `Imp ${index}`;
     }
   };
@@ -154,12 +170,17 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
                 {renderImpedanceFields(21, 30)}
               </Row>
             </TabPane>
-            <TabPane tab="Imp 31-35" key="4">
+            <TabPane tab="Imp 31-40" key="4">
               <Row gutter={16}>
-                {renderImpedanceFields(31, 35)}
+                {renderImpedanceFields(31, 40)}
               </Row>
             </TabPane>
-            <TabPane tab="Ghi chú" key="5">
+            <TabPane tab="Imp 41-50" key="5">
+              <Row gutter={16}>
+                {renderImpedanceFields(41, 50)}
+              </Row>
+            </TabPane>
+            <TabPane tab="Ghi chú" key="7">
               <Form.Item name="note" label="Ghi chú">
                 <Input.TextArea rows={4} placeholder="Nhập ghi chú (nếu có)" />
               </Form.Item>

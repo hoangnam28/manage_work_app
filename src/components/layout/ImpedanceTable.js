@@ -330,6 +330,143 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
           width: 100,
           align: 'center',
         },
+      ],
+    },
+    {
+      title: 'Tổng hợp kết quả mô phỏng',
+      children: [
+        {
+          title: 'Giá trị IMP',
+          dataIndex: 'IMP_36',
+          key: 'imp_36',
+          width: 100,
+          align: 'center',
+        },
+        {
+          title: 'Phủ sơn',
+          children: [
+            {
+              title: 'Độ dày phủ sơn trên PP',
+              dataIndex: 'IMP_37',
+              key: 'imp_37',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'Độ dày phủ sơn trên đồng',
+              dataIndex: 'IMP_38',
+              key: 'imp_38',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'Độ dày phủ sơn trên PP',
+              dataIndex: 'IMP_39',
+              key: 'imp_39',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'DK',
+              dataIndex: 'IMP_40',
+              key: 'imp_40',
+              width: 100,
+              align: 'center',
+            },
+          ]
+        },
+        {
+          title: 'Độ dày đồng (µm)',
+          dataIndex: 'IMP_41',
+          key: 'imp_41',
+          width: 100,
+          align: 'center',
+        },
+        {
+          title: 'Lớp GND1',
+          children: [
+            {
+              title: 'Loại',
+              dataIndex: 'IMP_42',
+              key: 'imp_42',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'Độ dày(µm)',
+              dataIndex: 'IMP_43',
+              key: 'imp_43',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'DK',
+              dataIndex: 'IMP_44',
+              key: 'imp_44',
+              width: 100,
+              align: 'center',
+            },
+          ]
+        },
+        {
+          title: 'Lớp GND2',
+          children: [
+            {
+              title: 'Loại',
+              dataIndex: 'IMP_45',
+              key: 'imp_45',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'Độ dày (µm)',
+              dataIndex: 'IMP_46',
+              key: 'imp_46',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'DK',
+              dataIndex: 'IMP_47',
+              key: 'imp_47',
+              width: 100,
+              align: 'center',
+            },
+          ]
+        },
+        {
+          title: 'L (µm)',
+          children: [
+            {
+              title: 'Đỉnh đường mạch',
+              dataIndex: 'IMP_48',
+              key: 'imp_48',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'Chân đường mạch',
+              dataIndex: 'IMP_49',
+              key: 'imp_49',
+              width: 100,
+              align: 'center',
+            },
+          ]
+        },
+        {
+          title: 'S (µm)',
+          dataIndex: 'IMP_50',
+          key: 'imp_50',
+          width: 100,
+          align: 'center',
+        },
+        {
+          title: 'GAP ｺﾌﾟﾚﾅｰ (µm) ',
+          dataIndex: 'IMP_51',
+          key: 'imp_51',
+          width: 100,
+          align: 'center',
+        },
         {
           title: 'Ghi chú',
           dataIndex: 'NOTE',
@@ -374,7 +511,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
       size="middle"
       scroll={{ x: 'max-content' }}
       sticky
-      style={{ 
+      style={{
         width: '100%',
         border: '1px solid #f0f0f0',
         borderRadius: '8px'
