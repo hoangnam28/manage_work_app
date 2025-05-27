@@ -73,6 +73,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
       dataIndex: 'IMP_2',
       key: 'imp_2',
       align: 'center',
+      fixed: 'left',
     },
     {
       title: 'Mã hàng tham khảo',

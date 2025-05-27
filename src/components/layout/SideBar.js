@@ -8,6 +8,7 @@ import {
   FileSearchOutlined,
   BarChartOutlined,
   TeamOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
 import './SideBar.css';
@@ -36,6 +37,11 @@ const SideBar = ({ onLogout, userId }) => {
       key: '/user-management',
       icon: <TeamOutlined />, 
       label: <Link to="/user-management">User List</Link>,
+    },
+    {
+      key: 'defect-details',
+      icon: <CopyOutlined />,
+      label: <a href="http://192.84.105.173:3000/services/defect-details" target="_blank" rel="noopener noreferrer">Defect Details</a>,
     },
   ];
   return (

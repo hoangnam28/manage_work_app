@@ -130,7 +130,7 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
 
   return (
     <Modal
-      title="Cập nhật dữ liệu Impedance"
+      title="Cập nhật số liệu Impedance"
       visible={visible}
       onOk={handleOk}
       onCancel={onCancel}
@@ -150,10 +150,6 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
       
       {currentRecord && (
         <Form form={form} layout="vertical">
-          <div style={{ marginBottom: 8 }}>
-            <strong>ID:</strong> {currentRecord.imp_id}
-          </div>
-          
           <Tabs defaultActiveKey="1">
             <TabPane tab="Imp 1-10" key="1">
               <Row gutter={16}>

@@ -25,7 +25,7 @@ const Impedance = () => {
     const token = localStorage.getItem('accessToken');
     if (token) {
       const decodedToken = JSON.parse(atob(token.split('.')[1]));
-      setHasEditPermission(['001507', '021253'].includes(decodedToken.company_id));
+      setHasEditPermission(['001507', '021253', '000001'].includes(decodedToken.company_id));
     }
     loadData();
   }, []);
@@ -208,7 +208,7 @@ const Impedance = () => {
           <div className="impedance-actions">
             <Input
               className="search-input"
-              placeholder="Tìm kiếm theo JOBNAME"
+              placeholder="Tìm kiếm theo JOBNAME hoặc Mã hàng"
               allowClear
               onChange={handleSearch}
             />
