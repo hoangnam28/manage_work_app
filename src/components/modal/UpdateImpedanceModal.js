@@ -12,7 +12,7 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
     if (visible && currentRecord) {
       setError(null);
       const initialValues = {};
-      for (let i = 1; i <= 121; i++) {
+      for (let i = 1; i <= 135; i++) {
         const lowerKey = `imp_${i}`;
         const upperKey = `IMP_${i}`;
         if (currentRecord[lowerKey] !== undefined) {
@@ -53,9 +53,9 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
         setLoading(false);
       });
   };
-
   const getFieldLabel = (index) => {
     switch (index) {
+      // Thông tin cơ bản
       case 1: return 'JobName';
       case 2: return 'Mã Hàng';
       case 3: return 'Mã hàng tham khảo';
@@ -106,13 +106,13 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
       case 48: return 'Chân đường mạch';
       case 49: return 'S (µm)';
       case 50: return 'GAP ｺﾌﾟﾚﾅｰ (µm)';
-      case 51: return 'VIMP 1';
-      case 52: return 'VIMP 2';
-      case 53: return 'VIMP 3';
-      case 54: return 'VIMP 4';
-      case 55: return 'VIMP 5';
-      case 56: return 'Trung bình IMP';
-      case 57: return 'Kết quả IMP';
+      case 51: return 'NO 1';
+      case 52: return 'NO 2';
+      case 53: return 'NO 3';
+      case 54: return 'NO 4';
+      case 55: return 'NO 5';
+      case 56: return 'AVG';
+      case 57: return 'Result';
       case 58: return 'PP 1';
       case 59: return 'PP 2';
       case 60: return 'PP 3';
@@ -175,8 +175,23 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
       case 117: return 'GAP 3';
       case 118: return 'GAP 4';
       case 119: return 'GAP 5';
-      case 120: return 'Trung bình GAP';
-      case 121: return 'Ghi chú';
+      case 120: return 'Trung bình GAP';    
+      // So sánh kết quả
+      case 121: return 'Giá trị IMP';
+      case 122: return 'Độ dày phủ sơn trên PP';
+      case 123: return 'Độ dày phủ sơn trên đồng';
+      case 124: return 'Độ dày phủ sơn trên PP';
+      case 125: return 'DK';
+      case 126: return 'Độ dày đồng (µm)';
+      case 127: return 'Độ dày PP (GND1)';
+      case 128: return 'DK (GND1)';
+      case 129: return 'Độ dày PP (GND2)';
+      case 130: return 'DK (GND2)';
+      case 131: return 'Đỉnh đường mạch L';
+      case 132: return 'Chân đường mạch L';
+      case 133: return 'S (µm)';
+      case 134: return 'GAP ｺﾌﾟﾚﾅｰ (µm)';
+      case 135: return 'Ghi chú';
       default: return `Imp ${index}`;
     }
   };
@@ -219,61 +234,148 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
       )}
       
       {currentRecord && (
-        <Form form={form} layout="vertical">
-          <Tabs defaultActiveKey="1">
-            <TabPane tab="Thông tin cơ bản (1-10)" key="1">
+        <Form form={form} layout="vertical">      <Tabs defaultActiveKey="1">
+            <TabPane tab="1. Thông tin cơ bản (1-14)" key="1">
+              <Alert
+                message="Thông tin cơ bản của đơn hàng"
+                description="JobName, Mã Hàng, Khách hàng, Loại khách hàng, Ứng dụng, Phân loại sản xuất, CCL, PP, Mực phủ sơn, Lấp lỗ vĩnh viễn..."
+                type="info" 
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
               <Row gutter={16}>
                 {renderImpedanceFields(1, 10)}
               </Row>
             </TabPane>
-            <TabPane tab="Vật liệu (11-20)" key="2">
+            <TabPane tab="2. Thông số vật liệu" key="2">
+              <Alert
+                message="Thông số chi tiết về vật liệu"
+                description="Bao gồm: Thông số PP, mực phủ sơn, độ dày và lấp lỗ vĩnh viễn"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
               <Row gutter={16}>
                 {renderImpedanceFields(11, 20)}
               </Row>
             </TabPane>
-            <TabPane tab="Thông số kỹ thuật (21-35)" key="3">
+            <TabPane tab="3. Yêu cầu kỹ thuật" key="3">
+              <Alert
+                message="Thông số kỹ thuật yêu cầu"
+                description="Bao gồm: Các thông số kỹ thuật về GND, độ dày, nhựa và thông số đồng"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
               <Row gutter={16}>
-                {renderImpedanceFields(21, 35)}
+                {renderImpedanceFields(21, 40)}
               </Row>
             </TabPane>
-            <TabPane tab="Giá trị VIMP (52-58)" key="4">
+            <TabPane tab="4. Giá trị VIMP đo được" key="4">
+              <Alert
+                message="Kết quả đo VIMP"
+                description="Bao gồm: Các giá trị VIMP đo được từ 1-5, giá trị trung bình và kết quả đánh giá"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
               <Row gutter={16}>
-                {renderImpedanceFields(52, 58)}
+                {renderImpedanceFields(41, 60)}
               </Row>
             </TabPane>
-            <TabPane tab="Thông số PP & CU (59-70)" key="5">
+            <TabPane tab="5. Thông số PP và CU" key="5">
+              <Alert
+                message="Thông số PP và CU"
+                description="Bao gồm: Các thông số đo PP và CU từ 1-5 và giá trị trung bình"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
               <Row gutter={16}>
-                {renderImpedanceFields(59, 70)}
+                {renderImpedanceFields(61, 80)}
               </Row>
             </TabPane>
-            <TabPane tab="Thông số PP1 & CU1 (71-83)" key="6">
+            <TabPane tab="6. Thông số PP1 và CU1" key="6">
+              <Alert
+                message="Thông số PP1 và CU1"
+                description="Bao gồm: Các thông số đo PP1 và CU1 từ 1-5 và giá trị trung bình"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
               <Row gutter={16}>
-                {renderImpedanceFields(71, 83)}
+                {renderImpedanceFields(81, 100)}
               </Row>
             </TabPane>
-            <TabPane tab="GND1 PP (84-89)" key="7">
+            <TabPane tab="7. Thông số GND1" key="7">
+              <Alert
+                message="Thông số GND1"
+                description="Bao gồm: Các giá trị đo GND1 từ PP1-PP5 và giá trị trung bình"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
               <Row gutter={16}>
-                {renderImpedanceFields(84, 89)}
+                {renderImpedanceFields(101, 110)}
               </Row>
             </TabPane>
-            <TabPane tab="GND2 PP (90-96)" key="8">
+            <TabPane tab="8. Thông số GND2" key="8">
+              <Alert
+                message="Thông số GND2"
+                description="Bao gồm: Các giá trị đo GND2 từ PP1-PP5 và giá trị trung bình"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
               <Row gutter={16}>
-                {renderImpedanceFields(90, 96)}
+                {renderImpedanceFields(111, 120)}
               </Row>
             </TabPane>
-            <TabPane tab="Đo L (97-109)" key="9">
+            <TabPane tab="9. Đo chiều dài L" key="9">
+              <Alert
+                message="Kết quả đo chiều dài L"
+                description="Bao gồm: Các giá trị đo L tại đỉnh và chân từ 1-5 và giá trị trung bình"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
               <Row gutter={16}>
-                {renderImpedanceFields(97, 109)}
+                {renderImpedanceFields(121, 125)}
               </Row>
-            </TabPane>
-            <TabPane tab="S & GAP (110-121)" key="10">
+            </TabPane>            <TabPane tab="10. Đo S và GAP (110-121)" key="10">
+              <Alert
+                message="Kết quả đo S và GAP"
+                description="Các giá trị đo S và GAP từ 1-5 và giá trị trung bình của các phép đo"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
               <Row gutter={16}>
                 {renderImpedanceFields(110, 121)}
               </Row>
             </TabPane>
-            <TabPane tab="Ghi chú" key="11">
+            <TabPane tab="11. So sánh kết quả (122-135)" key="11">
+              <Alert
+                message="So sánh kết quả giữa mô phỏng và thực tế"
+                description="Phân tích sự khác biệt giữa kết quả mô phỏng và đo thực tế"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Row gutter={16}>
+                {renderImpedanceFields(126, 135)}
+              </Row>
+            </TabPane>
+            <TabPane tab="12. Ghi chú" key="12">
+              <Alert
+                message="Ghi chú bổ sung"
+                description="Thêm các ghi chú và thông tin bổ sung khác"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
               <Form.Item name="note" label="Ghi chú">
-                <Input.TextArea rows={4} placeholder="Nhập ghi chú (nếu có)" />
+                <Input.TextArea rows={4} placeholder="Nhập ghi chú bổ sung (nếu có)" />
               </Form.Item>
             </TabPane>
           </Tabs>

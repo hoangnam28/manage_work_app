@@ -15,6 +15,7 @@ const Impedance = () => {
   const [impedanceData, setImpedanceData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
@@ -121,73 +122,169 @@ const Impedance = () => {
       const errorMessage = error.response?.data?.error || 'Lỗi khi xóa dữ liệu';
       toast.error(errorMessage);
     }
-  };
-  const exportToExcel = () => {
+  };  const exportToExcel = async () => {
     if (filteredData.length === 0) {
       toast.error('Không có dữ liệu để xuất');
       return;
     }
 
-    const mappedData = filteredData.map(item => ({
-      'JobName': item.IMP_1,
-      'Mã Hàng': item.IMP_2,
-      'Mã hàng tham khảo': item.IMP_3,
-      'Khách hàng': item.IMP_4,
-      'Loại khách hàng': item.IMP_5,
-      'Ứng dụng': item.IMP_6,
-      'Phân loại sản xuất': item.IMP_7,
-      'Độ dày bo (µm)': item.IMP_8,
-      'Cấu trúc lớp': item.IMP_9,
-      'CCL': item.IMP_10,
-      'PP': item.IMP_11,
-      'Mực phủ sơn': item.IMP_12,
-      'Lấp lỗ vĩnh viễn BVH': item.IMP_13,
-      'Lấp lỗ vĩnh viễn TH': item.IMP_14,
-      'Lá đồng (µm)': item.IMP_15,
-      'Tỷ lệ đồng còn lại lớp IMP': item.IMP_16,
-      'Tỷ lệ đồng còn lại lớp GND1': item.IMP_17,
-      'Tỷ lệ đồng còn lại lớp GND2': item.IMP_18,
-      'Mắt lưới': item.IMP_19,
-      'Độ dày (µm)': item.IMP_20,
-      '% Nhựa': item.IMP_21,
-      'Mắt lưới_2': item.IMP_22,
-      'Độ dày (µm)_2': item.IMP_23,
-      '% Nhựa_2': item.IMP_24,
-      'Giá trị IMP': item.IMP_25,
-      'Dung sai IMP': item.IMP_26,
-      'Loại IMP': item.IMP_27,
-      'Lớp IMP': item.IMP_28,
-      'GAP': item.IMP_29,
-      'Lớp IMP_2': item.IMP_30,
-      'Lớp GND1': item.IMP_31,
-      'Lớp GND2': item.IMP_32,
-      'L (µm)': item.IMP_33,
-      'S (µm)': item.IMP_34,
-      'GAP ｺﾌﾟﾚﾅｰ (µm)': item.IMP_35,
-      'Giá trị IMP ': item.IMP_36,
-      'Độ dày phủ sơn trên PP': item.IMP_37,
-      'Độ dày phủ sơn trên đồng': item.IMP_38,
-      'Độ dày phủ sơn trên PP ': item.IMP_39,
-      'DK': item.IMP_40,
-      'Độ dày đồng (µm)': item.IMP_41,
-      'Loại': item.IMP_42,
-      'Độ dày(µm)': item.IMP_43,
-      'DK ': item.IMP_44,
-      'Loại ': item.IMP_45,
-      'Độ dày(µm) ': item.IMP_46,
-      'DK  ': item.IMP_47,
-      'Đỉnh đường mạch': item.IMP_48,
-      'Chân đường mạch': item.IMP_49,
-      'S (µm) ': item.IMP_50,
-      'GAP ｺﾌﾟﾚﾅｰ (µm) ': item.IMP_51,
-      'Ghi chú': item.NOTE || item.note
-    }));
+    try {
+      setExportLoading(true);
+      const mappedData = filteredData.map(item => ({
+        // Thông tin chung
+        'JobName': item.IMP_1,
+        'Mã Hàng': item.IMP_2,
+        'Mã hàng tham khảo': item.IMP_3,
+        'Khách hàng': item.IMP_4,
+        'Loại khách hàng': item.IMP_5,
+        'Ứng dụng': item.IMP_6,
+        'Phân loại sản xuất': item.IMP_7,
+        'Độ dày bo (µm)': item.IMP_8,
+        'Cấu trúc lớp': item.IMP_9,
+        'CCL': item.IMP_10,
+        'PP': item.IMP_11,
+        'Mực phủ sơn': item.IMP_12,
+        'Lấp lỗ vĩnh viễn BVH': item.IMP_13,
+        'Lấp lỗ vĩnh viễn TH': item.IMP_14,
 
-    const worksheet = XLSX.utils.json_to_sheet(mappedData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Impedance Data');
-    XLSX.writeFile(workbook, 'ImpedanceData.xlsx');
-    toast.success('Xuất file Excel thành công');
+        // Thông số vật liệu
+        'Thông số vật liệu|Đồng|Lá đồng (µm)': item.IMP_15,
+        'Thông số vật liệu|Đồng|Tỷ lệ đồng còn lại lớp IMP': item.IMP_16,
+        'Thông số vật liệu|Đồng|Tỷ lệ đồng còn lại lớp GND1': item.IMP_17,
+        'Thông số vật liệu|Đồng|Tỷ lệ đồng còn lại lớp GND2': item.IMP_18,
+        'Thông số vật liệu|Lớp GND1|Mắt lưới': item.IMP_19,
+        'Thông số vật liệu|Lớp GND1|Độ dày (µm)': item.IMP_20,
+        'Thông số vật liệu|Lớp GND1|% Nhựa': item.IMP_21,
+        'Thông số vật liệu|Lớp GND2|Mắt lưới': item.IMP_22,
+        'Thông số vật liệu|Lớp GND2|Độ dày (µm)': item.IMP_23,
+        'Thông số vật liệu|Lớp GND2|% Nhựa': item.IMP_24,
+
+        // Thông tin IMP yêu cầu của khách hàng
+        'Thông tin IMP yêu cầu của khách hàng|Giá trị IMP': item.IMP_25,
+        'Thông tin IMP yêu cầu của khách hàng|Dung sai IMP': item.IMP_26,
+        'Thông tin IMP yêu cầu của khách hàng|Loại IMP': item.IMP_27,
+        'Thông tin IMP yêu cầu của khách hàng|GAP': item.IMP_29,
+        'Thông tin IMP yêu cầu của khách hàng|Lớp IMP (2)': item.IMP_30,
+        'Thông tin IMP yêu cầu của khách hàng|Lớp GND1': item.IMP_31,
+        'Thông tin IMP yêu cầu của khách hàng|Lớp GND2': item.IMP_32,
+        'Thông tin IMP yêu cầu của khách hàng|L (µm)': item.IMP_33,
+        'Thông tin IMP yêu cầu của khách hàng|S (µm)': item.IMP_34,
+        'Thông tin IMP yêu cầu của khách hàng|GAP ｺﾌﾟﾚﾅｰ (µm)': item.IMP_35,
+
+        // Tổng hợp kết quả mô phỏng
+        'Tổng hợp kết quả mô phỏng|Giá trị IMP': item.IMP_36,
+        'Tổng hợp kết quả mô phỏng|Phủ sơn|Độ dày phủ sơn trên PP (1)': item.IMP_37,
+        'Tổng hợp kết quả mô phỏng|Phủ sơn|Độ dày phủ sơn trên đồng': item.IMP_38,
+        'Tổng hợp kết quả mô phỏng|Phủ sơn|Độ dày phủ sơn trên PP (2)': item.IMP_39,
+        'Tổng hợp kết quả mô phỏng|Phủ sơn|DK': item.IMP_40,
+        'Tổng hợp kết quả mô phỏng|Độ dày đồng (µm)': item.IMP_41,
+        'Tổng hợp kết quả mô phỏng|Lớp GND1|Loại': item.IMP_42,
+        'Tổng hợp kết quả mô phỏng|Lớp GND1|Độ dày (µm)': item.IMP_43,
+        'Tổng hợp kết quả mô phỏng|Lớp GND1|DK': item.IMP_44,
+        'Tổng hợp kết quả mô phỏng|Lớp GND2|Loại': item.IMP_45,
+        'Tổng hợp kết quả mô phỏng|Lớp GND2|Độ dày (µm)': item.IMP_46,
+        'Tổng hợp kết quả mô phỏng|Lớp GND2|DK': item.IMP_47,
+        'Tổng hợp kết quả mô phỏng|L (µm)|Đỉnh đường mạch': item.IMP_48,
+        'Tổng hợp kết quả mô phỏng|L (µm)|Chân đường mạch': item.IMP_49,
+        'Tổng hợp kết quả mô phỏng|S (µm)': item.IMP_50,
+        'Tổng hợp kết quả mô phỏng|GAP ｺﾌﾟﾚﾅｰ (µm)': item.IMP_51,
+
+        // Tổng kết quả đo thực tế
+        'Tổng kết quả đo thực tế|Giá trị IMP|No 1': item.IMP_52,
+        'Tổng kết quả đo thực tế|Giá trị IMP|No 2': item.IMP_53,
+        'Tổng kết quả đo thực tế|Giá trị IMP|No 3': item.IMP_54,
+        'Tổng kết quả đo thực tế|Giá trị IMP|No 4': item.IMP_55,
+        'Tổng kết quả đo thực tế|Giá trị IMP|No 5': item.IMP_56,
+        'Tổng kết quả đo thực tế|Giá trị IMP|AVG': item.IMP_57,
+        'Tổng kết quả đo thực tế|Giá trị IMP|Result': item.IMP_58,
+
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (1)|No 1': item.IMP_59,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (1)|No 2': item.IMP_60,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (1)|No 3': item.IMP_61,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (1)|No 4': item.IMP_62,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (1)|No 5': item.IMP_63,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (1)|AVG': item.IMP_64,
+
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên đồng|No 1': item.IMP_65,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên đồng|No 2': item.IMP_66,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên đồng|No 3': item.IMP_67,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên đồng|No 4': item.IMP_68,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên đồng|No 5': item.IMP_69,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên đồng|AVG': item.IMP_70,
+
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (2)|No 1': item.IMP_71,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (2)|No 2': item.IMP_72,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (2)|No 3': item.IMP_73,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (2)|No 4': item.IMP_74,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (2)|No 5': item.IMP_75,
+        'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (2)|AVG': item.IMP_76,
+        'Tổng kết quả đo thực tế|Phủ sơn|DK': item.IMP_77,
+
+        'Tổng kết quả đo thực tế|Độ dày đồng|No 1': item.IMP_78,
+        'Tổng kết quả đo thực tế|Độ dày đồng|No 2': item.IMP_79,
+        'Tổng kết quả đo thực tế|Độ dày đồng|No 3': item.IMP_80,
+        'Tổng kết quả đo thực tế|Độ dày đồng|No 4': item.IMP_81,
+        'Tổng kết quả đo thực tế|Độ dày đồng|No 5': item.IMP_82,
+        'Tổng kết quả đo thực tế|Độ dày đồng|AVG': item.IMP_83,
+
+        'Tổng kết quả đo thực tế|Lớp GND1|Độ dày PP|No 1': item.IMP_84,
+        'Tổng kết quả đo thực tế|Lớp GND1|Độ dày PP|No 2': item.IMP_85,
+        'Tổng kết quả đo thực tế|Lớp GND1|Độ dày PP|No 3': item.IMP_86,
+        'Tổng kết quả đo thực tế|Lớp GND1|Độ dày PP|No 4': item.IMP_87,
+        'Tổng kết quả đo thực tế|Lớp GND1|Độ dày PP|No 5': item.IMP_88,
+        'Tổng kết quả đo thực tế|Lớp GND1|Độ dày PP|AVG': item.IMP_89,
+        'Tổng kết quả đo thực tế|Lớp GND1|DK': item.IMP_90,
+
+        'Tổng kết quả đo thực tế|Lớp GND2|Độ dày PP|No 1': item.IMP_91,
+        'Tổng kết quả đo thực tế|Lớp GND2|Độ dày PP|No 2': item.IMP_92,
+        'Tổng kết quả đo thực tế|Lớp GND2|Độ dày PP|No 3': item.IMP_93,
+        'Tổng kết quả đo thực tế|Lớp GND2|Độ dày PP|No 4': item.IMP_94,
+        'Tổng kết quả đo thực tế|Lớp GND2|Độ dày PP|No 5': item.IMP_95,
+        'Tổng kết quả đo thực tế|Lớp GND2|Độ dày PP|AVG': item.IMP_96,
+        'Tổng kết quả đo thực tế|Lớp GND2|DK': item.IMP_97,
+
+        'Tổng kết quả đo thực tế|L (µm)|Đỉnh đường mạch|No 1': item.IMP_98,
+        'Tổng kết quả đo thực tế|L (µm)|Đỉnh đường mạch|No 2': item.IMP_99,
+        'Tổng kết quả đo thực tế|L (µm)|Đỉnh đường mạch|No 3': item.IMP_100,
+        'Tổng kết quả đo thực tế|L (µm)|Đỉnh đường mạch|No 4': item.IMP_101,
+        'Tổng kết quả đo thực tế|L (µm)|Đỉnh đường mạch|No 5': item.IMP_102,
+        'Tổng kết quả đo thực tế|L (µm)|Đỉnh đường mạch|AVG': item.IMP_103,
+
+        'Tổng kết quả đo thực tế|L (µm)|Chân đường mạch|No 1': item.IMP_104,
+        'Tổng kết quả đo thực tế|L (µm)|Chân đường mạch|No 2': item.IMP_105,
+        'Tổng kết quả đo thực tế|L (µm)|Chân đường mạch|No 3': item.IMP_106,
+        'Tổng kết quả đo thực tế|L (µm)|Chân đường mạch|No 4': item.IMP_107,
+        'Tổng kết quả đo thực tế|L (µm)|Chân đường mạch|No 5': item.IMP_108,
+        'Tổng kết quả đo thực tế|L (µm)|Chân đường mạch|AVG': item.IMP_109,
+
+        'Tổng kết quả đo thực tế|S (µm)|No 1': item.IMP_110,
+        'Tổng kết quả đo thực tế|S (µm)|No 2': item.IMP_111,
+        'Tổng kết quả đo thực tế|S (µm)|No 3': item.IMP_112,
+        'Tổng kết quả đo thực tế|S (µm)|No 4': item.IMP_113,
+        'Tổng kết quả đo thực tế|S (µm)|No 5': item.IMP_114,
+        'Tổng kết quả đo thực tế|S (µm)|AVG': item.IMP_115,
+
+        'Tổng kết quả đo thực tế|GAP ｺﾌﾟﾚﾅｰ (µm)|No 1': item.IMP_116,
+        'Tổng kết quả đo thực tế|GAP ｺﾌﾟﾚﾅｰ (µm)|No 2': item.IMP_117,
+        'Tổng kết quả đo thực tế|GAP ｺﾌﾟﾚﾅｰ (µm)|No 3': item.IMP_118,
+        'Tổng kết quả đo thực tế|GAP ｺﾌﾟﾚﾅｰ (µm)|No 4': item.IMP_119,
+        'Tổng kết quả đo thực tế|GAP ｺﾌﾟﾚﾅｰ (µm)|No 5': item.IMP_120,
+        'Tổng kết quả đo thực tế|GAP ｺﾌﾟﾚﾅｰ (µm)|AVG': item.IMP_121,
+
+        'Ghi chú': item.NOTE || item.note
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(mappedData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Impedance Data');
+      await XLSX.writeFile(workbook, 'ImpedanceData.xlsx');
+      toast.success('Xuất file Excel thành công');
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      toast.error('Lỗi khi xuất file Excel');
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   return (
@@ -211,18 +308,22 @@ const Impedance = () => {
               placeholder="Tìm kiếm theo JOBNAME hoặc Mã hàng"
               allowClear
               onChange={handleSearch}
+              disabled={loading}
             />
             <div className="action-buttons">
               <Button
                 type="dashed"
                 onClick={exportToExcel}
+                loading={exportLoading}
+                disabled={loading}
               >
-                Xuất Excel
+                {exportLoading ? 'Đang xuất...' : 'Xuất Excel'}
               </Button>
               {hasEditPermission && (
                 <Button
                   type="primary"
                   onClick={() => setIsCreateModalVisible(true)}
+                  disabled={loading}
                 >
                   Thêm mới
                 </Button>
@@ -233,7 +334,7 @@ const Impedance = () => {
 
         {loading ? (
           <div className="impedance-loading">
-            <Spin size="large" />
+            <Spin size="large" tip="Đang tải dữ liệu..." />
           </div>
         ) : (
           <div className="impedance-table-container">

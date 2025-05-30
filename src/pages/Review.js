@@ -1254,11 +1254,11 @@ const Review = () => {
           style={{ background: '#52c41a', borderColor: '#52c41a' }}
         >
           Xuất Excel
-        </Button>
+        </Button>        
         <Button
           type="primary"
-          icon={<DownloadOutlined />}
-          onClick={() => window.open('/user_guide.docx', '_blank')}
+          icon={<EyeOutlined />}
+          onClick={() => window.open('/user_guide.pdf', '_blank', 'noopener,noreferrer')}
           style={{ background: '#1890ff', borderColor: '#1890ff' }}
         >
           Hướng dẫn sử dụng

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Button, Space, Popconfirm } from 'antd';
+import { Table, Button, Space, Popconfirm, Spin } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
@@ -7,6 +7,20 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
   const [newRowId, setNewRowId] = useState(null);
   const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setLoading(true);
+    try {
+      const processedData = data.map((item, index) => ({
+        ...item,
+        key: item.IMP_ID || index,
+      }));
+      setTableData(processedData);
+    } finally {
+      setLoading(false);
+    }
+  }, [data]);
 
   useEffect(() => {
     if (data.length > tableData.length) {
@@ -18,7 +32,6 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
         }, 1000);
       }
     }
-    setTableData(data);
   }, [data, tableData.length]);
 
   const columns = [
@@ -33,31 +46,35 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
     ...(onEdit && onSoftDelete ? [{
       title: 'Thao tác',
       key: 'action',
-      fixed: 'left',
-      width: 150,
+      fixed: 'right',
+      width: 120,
       align: 'center',
       render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            size="small"
-            onClick={() => onEdit(record)}
-          />
-          <Popconfirm
-            title="Xóa dữ liệu"
-            description="Bạn có chắc chắn muốn xóa dữ liệu này?"
-            onConfirm={() => onSoftDelete(record)}
-            okText="Có"
-            cancelText="Không"
-          >
+        <Space size="middle">
+          {onEdit && (
             <Button
               type="primary"
-              danger
-              icon={<DeleteOutlined />}
+              icon={<EditOutlined />}
               size="small"
+              onClick={() => onEdit(record)}
             />
-          </Popconfirm>
+          )}
+          {onSoftDelete && (
+            <Popconfirm
+              title="Xóa dữ liệu"
+              description="Bạn có chắc chắn muốn xóa dữ liệu này?"
+              onConfirm={() => onSoftDelete(record)}
+              okText="Có"
+              cancelText="Không"
+            >
+              <Button
+                type="primary"
+                danger
+                icon={<DeleteOutlined />}
+                size="small"
+              />
+            </Popconfirm>
+          )}
         </Space>
       ),
     }] : []),
@@ -471,7 +488,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
       ],
     },
     {
-      title: 'Tổng kết quả đo thực tế',
+      title: 'Tổng hợp kết quả đo thực tế',
       children: [
         {
           title: 'Giá trị IMP',
@@ -935,6 +952,129 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
       ]
     },
     {
+      title: 'So sánh kết quả giữ mô phỏng và thực tế',
+      children: [
+        {
+          title: 'Giá trị IMP',
+          dataIndex: 'IMP_122',
+          key: 'imp_122', 
+          width: 100,
+          align: 'center',
+        },
+        {
+          title: 'Phủ sơn',
+          children: [
+            {
+              title: 'Độ dày phủ sơn trên PP',
+              dataIndex: 'IMP_123',
+              key: 'imp_123',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'Độ dày phủ sơn trên đồng',
+              dataIndex: 'IMP_124',
+              key: 'imp_124',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'Độ dày phủ sơn trên PP',
+              dataIndex: 'IMP_125',
+              key: 'imp_125',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'DK',
+              dataIndex: 'IMP_126',
+              key: 'imp_126',
+              width: 100,
+              align: 'center',
+            },
+          ]
+        },
+        {
+          title: 'Độ dày đồng (µm)',
+          dataIndex: 'IMP_127',
+          key: 'imp_127',
+          width: 100,
+          align: 'center',
+        },
+        {
+          title: 'Lớp GND1',
+          children:[
+            {
+              title:'Độ dày PP',
+              dataIndex: 'IMP_128',
+              key: 'imp_128',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'DK',
+              dataIndex: 'IMP_129',
+              key: 'imp_129',
+              width: 100,
+              align: 'center',
+            },
+          ]
+        },
+        {
+          title: 'Lớp GND2',
+          children:[
+            {
+              title:'Độ dày PP',
+              dataIndex: 'IMP_130',
+              key: 'imp_130',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'DK',
+              dataIndex: 'IMP_131',
+              key: 'imp_131',
+              width: 100,
+              align: 'center',
+            },
+          ]
+        },
+        {
+          title: 'L (µm)',
+          children: [
+            {
+              title: 'Đỉnh đường mạch',
+              dataIndex: 'IMP_132',
+              key: 'imp_132',
+              width: 100,
+              align: 'center',
+            },
+            {
+              title: 'Chân đường mạch',
+              dataIndex: 'IMP_133',
+              key: 'imp_133',
+              width: 100,
+              align: 'center',
+            },
+          ]
+        },
+        {
+          title: 'S (µm)',
+          dataIndex: 'IMP_134',
+          key: 'imp_134',
+          width: 100,
+          align: 'center',
+        },
+        {
+          title: 'GAP ｺﾌﾟﾚﾅｰ (µm) ',
+          dataIndex: 'IMP_135',
+          key: 'imp_135',
+          width: 100,
+          align: 'center',
+        },
+      ]
+    },
+    {
       title: 'Ghi chú',
       dataIndex: 'NOTE',
       key: 'note',
@@ -947,41 +1087,45 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
   };
 
   return (
-    <Table
-      dataSource={tableData}
-      columns={columns}
-      rowKey="imp_id"
-      rowClassName={rowClassName}
-      bordered={true}
-      pagination={{
-        current: currentPage,
-        pageSize: pageSize,
-        total: tableData.length,
-        showSizeChanger: true,
-        pageSizeOptions: ['5', '10', '20', '50'],
-        showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} mục`,
-        position: ['bottomCenter'],
-        showQuickJumper: true,
-        onShowSizeChange: (current, size) => {
-          setPageSize(size);
-          setCurrentPage(1);
-        },
-        onChange: (page, size) => {
-          setCurrentPage(page);
-          if (size !== pageSize) {
-            setPageSize(size);
-          }
-        },
-      }}
-      size="middle"
-      scroll={{ x: 'max-content' }}
-      sticky
-      style={{
-        width: '100%',
-        border: '1px solid #f0f0f0',
-        borderRadius: '8px'
-      }}
-    />
+    <div className="impedance-table-wrapper">
+      <Spin spinning={loading} tip="Đang tải...">
+        <Table
+          dataSource={tableData}
+          columns={columns}
+          rowKey="imp_id"
+          rowClassName={rowClassName}
+          bordered={true}
+          pagination={{
+            current: currentPage,
+            pageSize: pageSize,
+            total: tableData.length,
+            showSizeChanger: true,
+            pageSizeOptions: ['5', '10', '20', '50'],
+            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} mục`,
+            position: ['bottomCenter'],
+            showQuickJumper: true,
+            onShowSizeChange: (current, size) => {
+              setPageSize(size);
+              setCurrentPage(1);
+            },
+            onChange: (page, size) => {
+              setCurrentPage(page);
+              if (size !== pageSize) {
+                setPageSize(size);
+              }
+            },
+          }}
+          size="middle"
+          scroll={{ x: 'max-content' }}
+          sticky
+          style={{
+            width: '100%',
+            border: '1px solid #f0f0f0',
+            borderRadius: '8px'
+          }}
+        />
+      </Spin>
+    </div>
   );
 };
 
