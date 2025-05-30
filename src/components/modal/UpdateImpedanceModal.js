@@ -235,7 +235,7 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
       
       {currentRecord && (
         <Form form={form} layout="vertical">      <Tabs defaultActiveKey="1">
-            <TabPane tab="1. Thông tin cơ bản (1-14)" key="1">
+            <TabPane tab="1. Thông tin cơ bản cột(1-13)" key="1">
               <Alert
                 message="Thông tin cơ bản của đơn hàng"
                 description="JobName, Mã Hàng, Khách hàng, Loại khách hàng, Ứng dụng, Phân loại sản xuất, CCL, PP, Mực phủ sơn, Lấp lỗ vĩnh viễn..."
@@ -244,10 +244,10 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
                 style={{ marginBottom: 16 }}
               />
               <Row gutter={16}>
-                {renderImpedanceFields(1, 10)}
+                {renderImpedanceFields(1, 13)}
               </Row>
             </TabPane>
-            <TabPane tab="2. Thông số vật liệu" key="2">
+            <TabPane tab="2. Thông số vật liệu cột(14- 23)" key="2">
               <Alert
                 message="Thông số chi tiết về vật liệu"
                 description="Bao gồm: Thông số PP, mực phủ sơn, độ dày và lấp lỗ vĩnh viễn"
@@ -256,85 +256,169 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
                 style={{ marginBottom: 16 }}
               />
               <Row gutter={16}>
-                {renderImpedanceFields(11, 20)}
+                {renderImpedanceFields(14, 23)}
               </Row>
             </TabPane>
-            <TabPane tab="3. Yêu cầu kỹ thuật" key="3">
+            <TabPane tab="3. Yêu cầu kỹ thuật cột (24-35)" key="3">
               <Alert
-                message="Thông số kỹ thuật yêu cầu"
+                message="Thông số IMP yêu cầu của khách hàng"
                 description="Bao gồm: Các thông số kỹ thuật về GND, độ dày, nhựa và thông số đồng"
                 type="info"
                 showIcon
                 style={{ marginBottom: 16 }}
               />
               <Row gutter={16}>
-                {renderImpedanceFields(21, 40)}
+                {renderImpedanceFields(24, 35)}
               </Row>
             </TabPane>
-            <TabPane tab="4. Giá trị VIMP đo được" key="4">
+            <TabPane tab="4. Tổng hợp kết quả mô phỏng" key="4">
               <Alert
-                message="Kết quả đo VIMP"
-                description="Bao gồm: Các giá trị VIMP đo được từ 1-5, giá trị trung bình và kết quả đánh giá"
+                message="Tổng hợp kết quả mô phỏng"
+                description="Bao gồm: Phủ sơn,	Độ dày đồng (µm),	Lớp GND1,	Lớp GND2,	L (µm),	S (µm),	GAP ｺﾌﾟﾚﾅｰ (µm)"
                 type="info"
                 showIcon
                 style={{ marginBottom: 16 }}
               />
               <Row gutter={16}>
-                {renderImpedanceFields(41, 60)}
+                {renderImpedanceFields(36, 50)}
               </Row>
             </TabPane>
-            <TabPane tab="5. Thông số PP và CU" key="5">
+            <TabPane tab="5. Tổng hợp kết quả đo thực tế - Giá trị IMP" key="5">
               <Alert
-                message="Thông số PP và CU"
+                message="Giá trị IMP"
                 description="Bao gồm: Các thông số đo PP và CU từ 1-5 và giá trị trung bình"
                 type="info"
                 showIcon
                 style={{ marginBottom: 16 }}
               />
               <Row gutter={16}>
-                {renderImpedanceFields(61, 80)}
+                {renderImpedanceFields(51, 57)}
               </Row>
             </TabPane>
-            <TabPane tab="6. Thông số PP1 và CU1" key="6">
+            <TabPane tab="6. Tổng hợp kết quả đo thực tế - Phủ sơn" key="6">
               <Alert
-                message="Thông số PP1 và CU1"
-                description="Bao gồm: Các thông số đo PP1 và CU1 từ 1-5 và giá trị trung bình"
+                message="Độ dày phủ sơn trên PP"
+                description="Bao gồm: Các thông số đo NO1 và NO5 từ 1-5 và giá trị trung bình"
                 type="info"
                 showIcon
                 style={{ marginBottom: 16 }}
               />
               <Row gutter={16}>
-                {renderImpedanceFields(81, 100)}
+                {renderImpedanceFields(58, 63)}
               </Row>
             </TabPane>
-            <TabPane tab="7. Thông số GND1" key="7">
+            <TabPane tab="7. Tổng hợp kết quả đo thực tế - Phủ sơn" key="7">
               <Alert
-                message="Thông số GND1"
-                description="Bao gồm: Các giá trị đo GND1 từ PP1-PP5 và giá trị trung bình"
+                message="Độ dày phủ sơn trên đồng"
+                description="Bao gồm: Các thông số đo NO1 và NO5 từ 1-5 và giá trị trung bình"
                 type="info"
                 showIcon
                 style={{ marginBottom: 16 }}
               />
               <Row gutter={16}>
-                {renderImpedanceFields(101, 110)}
+                {renderImpedanceFields(64, 69)}
               </Row>
             </TabPane>
-            <TabPane tab="8. Thông số GND2" key="8">
+            <TabPane tab="8. Tổng hợp kết quả đo thực tế - Phủ sơn" key="8">
               <Alert
-                message="Thông số GND2"
-                description="Bao gồm: Các giá trị đo GND2 từ PP1-PP5 và giá trị trung bình"
+                message="Độ dày phủ sơn trên PP"
+                description="Bao gồm: Các thông số đo NO1 và NO5 từ 1-5 và giá trị trung bình"
                 type="info"
                 showIcon
                 style={{ marginBottom: 16 }}
               />
               <Row gutter={16}>
-                {renderImpedanceFields(111, 120)}
+                {renderImpedanceFields(70, 76 )}
               </Row>
             </TabPane>
-            <TabPane tab="9. Đo chiều dài L" key="9">
+            <TabPane tab="9. Tổng hợp kết quả đo thực tế - Độ dày đồng" key="9">
               <Alert
-                message="Kết quả đo chiều dài L"
-                description="Bao gồm: Các giá trị đo L tại đỉnh và chân từ 1-5 và giá trị trung bình"
+                message="Độ dày đồng (µm)"
+                description="Bao gồm: Các thông số đo NO1 và NO5 từ 1-5 và giá trị trung bình"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Row gutter={16}>
+                {renderImpedanceFields(77, 82)}
+              </Row>
+            </TabPane>            
+            <TabPane tab="10. Tổng hợp kết quả đo thực tế - Lớp GND1" key="10">
+              <Alert
+                message="Độ dày PP"
+                description="Bao gồm: Các thông số đo NO1 và NO5 từ 1-5 và giá trị trung bình - DK"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}  
+              />
+              <Row gutter={16}>
+                {renderImpedanceFields(83, 89)}
+              </Row>
+            </TabPane>
+            <TabPane tab="11. Tổng hợp kết quả đo thực tế - Lớp GND2" key="11">
+              <Alert
+                message="Độ dày PP"
+                description="Bao gồm: Các thông số đo NO1 và NO5 từ 1-5 và giá trị trung bình - DK"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Row gutter={16}>
+                {renderImpedanceFields(90, 96)}
+              </Row>
+            </TabPane>
+             <TabPane tab="12. Tổng hợp kết quả đo thực tế - L (µm)" key="12">
+              <Alert
+                message="Đỉnh đường mạch"
+                description="Bao gồm: Các thông số đo NO1 và NO5 từ 1-5 và giá trị trung bình"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Row gutter={16}>
+                {renderImpedanceFields(97, 102 )}
+              </Row>
+            </TabPane>
+            <TabPane tab="13. Tổng hợp kết quả đo thực tế - L (µm)" key="13">
+              <Alert
+                message="Chân đường mạch"
+                description="Bao gồm: Các thông số đo NO1 và NO5 từ 1-5 và giá trị trung bình"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Row gutter={16}>
+                {renderImpedanceFields(103, 108)}
+              </Row>
+            </TabPane>
+            <TabPane tab="14. Tổng hợp kết quả đo thực tế - S (µm)" key="14">
+              <Alert
+                message="S (µm)"
+                description="Bao gồm: Các thông số đo NO1 và NO5 từ 1-5 và giá trị trung bình"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Row gutter={16}>
+                {renderImpedanceFields(109, 114)}
+              </Row>
+            </TabPane>
+            <TabPane tab="15. Tổng hợp kết quả đo thực tế - GAP ｺﾌﾟﾚﾅｰ (µm)" key="15">
+              <Alert
+                message="GAP ｺﾌﾟﾚﾅｰ (µm)"
+                description="Bao gồm: Các thông số đo NO1 và NO5 từ 1-5 và giá trị trung bình"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <Row gutter={16}>
+                {renderImpedanceFields(115, 120)}
+              </Row>
+            </TabPane>
+            <TabPane tab="16. So sánh kết quả giữ mô phỏng và thực tế" key="16">
+              <Alert
+                message="Giá trị IMP - Phủ sơn"
+                description="Bao gồm: Giá trị IMP - Phủ sơn, Độ dày phủ sơn trên PP,	Độ dày phủ sơn trên đồng,	Độ dày phủ sơn trên PP"
                 type="info"
                 showIcon
                 style={{ marginBottom: 16 }}
@@ -342,31 +426,20 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
               <Row gutter={16}>
                 {renderImpedanceFields(121, 125)}
               </Row>
-            </TabPane>            <TabPane tab="10. Đo S và GAP (110-121)" key="10">
+            </TabPane>
+            <TabPane tab="17. So sánh kết quả giữ mô phỏng và thực tế" key="17">
               <Alert
-                message="Kết quả đo S và GAP"
-                description="Các giá trị đo S và GAP từ 1-5 và giá trị trung bình của các phép đo"
+                message="Độ dày đồng (µm) - Lớp GND1 - Lớp GND2 - L (µm) - S (µm) - GAP ｺﾌﾟﾚﾅｰ (µm)"
+                description="Bao gồm: Độ dày PP-GDN1, DK-GND1, Độ dày PP-GND2, DK-GND2, Đỉnh đường mạch L, Chân đường mạch L, S (µm), GAP ｺﾌﾟﾚﾅｰ (µm)"
                 type="info"
                 showIcon
                 style={{ marginBottom: 16 }}
               />
               <Row gutter={16}>
-                {renderImpedanceFields(110, 121)}
+                {renderImpedanceFields(126, 134)}
               </Row>
             </TabPane>
-            <TabPane tab="11. So sánh kết quả (122-135)" key="11">
-              <Alert
-                message="So sánh kết quả giữa mô phỏng và thực tế"
-                description="Phân tích sự khác biệt giữa kết quả mô phỏng và đo thực tế"
-                type="info"
-                showIcon
-                style={{ marginBottom: 16 }}
-              />
-              <Row gutter={16}>
-                {renderImpedanceFields(126, 135)}
-              </Row>
-            </TabPane>
-            <TabPane tab="12. Ghi chú" key="12">
+            <TabPane tab="18. Ghi chú" key="18">
               <Alert
                 message="Ghi chú bổ sung"
                 description="Thêm các ghi chú và thông tin bổ sung khác"

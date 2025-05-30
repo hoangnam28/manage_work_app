@@ -46,7 +46,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
     ...(onEdit && onSoftDelete ? [{
       title: 'Thao tác',
       key: 'action',
-      fixed: 'right',
+      fixed: 'left',
       width: 120,
       align: 'center',
       render: (_, record) => (
