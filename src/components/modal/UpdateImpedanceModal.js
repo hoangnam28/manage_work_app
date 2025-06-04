@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, Form, Input, Row, Col, Tabs, Alert } from 'antd';
 
 const { TabPane } = Tabs;
