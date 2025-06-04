@@ -28,8 +28,7 @@ html, body, #root {
 }
 
 .ant-table-body {
-  height: calc(100% - 64px); /* Adjust based on header/footer height */
-  overflow: auto;
+  height: calc(100% - 64px); 
 }
 
 .custom-table-row td {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Modal, Form, Input } from 'antd';
 
 const CreateImpedanceModal = ({ visible, onCancel, onCreate }) => {

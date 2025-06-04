@@ -55,7 +55,6 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
   };
   const getFieldLabel = (index) => {
     switch (index) {
-      // Thông tin cơ bản
       case 1: return 'JobName';
       case 2: return 'Mã Hàng';
       case 3: return 'Mã hàng tham khảo';
@@ -176,7 +175,6 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
       case 118: return 'NO4';
       case 119: return 'NO5';
       case 120: return 'AVG';    
-      // So sánh kết quả
       case 121: return 'Giá trị IMP';
       case 122: return 'Độ dày phủ sơn trên PP';
       case 123: return 'Độ dày phủ sơn trên đồng';
@@ -234,7 +232,8 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
       )}
       
       {currentRecord && (
-        <Form form={form} layout="vertical">      <Tabs defaultActiveKey="1">
+        <Form form={form} layout="vertical">     
+         <Tabs defaultActiveKey="1">
             <TabPane tab="1. Thông tin cơ bản cột(1-13)" key="1">
               <Alert
                 message="Thông tin cơ bản của đơn hàng"

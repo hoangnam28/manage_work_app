@@ -1,4 +1,3 @@
-import React from 'react';
 import { Layout } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import SideBar from './SideBar';
@@ -12,7 +11,7 @@ const MainLayout = ({ children }) => {
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('userInfo');
-    navigate('/'); // Redirect to login page after logout
+    navigate('/'); 
   };
 
   const username = localStorage.getItem('username');

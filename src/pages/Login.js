@@ -16,9 +16,6 @@ const Login = () => {
         company_id: values.company_id.trim(),
         password_hash: values.password_hash.trim()
       };
-
-      console.log('Sending login data:', loginData);
-
       const response = await axios.post('http://192.84.105.173:5000/api/auth/login', loginData);
 
       if (response.data.accessToken) {

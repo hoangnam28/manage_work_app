@@ -51,7 +51,6 @@ const Review = () => {
         }
       });
       setCurrentUser(response.data);
-      // Check if user has admin or editor role
       const hasPermission = response.data.role === 'admin' || response.data.role === 'editor';
       setHasEditPermission(hasPermission);
 
@@ -68,7 +67,7 @@ const Review = () => {
   }, []);
 
   const handleSearch = (value) => {
-    setSearchKeyword(value); // Lưu từ khóa tìm kiếm
+    setSearchKeyword(value); 
     if (value.trim() === '') {
       setFilteredData(data);
     } else {
@@ -186,21 +185,21 @@ const Review = () => {
       toast.error('Bạn không có quyền tải lên hình ảnh');
       return;
     }
-  
+
     const token = localStorage.getItem('accessToken');
     if (!token) {
       toast.error('Vui lòng đăng nhập lại');
       return;
     }
-  
+
     setImageLoadingStates(prev => ({
       ...prev,
       [`${record.COLUMN_ID}-${field}`]: true
     }));
-  
+
     const formData = new FormData();
     formData.append('images', info.file.originFileObj);
-  
+
     try {
       const response = await axios.post(
         `http://192.84.105.173:5000/api/document/upload-images/${record.COLUMN_ID}/${field}`,
@@ -212,22 +211,18 @@ const Review = () => {
           }
         }
       );
-  
+
       if (response.data) {
         toast.success('Tải ảnh thành công');
         const updatedImages = await fetchImages(record.COLUMN_ID, field);
-        
-        // Cập nhật data và giữ nguyên kết quả tìm kiếm
         setData(prevData => {
-          const newData = prevData.map(item => 
-            item.COLUMN_ID === record.COLUMN_ID 
+          const newData = prevData.map(item =>
+            item.COLUMN_ID === record.COLUMN_ID
               ? { ...item, [field]: updatedImages }
               : item
           );
           return newData;
         });
-  
-        // Cập nhật filteredData để giữ kết quả tìm kiếm
         setFilteredData(prevFiltered => {
           const newFiltered = prevFiltered.map(item =>
             item.COLUMN_ID === record.COLUMN_ID
@@ -312,7 +307,7 @@ const Review = () => {
         try {
           const dataToAdd = {
             ...values,
-            doi_tuong: values.doi_tuong || '', 
+            doi_tuong: values.doi_tuong || '',
             REV: '',
             CONG_VENH: '',
             V_CUT: '',
@@ -321,10 +316,10 @@ const Review = () => {
             created_by: currentUser.username,
             created_at: new Date().toISOString(),
           };
-  
+
           await axios.post('http://192.84.105.173:5000/api/document/add', dataToAdd);
           toast.success('Thêm dữ liệu thành công');
-          fetchData(); 
+          fetchData();
           setIsModalVisible(false);
           form.resetFields();
         } catch (error) {
@@ -505,7 +500,7 @@ const Review = () => {
       setCurrentReviewRow(null);
 
       toast.success('Lưu thông tin thành công!');
-      fetchData(); // Refresh data to ensure consistency
+      fetchData(); 
     } catch (error) {
       console.error('Error updating review types:', error);
       toast.error('Lỗi khi cập nhật loại review');
@@ -680,7 +675,7 @@ const Review = () => {
     {
       title: "Đối tượng",
       dataIndex: "DOI_TUONG",
-      key: "doi_tuong",  
+      key: "doi_tuong",
       width: 150,
       fixed: "left",
       render: (text, record) => renderEditableCell(text, record, "DOI_TUONG"),
@@ -710,12 +705,12 @@ const Review = () => {
       width: 130,
       render: (text, record) => {
         const isDisabled = !hasEditPermission;
-    
+
         return (
           <div
             onClick={() => {
               if (!isDisabled) {
-                handleEdit(record); 
+                handleEdit(record);
               }
             }}
             style={{
@@ -751,8 +746,8 @@ const Review = () => {
                 transition: "all 0.3s",
               }}
               onClick={(e) => {
-                e.stopPropagation(); // Ngăn chặn sự kiện mở modal
-                fetchEditHistory(record.COLUMN_ID, "REV"); 
+                e.stopPropagation();
+                fetchEditHistory(record.COLUMN_ID, "REV");
               }}
             />
           </div>
@@ -1254,7 +1249,7 @@ const Review = () => {
           style={{ background: '#52c41a', borderColor: '#52c41a' }}
         >
           Xuất Excel
-        </Button>        
+        </Button>
         <Button
           type="primary"
           icon={<EyeOutlined />}

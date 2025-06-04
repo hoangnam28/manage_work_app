@@ -131,7 +131,6 @@ const Impedance = () => {
     try {
       setExportLoading(true);
       const mappedData = filteredData.map(item => ({
-        // Thông tin chung
         'JobName': item.IMP_1,
         'Mã Hàng': item.IMP_2,
         'Mã hàng tham khảo': item.IMP_3,

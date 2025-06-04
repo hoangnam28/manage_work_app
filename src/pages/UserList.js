@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Modal, Form, Input, Popconfirm, Space, Typography, Select } from 'antd';
 import { EditOutlined, DeleteOutlined, UserAddOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -59,11 +59,8 @@ const UserManagement = () => {
         toast.error('Vui lòng nhập ID công ty');
         return;
       }
-
-      // Prepare user data based on whether we're editing or creating
       const userData = editingUser ? {
         username: values.username.trim(),
-        // Only include password_hash if it's provided
         ...(values.password_hash && { password_hash: values.password_hash }),
         ...(values.role && { role: values.role })
       } : {
@@ -75,7 +72,6 @@ const UserManagement = () => {
       };
 
       if (editingUser) {
-        // Update existing user
         const response = await axios.put(
           `http://192.84.105.173:5000/api/user/update/${editingUser.USER_ID}`,
           userData,
@@ -98,7 +94,6 @@ const UserManagement = () => {
           setEditingUser(null);
         }
       } else {
-        // Create new user
         const response = await axios.post(
           'http://192.84.105.173:5000/api/user/create',
           userData,
@@ -127,7 +122,6 @@ const UserManagement = () => {
     }
   };
 
-  // Handle edit user
   const handleEdit = (user) => {
     setEditingUser(user);
     form.setFieldsValue({
@@ -137,7 +131,6 @@ const UserManagement = () => {
     setIsModalVisible(true);
   };
 
-  // Handle delete user
   const handleDelete = async (userId) => {
     try {
       const token = localStorage.getItem('accessToken');
@@ -157,12 +150,8 @@ const UserManagement = () => {
     }
   };
 
-  // Tạo dữ liệu đã được filter và search
   const filteredUsers = useMemo(() => {
     let result = users;
-    
- 
-    // Filter by search text
     if (searchText) {
       const searchLower = searchText.toLowerCase();
       result = result.filter(user => 
@@ -178,7 +167,6 @@ const UserManagement = () => {
     setSearchText(e.target.value);
   };
 
-  // Table columns
   const columns = [
     {
       title: 'ID',
@@ -266,8 +254,6 @@ const UserManagement = () => {
             Thêm người dùng
           </Button>
         </div>
-
-        {/* Thêm section filter và search */}
         <div style={{ 
           marginBottom: '16px',
           display: 'flex',

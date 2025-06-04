@@ -36,7 +36,7 @@ const UpdateDocumentModal = ({ visible, onCancel, onOk, record }) => {
       open={visible}
       onOk={handleOk}
       onCancel={onCancel}
-      width={800} // Tăng chiều rộng modal
+      width={800}
     >
       <Form
         form={form}
