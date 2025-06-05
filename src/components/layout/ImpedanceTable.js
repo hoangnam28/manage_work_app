@@ -342,7 +342,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
           align: 'center',
         },
         {
-          title: 'GAP ｺﾌﾟﾚﾅｰ (µm) ',
+          title: 'GAP',
           dataIndex: 'IMP_35',
           key: 'imp_35',
           width: 100,
@@ -479,7 +479,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
           align: 'center',
         },
         {
-          title: 'GAP ｺﾌﾟﾚﾅｰ (µm) ',
+          title: 'GAP',
           dataIndex: 'IMP_51',
           key: 'imp_51',
           width: 100,
@@ -915,7 +915,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
           ]
         },
         {
-          title: 'GAP ｺﾌﾟﾚﾅｰ (µm) ',
+          title: 'GAP ',
           children: [
             {title: 'No 1',
               dataIndex: 'IMP_116',
@@ -1066,7 +1066,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
           align: 'center',
         },
         {
-          title: 'GAP ｺﾌﾟﾚﾅｰ (µm) ',
+          title: 'GAP',
           dataIndex: 'IMP_135',
           key: 'imp_135',
           width: 100,

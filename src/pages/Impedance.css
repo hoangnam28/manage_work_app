@@ -152,10 +152,16 @@
     padding: 48px;
     background: white;
     border-radius: 8px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
     min-height: 400px;
+}
+
+.loading-content {
+    padding: 50px 0;
+    text-align: center;
+    color: #1890ff;
+    font-size: 14px;
+    border-radius: 4px;
+    width: 100%;
 }
 
 .impedance-table-container .ant-spin-spinning {
