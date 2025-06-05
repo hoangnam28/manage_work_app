@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Input, Button, Spin, Typography, Alert } from 'antd';
+import { useState, useEffect } from 'react';
+import { Input, Button, Spin, Typography, Alert, Select } from 'antd';
 import ImpedanceTable from '../components/layout/ImpedanceTable';
 import MainLayout from '../components/layout/MainLayout';
 import CreateImpedanceModal from '../components/modal/CreateImpedanceModal';
@@ -20,9 +20,10 @@ const Impedance = () => {
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
   const [hasEditPermission, setHasEditPermission] = useState(false);
+  const [selectedCodes, setSelectedCodes] = useState([]);
+  const [searchOptions, setSearchOptions] = useState([]);
 
   useEffect(() => {
-    // Kiểm tra quyền từ token
     const token = localStorage.getItem('accessToken');
     if (token) {
       const decodedToken = JSON.parse(atob(token.split('.')[1]));
@@ -130,7 +131,16 @@ const Impedance = () => {
 
     try {
       setExportLoading(true);
-      const mappedData = filteredData.map(item => ({
+      const dataToExport = selectedCodes.length > 0 
+        ? impedanceData.filter(item => selectedCodes.includes(item.IMP_2))
+        : filteredData;
+
+      if (dataToExport.length === 0) {
+        toast.error('Không có dữ liệu nào phù hợp với các mã hàng đã chọn');
+        return;
+      }
+
+      const mappedData = dataToExport.map(item => ({
         'JobName': item.IMP_1,
         'Mã Hàng': item.IMP_2,
         'Mã hàng tham khảo': item.IMP_3,
@@ -145,8 +155,6 @@ const Impedance = () => {
         'Mực phủ sơn': item.IMP_12,
         'Lấp lỗ vĩnh viễn BVH': item.IMP_13,
         'Lấp lỗ vĩnh viễn TH': item.IMP_14,
-
-        // Thông số vật liệu
         'Thông số vật liệu|Đồng|Lá đồng (µm)': item.IMP_15,
         'Thông số vật liệu|Đồng|Tỷ lệ đồng còn lại lớp IMP': item.IMP_16,
         'Thông số vật liệu|Đồng|Tỷ lệ đồng còn lại lớp GND1': item.IMP_17,
@@ -157,8 +165,6 @@ const Impedance = () => {
         'Thông số vật liệu|Lớp GND2|Mắt lưới': item.IMP_22,
         'Thông số vật liệu|Lớp GND2|Độ dày (µm)': item.IMP_23,
         'Thông số vật liệu|Lớp GND2|% Nhựa': item.IMP_24,
-
-        // Thông tin IMP yêu cầu của khách hàng
         'Thông tin IMP yêu cầu của khách hàng|Giá trị IMP': item.IMP_25,
         'Thông tin IMP yêu cầu của khách hàng|Dung sai IMP': item.IMP_26,
         'Thông tin IMP yêu cầu của khách hàng|Loại IMP': item.IMP_27,
@@ -169,8 +175,6 @@ const Impedance = () => {
         'Thông tin IMP yêu cầu của khách hàng|L (µm)': item.IMP_33,
         'Thông tin IMP yêu cầu của khách hàng|S (µm)': item.IMP_34,
         'Thông tin IMP yêu cầu của khách hàng|GAP ｺﾌﾟﾚﾅｰ (µm)': item.IMP_35,
-
-        // Tổng hợp kết quả mô phỏng
         'Tổng hợp kết quả mô phỏng|Giá trị IMP': item.IMP_36,
         'Tổng hợp kết quả mô phỏng|Phủ sơn|Độ dày phủ sơn trên PP (1)': item.IMP_37,
         'Tổng hợp kết quả mô phỏng|Phủ sơn|Độ dày phủ sơn trên đồng': item.IMP_38,
@@ -187,8 +191,6 @@ const Impedance = () => {
         'Tổng hợp kết quả mô phỏng|L (µm)|Chân đường mạch': item.IMP_49,
         'Tổng hợp kết quả mô phỏng|S (µm)': item.IMP_50,
         'Tổng hợp kết quả mô phỏng|GAP ｺﾌﾟﾚﾅｰ (µm)': item.IMP_51,
-
-        // Tổng kết quả đo thực tế
         'Tổng kết quả đo thực tế|Giá trị IMP|No 1': item.IMP_52,
         'Tổng kết quả đo thực tế|Giá trị IMP|No 2': item.IMP_53,
         'Tổng kết quả đo thực tế|Giá trị IMP|No 3': item.IMP_54,
@@ -196,21 +198,18 @@ const Impedance = () => {
         'Tổng kết quả đo thực tế|Giá trị IMP|No 5': item.IMP_56,
         'Tổng kết quả đo thực tế|Giá trị IMP|AVG': item.IMP_57,
         'Tổng kết quả đo thực tế|Giá trị IMP|Result': item.IMP_58,
-
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (1)|No 1': item.IMP_59,
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (1)|No 2': item.IMP_60,
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (1)|No 3': item.IMP_61,
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (1)|No 4': item.IMP_62,
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (1)|No 5': item.IMP_63,
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (1)|AVG': item.IMP_64,
-
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên đồng|No 1': item.IMP_65,
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên đồng|No 2': item.IMP_66,
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên đồng|No 3': item.IMP_67,
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên đồng|No 4': item.IMP_68,
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên đồng|No 5': item.IMP_69,
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên đồng|AVG': item.IMP_70,
-
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (2)|No 1': item.IMP_71,
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (2)|No 2': item.IMP_72,
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (2)|No 3': item.IMP_73,
@@ -218,14 +217,12 @@ const Impedance = () => {
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (2)|No 5': item.IMP_75,
         'Tổng kết quả đo thực tế|Phủ sơn|Độ dày phủ sơn trên PP (2)|AVG': item.IMP_76,
         'Tổng kết quả đo thực tế|Phủ sơn|DK': item.IMP_77,
-
         'Tổng kết quả đo thực tế|Độ dày đồng|No 1': item.IMP_78,
         'Tổng kết quả đo thực tế|Độ dày đồng|No 2': item.IMP_79,
         'Tổng kết quả đo thực tế|Độ dày đồng|No 3': item.IMP_80,
         'Tổng kết quả đo thực tế|Độ dày đồng|No 4': item.IMP_81,
         'Tổng kết quả đo thực tế|Độ dày đồng|No 5': item.IMP_82,
         'Tổng kết quả đo thực tế|Độ dày đồng|AVG': item.IMP_83,
-
         'Tổng kết quả đo thực tế|Lớp GND1|Độ dày PP|No 1': item.IMP_84,
         'Tổng kết quả đo thực tế|Lớp GND1|Độ dày PP|No 2': item.IMP_85,
         'Tổng kết quả đo thực tế|Lớp GND1|Độ dày PP|No 3': item.IMP_86,
@@ -233,7 +230,6 @@ const Impedance = () => {
         'Tổng kết quả đo thực tế|Lớp GND1|Độ dày PP|No 5': item.IMP_88,
         'Tổng kết quả đo thực tế|Lớp GND1|Độ dày PP|AVG': item.IMP_89,
         'Tổng kết quả đo thực tế|Lớp GND1|DK': item.IMP_90,
-
         'Tổng kết quả đo thực tế|Lớp GND2|Độ dày PP|No 1': item.IMP_91,
         'Tổng kết quả đo thực tế|Lớp GND2|Độ dày PP|No 2': item.IMP_92,
         'Tổng kết quả đo thực tế|Lớp GND2|Độ dày PP|No 3': item.IMP_93,
@@ -241,28 +237,24 @@ const Impedance = () => {
         'Tổng kết quả đo thực tế|Lớp GND2|Độ dày PP|No 5': item.IMP_95,
         'Tổng kết quả đo thực tế|Lớp GND2|Độ dày PP|AVG': item.IMP_96,
         'Tổng kết quả đo thực tế|Lớp GND2|DK': item.IMP_97,
-
         'Tổng kết quả đo thực tế|L (µm)|Đỉnh đường mạch|No 1': item.IMP_98,
         'Tổng kết quả đo thực tế|L (µm)|Đỉnh đường mạch|No 2': item.IMP_99,
         'Tổng kết quả đo thực tế|L (µm)|Đỉnh đường mạch|No 3': item.IMP_100,
         'Tổng kết quả đo thực tế|L (µm)|Đỉnh đường mạch|No 4': item.IMP_101,
         'Tổng kết quả đo thực tế|L (µm)|Đỉnh đường mạch|No 5': item.IMP_102,
         'Tổng kết quả đo thực tế|L (µm)|Đỉnh đường mạch|AVG': item.IMP_103,
-
         'Tổng kết quả đo thực tế|L (µm)|Chân đường mạch|No 1': item.IMP_104,
         'Tổng kết quả đo thực tế|L (µm)|Chân đường mạch|No 2': item.IMP_105,
         'Tổng kết quả đo thực tế|L (µm)|Chân đường mạch|No 3': item.IMP_106,
         'Tổng kết quả đo thực tế|L (µm)|Chân đường mạch|No 4': item.IMP_107,
         'Tổng kết quả đo thực tế|L (µm)|Chân đường mạch|No 5': item.IMP_108,
         'Tổng kết quả đo thực tế|L (µm)|Chân đường mạch|AVG': item.IMP_109,
-
         'Tổng kết quả đo thực tế|S (µm)|No 1': item.IMP_110,
         'Tổng kết quả đo thực tế|S (µm)|No 2': item.IMP_111,
         'Tổng kết quả đo thực tế|S (µm)|No 3': item.IMP_112,
         'Tổng kết quả đo thực tế|S (µm)|No 4': item.IMP_113,
         'Tổng kết quả đo thực tế|S (µm)|No 5': item.IMP_114,
         'Tổng kết quả đo thực tế|S (µm)|AVG': item.IMP_115,
-
         'Tổng kết quả đo thực tế|GAP ｺﾌﾟﾚﾅｰ (µm)|No 1': item.IMP_116,
         'Tổng kết quả đo thực tế|GAP ｺﾌﾟﾚﾅｰ (µm)|No 2': item.IMP_117,
         'Tổng kết quả đo thực tế|GAP ｺﾌﾟﾚﾅｰ (µm)|No 3': item.IMP_118,
@@ -283,15 +275,21 @@ const Impedance = () => {
         'So sánh kết quả giữa mô phỏng và thực tế| L (µm)| Chân đường mạch': item.IMP_133,
         'So sánh kết quả giữa mô phỏng và thực tế| S (µm)': item.IMP_134,
         'So sánh kết quả giữa mô phỏng và thực tế| GAP ｺﾌﾟﾚﾅｰ (µm)': item.IMP_135,
-
         'Ghi chú': item.NOTE || item.note
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(mappedData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Impedance Data');
-      await XLSX.writeFile(workbook, 'ImpedanceData.xlsx');
-      toast.success('Xuất file Excel thành công');
+      
+      const filename = selectedCodes.length > 0 
+        ? `ImpedanceData_${selectedCodes.join('_')}.xlsx`
+        : 'ImpedanceData.xlsx';
+      
+      await XLSX.writeFile(workbook, filename);
+      toast.success(selectedCodes.length > 0 
+        ? `Đã xuất dữ liệu của ${selectedCodes.length} mã hàng ra file Excel`
+        : 'Đã xuất toàn bộ dữ liệu ra file Excel');
     } catch (error) {
       console.error('Error exporting to Excel:', error);
       toast.error('Lỗi khi xuất file Excel');
@@ -299,7 +297,42 @@ const Impedance = () => {
       setExportLoading(false);
     }
   };
-
+  const getProductCodes = () => {
+    const uniqueCodes = [...new Set(impedanceData.map(item => item.IMP_2))].filter(Boolean);
+    return uniqueCodes.map(code => ({ value: code, label: code }));
+  };
+  const handleSearchSelect = (value) => {
+    if (!value) {
+      setSearchOptions(getProductCodes());
+      return;
+    }
+    
+    const searchValue = value.toLowerCase();
+    const allOptions = getProductCodes();
+    const filtered = allOptions.filter(option => 
+      option.value.toLowerCase().includes(searchValue) ||
+      option.label.toLowerCase().includes(searchValue)
+    );
+    if (filtered.length === 0 && value.trim() !== '') {
+      filtered.push({
+        value: value,
+        label: `${value} (Mã hàng mới)`,
+      });
+    }
+    setSearchOptions(filtered);
+  };
+  const handleProductCodeChange = (values) => {
+    setSelectedCodes(values);
+    if (values.length === 0) {
+      setFilteredData(impedanceData);
+    } else {
+      const filtered = impedanceData.filter(item => 
+        values.includes(item.IMP_2)
+      );
+      setFilteredData(filtered);
+    }
+  };
+  
   return (
     <MainLayout>
       <Toaster position="top-right" richColors />
@@ -322,6 +355,23 @@ const Impedance = () => {
               allowClear
               onChange={handleSearch}
               disabled={loading}
+            />            <Select
+              mode="multiple"
+              showSearch
+              placeholder="Chọn hoặc nhập mã hàng..."
+              options={searchOptions.length > 0 ? searchOptions : getProductCodes()}
+              onSearch={handleSearchSelect}
+              onChange={handleProductCodeChange}
+              value={selectedCodes}
+              style={{ width: '300px', marginLeft: '8px' }}
+              disabled={loading}
+              filterOption={false}
+              maxTagCount="responsive"
+              allowClear
+              showArrow
+              loading={loading}
+              optionFilterProp="label"
+              notFoundContent={loading ? <Spin size="small" /> : "Không tìm thấy mã hàng"}
             />
             <div className="action-buttons">
               <Button
