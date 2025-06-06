@@ -27,7 +27,7 @@ const Impedance = () => {
     const token = localStorage.getItem('accessToken');
     if (token) {
       const decodedToken = JSON.parse(atob(token.split('.')[1]));
-      setHasEditPermission(['001507', '021253', '000001'].includes(decodedToken.company_id));
+      setHasEditPermission(['001507', '021253', '000001', '008048', '030783'].includes(decodedToken.company_id));
     }
     loadData();
   }, []);
@@ -77,12 +77,10 @@ const Impedance = () => {
       if (!impId || impId === 'undefined' || impId === 'null') {
         toast.error('Không thể cập nhật vì không có ID hợp lệ');
         return;
-      }
-      const response = await updateImpedance(impId, values);
+      }      const response = await updateImpedance(impId, values);
       if (response && response.data) {
-        setIsUpdateModalVisible(false);
-        setCurrentRecord(null);
         toast.success('Cập nhật thành công');
+        // Tải lại dữ liệu nhưng không đóng modal
         await loadData();
       }
     } catch (error) {
@@ -168,8 +166,9 @@ const Impedance = () => {
         'Thông tin IMP yêu cầu của khách hàng|Giá trị IMP': item.IMP_25,
         'Thông tin IMP yêu cầu của khách hàng|Dung sai IMP': item.IMP_26,
         'Thông tin IMP yêu cầu của khách hàng|Loại IMP': item.IMP_27,
-        'Thông tin IMP yêu cầu của khách hàng|Lớp IMP': item.IMP_29,
-        'Thông tin IMP yêu cầu của khách hàng|GAP': item.IMP_30,
+        'Thông tin IMP yêu cầu của khách hàng|Lớp IMP': item.IMP_28,
+        'Thông tin IMP yêu cầu của khách hàng|GAP': item.IMP_29,
+        'Thông tin IMP yêu cầu của khách hàng|Lớp IMP ': item.IMP_30,
         'Thông tin IMP yêu cầu của khách hàng|Lớp GND1': item.IMP_31,
         'Thông tin IMP yêu cầu của khách hàng|Lớp GND2': item.IMP_32,
         'Thông tin IMP yêu cầu của khách hàng|L (µm)': item.IMP_33,

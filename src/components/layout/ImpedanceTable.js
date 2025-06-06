@@ -490,7 +490,7 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
     {
       title: 'Tổng hợp kết quả đo thực tế',
       children: [
-        {
+        {              
           title: 'Giá trị IMP',
           children: [
             {
@@ -498,49 +498,54 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
               dataIndex: 'IMP_52',
               key: 'imp_52',
               width: 100,
+              align: 'center',
             },
             {
               title: 'No 2',
               dataIndex: 'IMP_53',
               key: 'imp_53',
               width: 100,
+              align: 'center',
             },
             {
               title: 'No 3',
               dataIndex: 'IMP_54',
               key: 'imp_54',
               width: 100,
+              align: 'center',
             },
             {
               title: 'No 4',
               dataIndex: 'IMP_55',
               key: 'imp_55',
               width: 100,
+              align: 'center',
             },
             {
               title: 'No 5',
               dataIndex: 'IMP_56',
               key: 'imp_56',
               width: 100,
-            },
+              align: 'center',
+            },            
             {
               title: 'AVG',
               dataIndex: 'IMP_57',
               key: 'imp_57',
               width: 100,
+              align: 'center',
             },
             {
               title: 'Result',
               dataIndex: 'IMP_58',
               key: 'imp_58',
               width: 100,
+              align: 'center',
             },
           ]
-        },
-        {
+        },        {
           title: 'Phủ sơn',
-          children: [
-            {
+          children: [            {
               title: 'Độ dày phủ sơn trên PP',
               children: [
                 {
@@ -548,36 +553,42 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
                   dataIndex: 'IMP_59',
                   key: 'imp_59',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'No 2',
                   dataIndex: 'IMP_60',
                   key: 'imp_60',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'No 3',
                   dataIndex: 'IMP_61',
                   key: 'imp_61',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'No 4',
                   dataIndex: 'IMP_62',
                   key: 'imp_62',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'No 5',
                   dataIndex: 'IMP_63',
                   key: 'imp_63',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'AVG',
                   dataIndex: 'IMP_64',
                   key: 'imp_64',
                   width: 100,
+                  align: 'center',
                 },
               ]
             },
@@ -589,77 +600,88 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
                   dataIndex: 'IMP_65',
                   key: 'imp_65',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'No 2',
                   dataIndex: 'IMP_66',
                   key: 'imp_66',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'No 3',
                   dataIndex: 'IMP_67',
-                  key: 'cu_3',
+                  key: 'imp_67',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'No 4',
                   dataIndex: 'IMP_68',
                   key: 'imp_68',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'No 5',
                   dataIndex: 'IMP_69',
                   key: 'imp_69',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'AVG',
                   dataIndex: 'IMP_70',
                   key: 'imp_70',
                   width: 100,
+                  align: 'center',
                 },
               ]
             },
-            {
-              title: 'Độ dày phủ sơn trên PP',
+            {              title: 'Độ dày phủ sơn trên PP',
               children: [
                 {
                   title: 'No 1',
                   dataIndex: 'IMP_71',
                   key: 'imp_71',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'No 2',
                   dataIndex: 'IMP_72',
                   key: 'imp_72',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'No 3',
                   dataIndex: 'IMP_73',
                   key: 'imp_73',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'No 4',
                   dataIndex: 'IMP_74',
                   key: 'imp_74',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'No 5',
                   dataIndex: 'IMP_75',
                   key: 'imp_75',
                   width: 100,
+                  align: 'center',
                 },
                 {
                   title: 'AVG',
                   dataIndex: 'IMP_76',
                   key: 'imp_76',
                   width: 100,
+                  align: 'center',
                 },
               ]
             },
