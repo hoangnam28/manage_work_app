@@ -4,7 +4,8 @@ import ImpedanceTable from '../components/layout/ImpedanceTable';
 import MainLayout from '../components/layout/MainLayout';
 import CreateImpedanceModal from '../components/modal/CreateImpedanceModal';
 import UpdateImpedanceModal from '../components/modal/UpdateImpedanceModal';
-import { fetchImpedanceData, createImpedance, updateImpedance, softDeleteImpedance } from '../utils/api';
+import ImportImpedanceModal from '../components/modal/ImportImpedanceModal';
+import { fetchImpedanceData, createImpedance, updateImpedance, softDeleteImpedance, importImpedance } from '../utils/api';
 import { toast, Toaster } from 'sonner';
 import * as XLSX from 'xlsx';
 import './Impedance.css';
@@ -15,9 +16,9 @@ const Impedance = () => {
   const [impedanceData, setImpedanceData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [exportLoading, setExportLoading] = useState(false);
-  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
+  const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
   const [hasEditPermission, setHasEditPermission] = useState(false);
   const [selectedCodes, setSelectedCodes] = useState([]);
@@ -34,7 +35,10 @@ const Impedance = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      const data = await fetchImpedanceData();
+      const response = await fetchImpedanceData();
+      // Đảm bảo dữ liệu là mảng
+      const data = Array.isArray(response) ? response : 
+                  (response && Array.isArray(response.data) ? response.data : []);
       setImpedanceData(data);
       setFilteredData(data);
     } catch (error) {
@@ -44,6 +48,8 @@ const Impedance = () => {
       } else {
         toast.error('Lỗi khi tải dữ liệu');
       }
+      setImpedanceData([]);
+      setFilteredData([]);
     } finally {
       setLoading(false);
     }
@@ -80,7 +86,6 @@ const Impedance = () => {
       }      const response = await updateImpedance(impId, values);
       if (response && response.data) {
         toast.success('Cập nhật thành công');
-        // Tải lại dữ liệu nhưng không đóng modal
         await loadData();
       }
     } catch (error) {
@@ -297,8 +302,18 @@ const Impedance = () => {
     }
   };
   const getProductCodes = () => {
-    const uniqueCodes = [...new Set(impedanceData.map(item => item.IMP_2))].filter(Boolean);
-    return uniqueCodes.map(code => ({ value: code, label: code }));
+    if (!impedanceData || !Array.isArray(impedanceData)) {
+      return [];
+    }
+    return impedanceData
+      .filter(item => item && item.IMP_2) // Lọc các item có IMP_2
+      .map(item => ({
+        value: item.IMP_2,
+        label: item.IMP_2
+      }))
+      .filter((item, index, self) => 
+        index === self.findIndex(t => t.value === item.value)
+      ); // Loại bỏ các giá trị trùng lặp
   };
   const handleSearchSelect = (value) => {
     if (!value) {
@@ -372,8 +387,7 @@ const Impedance = () => {
               optionFilterProp="label"
               notFoundContent={loading ? <Spin size="small" /> : "Không tìm thấy mã hàng"}
             />
-            <div className="action-buttons">
-              <Button
+            <div className="action-buttons">              <Button
                 type="dashed"
                 onClick={exportToExcel}
                 loading={exportLoading}
@@ -382,13 +396,22 @@ const Impedance = () => {
                 {exportLoading ? 'Đang xuất...' : 'Xuất Excel'}
               </Button>
               {hasEditPermission && (
-                <Button
-                  type="primary"
-                  onClick={() => setIsCreateModalVisible(true)}
-                  disabled={loading}
-                >
-                  Thêm mới
-                </Button>
+                <>
+                  <Button
+                    type="dashed"
+                    onClick={() => setIsImportModalVisible(true)}
+                    disabled={loading}
+                  >
+                    Import Excel
+                  </Button>
+                  <Button
+                    type="primary"
+                    onClick={() => setIsCreateModalVisible(true)}
+                    disabled={loading}
+                  >
+                    Thêm mới
+                  </Button>
+                </>
               )}
             </div>
           </div>
@@ -406,9 +429,7 @@ const Impedance = () => {
               onSoftDelete={hasEditPermission ? handleSoftDelete : null}
             />
           </div>
-        )}
-
-        <CreateImpedanceModal
+        )}        <CreateImpedanceModal
           visible={isCreateModalVisible}
           onCancel={() => setIsCreateModalVisible(false)}
           onCreate={handleCreate}
@@ -421,6 +442,21 @@ const Impedance = () => {
           }}
           onUpdate={handleUpdate}
           currentRecord={currentRecord}
+        />
+        <ImportImpedanceModal
+          visible={isImportModalVisible}
+          onCancel={() => setIsImportModalVisible(false)}
+          onImport={async (data) => {
+            try {
+              await importImpedance(data);
+              toast.success('Import thành công');
+              setIsImportModalVisible(false);
+              await loadData();
+            } catch (error) {
+              console.error('Error importing data:', error);
+              toast.error(error.response?.data?.message || 'Lỗi khi import dữ liệu');
+            }
+          }}
         />
       </div>
     </MainLayout>

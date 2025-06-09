@@ -80,3 +80,22 @@ export const softDeleteImpedance = async (impId) => {
     throw error;
   }
 };
+
+export const importImpedance = async (data) => {
+  try {
+    const token = localStorage.getItem('accessToken');
+    const response = await axios.post(
+      'http://192.84.105.173:5000/api/impedance/import-impedance',
+      { data },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error importing impedance:', error);
+    throw error;
+  }
+};
