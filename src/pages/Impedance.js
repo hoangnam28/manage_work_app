@@ -23,6 +23,7 @@ const Impedance = () => {
   const [hasEditPermission, setHasEditPermission] = useState(false);
   const [selectedCodes, setSelectedCodes] = useState([]);
   const [searchOptions, setSearchOptions] = useState([]);
+  const [searchValue, setSearchValue] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -94,15 +95,34 @@ const Impedance = () => {
     }
   };
 
-  const handleSearch = (e) => {
-    const value = e.target.value;
-    if (value.trim() === '') {
+  const handleSearchInputChange = (e) => {
+    const newValue = e.target.value;
+    setSearchValue(newValue);
+    if (newValue === '') {
+      setFilteredData(impedanceData); // Reset data khi xóa hết nội dung
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchValue('');
+    setFilteredData(impedanceData); // Reset data khi nhấn clear
+  };
+
+  const handleSearchSubmit = () => {
+    if (searchValue.trim() === '') {
       setFilteredData(impedanceData);
     } else {
       const filtered = impedanceData.filter((item) =>
-        item.IMP_1?.toLowerCase().includes(value.toLowerCase()) || item.IMP_2?.toLowerCase().includes(value.toLowerCase())
+        (item.IMP_1?.toLowerCase().includes(searchValue.toLowerCase()) || 
+        item.IMP_2?.toLowerCase().includes(searchValue.toLowerCase()))
       );
       setFilteredData(filtered);
+    }
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') {
+      handleSearchSubmit();
     }
   };
 
@@ -363,13 +383,26 @@ const Impedance = () => {
         <div className="impedance-header">
           <Title level={2} className="impedance-title">Số liệu Impedance</Title>
           <div className="impedance-actions">
-            <Input
-              className="search-input"
-              placeholder="Tìm kiếm theo JOBNAME hoặc Mã hàng"
-              allowClear
-              onChange={handleSearch}
-              disabled={loading}
-            />            <Select
+            <div className="search-container" style={{ display: 'flex', gap: '8px' }}>
+              <Input
+                className="search-input"
+                placeholder="Tìm kiếm theo JOBNAME hoặc Mã hàng"
+                allowClear
+                value={searchValue}
+                onChange={handleSearchInputChange}
+                onKeyPress={handleKeyPress}
+                disabled={loading}
+                onClear={handleClearSearch}
+              />
+              <Button 
+                type="primary"
+                onClick={handleSearchSubmit}
+                disabled={loading}
+              >
+                Tìm kiếm
+              </Button>
+            </div>
+            <Select
               mode="multiple"
               showSearch
               placeholder="Chọn hoặc nhập mã hàng..."
