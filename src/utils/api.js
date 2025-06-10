@@ -99,3 +99,22 @@ export const importImpedance = async (data) => {
     throw error;
   }
 };
+
+export const bulkDeleteImpedancesByProduct = async (productCode) => {
+  try {
+    const token = localStorage.getItem('accessToken');
+    const response = await axios.put(
+      `http://192.84.105.173:5000/api/impedance/bulk-delete-by-product/${productCode}`,
+      null,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error bulk deleting impedances:', error);
+    throw error;
+  }
+};

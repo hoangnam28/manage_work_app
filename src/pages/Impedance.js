@@ -16,7 +16,7 @@ const Impedance = () => {
   const [impedanceData, setImpedanceData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [exportLoading, setExportLoading] = useState(false);  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false); const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
@@ -24,6 +24,7 @@ const Impedance = () => {
   const [selectedCodes, setSelectedCodes] = useState([]);
   const [searchOptions, setSearchOptions] = useState([]);
   const [searchValue, setSearchValue] = useState('');
+  const [shouldRefresh, setShouldRefresh] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
@@ -32,14 +33,14 @@ const Impedance = () => {
       setHasEditPermission(['001507', '021253', '000001', '008048', '030783'].includes(decodedToken.company_id));
     }
     loadData();
-  }, []);
+  }, [shouldRefresh]);
   const loadData = async () => {
     setLoading(true);
     try {
       const response = await fetchImpedanceData();
       // Đảm bảo dữ liệu là mảng
-      const data = Array.isArray(response) ? response : 
-                  (response && Array.isArray(response.data) ? response.data : []);
+      const data = Array.isArray(response) ? response :
+        (response && Array.isArray(response.data) ? response.data : []);
       setImpedanceData(data);
       setFilteredData(data);
     } catch (error) {
@@ -84,7 +85,7 @@ const Impedance = () => {
       if (!impId || impId === 'undefined' || impId === 'null') {
         toast.error('Không thể cập nhật vì không có ID hợp lệ');
         return;
-      }      const response = await updateImpedance(impId, values);
+      } const response = await updateImpedance(impId, values);
       if (response && response.data) {
         toast.success('Cập nhật thành công');
         await loadData();
@@ -113,7 +114,7 @@ const Impedance = () => {
       setFilteredData(impedanceData);
     } else {
       const filtered = impedanceData.filter((item) =>
-        (item.IMP_1?.toLowerCase().includes(searchValue.toLowerCase()) || 
+      (item.IMP_1?.toLowerCase().includes(searchValue.toLowerCase()) ||
         item.IMP_2?.toLowerCase().includes(searchValue.toLowerCase()))
       );
       setFilteredData(filtered);
@@ -146,7 +147,7 @@ const Impedance = () => {
       const errorMessage = error.response?.data?.error || 'Lỗi khi xóa dữ liệu';
       toast.error(errorMessage);
     }
-  };  const exportToExcel = async () => {
+  }; const exportToExcel = async () => {
     if (filteredData.length === 0) {
       toast.error('Không có dữ liệu để xuất');
       return;
@@ -154,7 +155,7 @@ const Impedance = () => {
 
     try {
       setExportLoading(true);
-      const dataToExport = selectedCodes.length > 0 
+      const dataToExport = selectedCodes.length > 0
         ? impedanceData.filter(item => selectedCodes.includes(item.IMP_2))
         : filteredData;
 
@@ -305,13 +306,13 @@ const Impedance = () => {
       const worksheet = XLSX.utils.json_to_sheet(mappedData);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Impedance Data');
-      
-      const filename = selectedCodes.length > 0 
+
+      const filename = selectedCodes.length > 0
         ? `ImpedanceData_${selectedCodes.join('_')}.xlsx`
         : 'ImpedanceData.xlsx';
-      
+
       await XLSX.writeFile(workbook, filename);
-      toast.success(selectedCodes.length > 0 
+      toast.success(selectedCodes.length > 0
         ? `Đã xuất dữ liệu của ${selectedCodes.length} mã hàng ra file Excel`
         : 'Đã xuất toàn bộ dữ liệu ra file Excel');
     } catch (error) {
@@ -331,7 +332,7 @@ const Impedance = () => {
         value: item.IMP_2,
         label: item.IMP_2
       }))
-      .filter((item, index, self) => 
+      .filter((item, index, self) =>
         index === self.findIndex(t => t.value === item.value)
       ); // Loại bỏ các giá trị trùng lặp
   };
@@ -340,10 +341,10 @@ const Impedance = () => {
       setSearchOptions(getProductCodes());
       return;
     }
-    
+
     const searchValue = value.toLowerCase();
     const allOptions = getProductCodes();
-    const filtered = allOptions.filter(option => 
+    const filtered = allOptions.filter(option =>
       option.value.toLowerCase().includes(searchValue) ||
       option.label.toLowerCase().includes(searchValue)
     );
@@ -360,13 +361,17 @@ const Impedance = () => {
     if (values.length === 0) {
       setFilteredData(impedanceData);
     } else {
-      const filtered = impedanceData.filter(item => 
+      const filtered = impedanceData.filter(item =>
         values.includes(item.IMP_2)
       );
       setFilteredData(filtered);
     }
   };
-  
+
+  const handleDataChange = () => {
+    setShouldRefresh(prev => !prev);
+  };
+
   return (
     <MainLayout>
       <Toaster position="top-right" richColors />
@@ -394,7 +399,7 @@ const Impedance = () => {
                 disabled={loading}
                 onClear={handleClearSearch}
               />
-              <Button 
+              <Button
                 type="primary"
                 onClick={handleSearchSubmit}
                 disabled={loading}
@@ -420,7 +425,8 @@ const Impedance = () => {
               optionFilterProp="label"
               notFoundContent={loading ? <Spin size="small" /> : "Không tìm thấy mã hàng"}
             />
-            <div className="action-buttons">              <Button
+            <div className="action-buttons">
+              <Button
                 type="dashed"
                 onClick={exportToExcel}
                 loading={exportLoading}
@@ -458,6 +464,7 @@ const Impedance = () => {
           <div className="impedance-table-container">
             <ImpedanceTable
               data={filteredData}
+              onDataChange={handleDataChange}
               onEdit={hasEditPermission ? handleEdit : null}
               onSoftDelete={hasEditPermission ? handleSoftDelete : null}
             />

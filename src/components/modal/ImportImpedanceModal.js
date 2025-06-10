@@ -20,24 +20,17 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
         try {
           const workbook = XLSX.read(e.target.result, { type: 'array' });
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          
-          // Đọc toàn bộ dữ liệu từ sheet
+        
           const data = XLSX.utils.sheet_to_json(firstSheet, {
             header: 1, // Sử dụng array index làm header
-            raw: true, // Lấy giá trị thô
+            raw: true, // Lấy giá trị thông tin thô
             blankrows: false, // Bỏ qua các hàng trống
             defval: null // Giá trị mặc định cho ô trống
           });
-
-          console.log('Raw Excel data:', data); // Debug log
-
           if (!data || data.length === 0) {
             setError('File không có dữ liệu.');
             return;
           }
-
-          console.log('Number of rows:', data.length); // Debug log
-          
           const transformedData = data.map((row, rowIndex) => {
             console.log(`Processing row ${rowIndex}:`, row); // Debug log
             const transformedRow = {};
@@ -86,20 +79,15 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
                 continue;
               }
             }
-
-            // Xử lý cột NOTE riêng biệt
             const noteValue = row[134];
             if (noteValue !== undefined && noteValue !== null && String(noteValue).trim() !== '' && String(noteValue).toLowerCase() !== 'nan' && String(noteValue).toLowerCase() !== 'null') {
               transformedRow['NOTE'] = String(noteValue).trim();
             } else {
               transformedRow['NOTE'] = null;
             }
-
-            console.log(`Transformed row ${rowIndex}:`, transformedRow); // Debug log
             return transformedRow;
           });
 
-          console.log('Final transformed data:', transformedData); // Debug log
           setPreviewData(transformedData);
         } catch (error) {
           console.error('Error parsing Excel:', error);
@@ -123,9 +111,6 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
         setError('Không có dữ liệu để import');
         return;
       }
-      // Log dữ liệu trước khi gửi lên backend
-      console.log('Data gửi lên backend:', previewData);
-      console.log('Dữ liệu nhận được từ FE:', previewData);
       await onImport(previewData);
       setFileList([]);
       setPreviewData([]);

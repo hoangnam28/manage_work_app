@@ -1,13 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Table, Button, Space, Popconfirm, Spin } from 'antd';
+import { Table, Button, Space, Popconfirm, Spin, Tooltip, Modal, message } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { bulkDeleteImpedancesByProduct } from '../../utils/api';
 
-const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
+const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
   const [tableData, setTableData] = useState([]);
   const [newRowId, setNewRowId] = useState(null);
   const [pageSize, setPageSize] = useState(5);
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const [isBulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -33,6 +36,24 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
       }
     }
   }, [data, tableData.length]);
+
+  const handleBulkDelete = async (productCode) => {
+    setSelectedProduct(productCode);
+    setBulkDeleteDialogOpen(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    try {
+      await bulkDeleteImpedancesByProduct(selectedProduct);
+      message.success(`Đã xóa thành công tất cả dữ liệu của mã hàng ${selectedProduct}`);
+      onDataChange();
+    } catch (error) {
+      message.error(error.message || 'Có lỗi xảy ra khi xóa dữ liệu');
+    } finally {
+      setBulkDeleteDialogOpen(false);
+      setSelectedProduct(null);
+    }
+  };
 
   const columns = [
     {
@@ -75,6 +96,16 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
               />
             </Popconfirm>
           )}
+          <Tooltip title="Xóa tất cả dữ liệu của mã hàng này">
+            <Button
+              type="link"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleBulkDelete(record.IMP_2)}
+            >
+              Xóa tất cả
+            </Button>
+          </Tooltip>
         </Space>
       ),
     }] : []),
@@ -639,7 +670,8 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
                 },
               ]
             },
-            {              title: 'Độ dày phủ sơn trên PP',
+            {              
+              title: 'Độ dày phủ sơn trên PP',
               children: [
                 {
                   title: 'No 1',
@@ -1109,45 +1141,61 @@ const ImpedanceTable = ({ data, onEdit, onSoftDelete }) => {
   };
 
   return (
-    <div className="impedance-table-wrapper">
-      <Spin spinning={loading} tip="Đang tải...">
-        <Table
-          dataSource={tableData}
-          columns={columns}
-          rowKey="imp_id"
-          rowClassName={rowClassName}
-          bordered={true}
-          pagination={{
-            current: currentPage,
-            pageSize: pageSize,
-            total: tableData.length,
-            showSizeChanger: true,
-            pageSizeOptions: ['5', '10', '20', '50'],
-            showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} mục`,
-            position: ['bottomCenter'],
-            showQuickJumper: true,
-            onShowSizeChange: (current, size) => {
-              setPageSize(size);
-              setCurrentPage(1);
-            },
-            onChange: (page, size) => {
-              setCurrentPage(page);
-              if (size !== pageSize) {
+    <>
+      <div className="impedance-table-wrapper">
+        <Spin spinning={loading} tip="Đang tải...">
+          <Table
+            dataSource={tableData}
+            columns={columns}
+            rowKey="imp_id"
+            rowClassName={rowClassName}
+            bordered={true}
+            pagination={{
+              current: currentPage,
+              pageSize: pageSize,
+              total: tableData.length,
+              showSizeChanger: true,
+              pageSizeOptions: ['5', '10', '20', '50'],
+              showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} mục`,
+              position: ['bottomCenter'],
+              showQuickJumper: true,
+              onShowSizeChange: (current, size) => {
                 setPageSize(size);
-              }
-            },
-          }}
-          size="middle"
-          scroll={{ x: 'max-content' }}
-          sticky
-          style={{
-            width: '100%',
-            border: '1px solid #f0f0f0',
-            borderRadius: '8px'
-          }}
-        />
-      </Spin>
-    </div>
+                setCurrentPage(1);
+              },
+              onChange: (page, size) => {
+                setCurrentPage(page);
+                if (size !== pageSize) {
+                  setPageSize(size);
+                }
+              },
+            }}
+            size="middle"
+            scroll={{ x: 'max-content' }}
+            sticky
+            style={{
+              width: '100%',
+              border: '1px solid #f0f0f0',
+              borderRadius: '8px'
+            }}
+          />
+        </Spin>
+      </div>
+      <Modal
+        title="Xác nhận xóa hàng loạt"
+        open={isBulkDeleteDialogOpen}
+        onOk={confirmBulkDelete}
+        onCancel={() => {
+          setBulkDeleteDialogOpen(false);
+          setSelectedProduct(null);
+        }}
+        okText="Xóa"
+        cancelText="Hủy"
+      >
+        <p>Bạn có chắc chắn muốn xóa tất cả dữ liệu của mã hàng {selectedProduct}?</p>
+        <p>Hành động này không thể hoàn tác.</p>
+      </Modal>
+    </>
   );
 };
 

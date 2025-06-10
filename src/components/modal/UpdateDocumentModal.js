@@ -76,7 +76,6 @@ const UpdateDocumentModal = ({ visible, onCancel, onOk, record }) => {
             <Form.Item
               name="doi_tuong"
               label="Đối Tượng"
-              rules={[{ required: true, message: 'Vui lòng nhập Đối Tượng!' }]}
             >
               <Input />
             </Form.Item>
