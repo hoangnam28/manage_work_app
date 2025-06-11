@@ -34,6 +34,11 @@ const SideBar = ({ onLogout, userId }) => {
       label: <Link to="/impedance">Impedance</Link>,
     },
     {
+      key: '/material-core',
+      icon: <FileSearchOutlined />,
+      label: <Link to="/material-core">Material Core</Link>,
+    },
+    {
       key: '/user-management',
       icon: <TeamOutlined />, 
       label: <Link to="/user-management">User List</Link>,

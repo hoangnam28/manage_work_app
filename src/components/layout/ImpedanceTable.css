@@ -1,0 +1,31 @@
+.column-title {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  line-height: 1.2;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 8px 4px;
+}
+
+.impedance-table-wrapper .ant-table-thead > tr > th {
+  padding: 4px !important;
+  height: auto !important;
+}
+
+.impedance-table-wrapper .ant-table-container {
+  overflow-x: auto;
+}
+
+/* Tăng chiều cao cho các cell chứa nội dung dài */
+.impedance-table-wrapper .ant-table-cell {
+  vertical-align: middle;
+}
+
+/* Style cho nested headers */
+.impedance-table-wrapper .ant-table-thead > tr > th.ant-table-cell-fix-left,
+.impedance-table-wrapper .ant-table-thead > tr > th.ant-table-cell-fix-right {
+  z-index: 3;
+}

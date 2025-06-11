@@ -1,0 +1,22 @@
+.ant-table {
+  background: white;
+  border-radius: 8px;
+}
+
+.ant-table-thead > tr > th {
+  background: #f5f5f5;
+  text-align: center;
+}
+
+.ant-table-tbody > tr > td {
+  text-align: center;
+}
+
+.ant-form-item-label {
+  text-align: left;
+}
+
+h1 {
+  margin: 0;
+  color: #1890ff;
+}

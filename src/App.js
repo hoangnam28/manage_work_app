@@ -5,6 +5,7 @@ import ReviewPage from './pages/Review';
 import Impedance from './pages/Impedance';
 import PrivateRoute from './routes/PrivateRoute';
 import UserManagement from './pages/UserList';
+import MaterialCore from './pages/MaterialCore';
 
 function App() {
   return (
@@ -26,8 +27,15 @@ function App() {
               <Impedance />
             </PrivateRoute>
           } 
+        />        <Route path="/user-management" element={<UserManagement />} />
+        <Route 
+          path="/material-core" 
+          element={
+            <PrivateRoute>
+              <MaterialCore />
+            </PrivateRoute>
+          } 
         />
-        <Route path="/user-management" element={<UserManagement />} />
       </Routes>
     </div>
   );
