@@ -87,13 +87,6 @@ const MaterialCore = () => {
 
   const columns = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 80,
-      fixed: 'left'
-    },
-    {
       title: 'Người yêu cầu',
       dataIndex: 'REQUESTER_NAME',
       key: 'requester_name',

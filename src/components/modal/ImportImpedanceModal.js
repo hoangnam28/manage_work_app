@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal, Upload, Button, Table, Alert, Typography } from 'antd';
 import { InboxOutlined } from '@ant-design/icons';
 import * as XLSX from 'xlsx';
@@ -11,10 +11,10 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
   const [previewData, setPreviewData] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [allData, setAllData] = useState([]);
 
-  const handleUpload = async (file) => {
-    try {
-      setError(null);
+  const readExcelFile = (file) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
@@ -28,7 +28,7 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
             defval: null // Giá trị mặc định cho ô trống
           });
           if (!data || data.length === 0) {
-            setError('File không có dữ liệu.');
+            reject(new Error('File không có dữ liệu.'));
             return;
           }
           const transformedData = data.map((row, rowIndex) => {
@@ -88,36 +88,52 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
             return transformedRow;
           });
 
-          setPreviewData(transformedData);
+          resolve(transformedData);
         } catch (error) {
           console.error('Error parsing Excel:', error);
-          setError('File không đúng định dạng. Vui lòng kiểm tra lại.');
+          reject(new Error('File không đúng định dạng. Vui lòng kiểm tra lại.'));
         }
       };
       reader.readAsArrayBuffer(file);
-    } catch (error) {
-      console.error('Error handling upload:', error);
-      setError('Có lỗi xảy ra khi đọc file. Vui lòng thử lại.');
+    });
+  };
+
+  const handleUpload = async (file) => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await readExcelFile(file);
+      
+      // Thêm dữ liệu từ file mới vào allData
+      setAllData(prevData => [...prevData, ...data]);
+      
+      // Chỉ hiển thị preview của file mới nhất
+      setPreviewData(data);
+      return false; // Prevent upload
+    } catch (err) {
+      setError('Lỗi khi đọc file: ' + err.message);
+      return Upload.LIST_IGNORE;
+    } finally {
+      setLoading(false);
     }
-    return false;
   };
 
   const handleImport = async () => {
     try {
       setLoading(true);
       setError(null);
-
-      if (previewData.length === 0) {
-        setError('Không có dữ liệu để import');
-        return;
+      
+      // Import tất cả dữ liệu đã tích lũy
+      if (allData.length === 0) {
+        throw new Error('Không có dữ liệu để import');
       }
-      await onImport(previewData);
-      setFileList([]);
+      
+      await onImport(allData);
+      setAllData([]); // Reset sau khi import thành công
+      setFileList([]); 
       setPreviewData([]);
-
-    } catch (error) {
-      console.error('Error importing data:', error);
-      setError('Có lỗi xảy ra khi import dữ liệu');
+    } catch (err) {
+      setError('Lỗi khi import: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -1201,6 +1217,16 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
       setFileList(info.fileList.slice(-1));
     }
   };
+
+  // Reset state khi đóng modal
+  useEffect(() => {
+    if (!visible) {
+      setAllData([]);
+      setFileList([]);
+      setPreviewData([]);
+      setError(null);
+    }
+  }, [visible]);
 
   return (
     <Modal
