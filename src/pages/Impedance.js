@@ -6,6 +6,7 @@ import CreateImpedanceModal from '../components/modal/CreateImpedanceModal';
 import UpdateImpedanceModal from '../components/modal/UpdateImpedanceModal';
 import ImportImpedanceModal from '../components/modal/ImportImpedanceModal';
 import { fetchImpedanceData, createImpedance, updateImpedance, softDeleteImpedance, importImpedance } from '../utils/api';
+import { EyeOutlined } from "@ant-design/icons";
 import { toast, Toaster } from 'sonner';
 import * as XLSX from 'xlsx';
 import './Impedance.css';
@@ -405,6 +406,14 @@ const Impedance = () => {
                 disabled={loading}
               >
                 Tìm kiếm
+              </Button>
+              <Button
+                type="primary"
+                icon={<EyeOutlined />}
+                onClick={() => window.open('/user_guide_imp.pdf', '_blank', 'noopener,noreferrer')}
+                style={{ background: '#1890ff', borderColor: '#1890ff' }}
+              >
+                Hướng dẫn sử dụng
               </Button>
             </div>
             <Select
