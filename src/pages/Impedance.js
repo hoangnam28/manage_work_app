@@ -101,13 +101,13 @@ const Impedance = () => {
     const newValue = e.target.value;
     setSearchValue(newValue);
     if (newValue === '') {
-      setFilteredData(impedanceData); // Reset data khi xóa hết nội dung
+      setFilteredData(impedanceData); 
     }
   };
 
   const handleClearSearch = () => {
     setSearchValue('');
-    setFilteredData(impedanceData); // Reset data khi nhấn clear
+    setFilteredData(impedanceData); 
   };
 
   const handleSearchSubmit = () => {
@@ -328,14 +328,14 @@ const Impedance = () => {
       return [];
     }
     return impedanceData
-      .filter(item => item && item.IMP_2) // Lọc các item có IMP_2
+      .filter(item => item && item.IMP_2) 
       .map(item => ({
         value: item.IMP_2,
         label: item.IMP_2
       }))
       .filter((item, index, self) =>
         index === self.findIndex(t => t.value === item.value)
-      ); // Loại bỏ các giá trị trùng lặp
+      ); 
   };
   const handleSearchSelect = (value) => {
     if (!value) {
@@ -432,7 +432,8 @@ const Impedance = () => {
               showArrow
               loading={loading}
               optionFilterProp="label"
-              notFoundContent={loading ? <Spin size="small" /> : "Không tìm thấy mã hàng"}
+              notFoundContent={loading ? 
+              <Spin size="small" /> : "Không tìm thấy mã hàng"}
             />
             <div className="action-buttons">
               <Button
