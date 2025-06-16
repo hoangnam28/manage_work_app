@@ -12,7 +12,7 @@ import {
   updateMaterialCore,
   deleteMaterialCore 
 } from '../utils/material-core-api';
-import MaterialCoreModal from '../components/modal/MaterialCoreModal';
+import CreateMaterialCoreModal from '../components/modal/CreateMaterialCoreModal';
 import { toast } from 'sonner';
 import './MaterialCore.css';
 
@@ -280,7 +280,7 @@ const MaterialCore = () => {
           }}
         />
 
-        <MaterialCoreModal
+        <CreateMaterialCoreModal
           open={modalVisible}
           onCancel={() => {
             setModalVisible(false);
