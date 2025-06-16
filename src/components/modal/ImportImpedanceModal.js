@@ -22,28 +22,21 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         
           const data = XLSX.utils.sheet_to_json(firstSheet, {
-            header: 1, // Sử dụng array index làm header
-            raw: true, // Lấy giá trị thông tin thô
-            blankrows: false, // Bỏ qua các hàng trống
-            defval: null // Giá trị mặc định cho ô trống
+            header: 1, 
+            raw: true, 
+            blankrows: false, 
+            defval: null 
           });
           if (!data || data.length === 0) {
             reject(new Error('File không có dữ liệu.'));
             return;
           }
           const transformedData = data.map((row, rowIndex) => {
-            console.log(`Processing row ${rowIndex}:`, row); // Debug log
             const transformedRow = {};
-
-            // Thêm IMP_1 với giá trị null để giữ nguyên kích thước ô
             transformedRow['IMP_1'] = null;
-
-            // Map từ IMP_2 đến IMP_135
             for (let i = 0; i < 134; i++) {
               const value = row[i];
               const impKey = `IMP_${i + 2}`;
-
-              // Xử lý các trường hợp giá trị không hợp lệ
               if (
                 value === undefined ||
                 value === null ||
@@ -55,8 +48,6 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
                 transformedRow[impKey] = null;
                 continue;
               }
-
-              // Nếu là số, kiểm tra tính hợp lệ
               if (typeof value === 'number') {
                 if (Number.isFinite(value) && !isNaN(value)) {
                   transformedRow[impKey] = value;
@@ -65,8 +56,6 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
                 }
                 continue;
               }
-
-              // Nếu là chuỗi, thử parse thành số
               if (typeof value === 'string') {
                 const trimmedValue = value.trim();
                 const numValue = parseFloat(trimmedValue.replace(/,/g, ''));
@@ -103,13 +92,9 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
       setLoading(true);
       setError(null);
       const data = await readExcelFile(file);
-      
-      // Thêm dữ liệu từ file mới vào allData
       setAllData(prevData => [...prevData, ...data]);
-      
-      // Chỉ hiển thị preview của file mới nhất
       setPreviewData(data);
-      return false; // Prevent upload
+      return false; 
     } catch (err) {
       setError('Lỗi khi đọc file: ' + err.message);
       return Upload.LIST_IGNORE;
@@ -122,14 +107,11 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
     try {
       setLoading(true);
       setError(null);
-      
-      // Import tất cả dữ liệu đã tích lũy
       if (allData.length === 0) {
         throw new Error('Không có dữ liệu để import');
       }
-      
       await onImport(allData);
-      setAllData([]); // Reset sau khi import thành công
+      setAllData([]);
       setFileList([]); 
       setPreviewData([]);
     } catch (err) {
@@ -1217,8 +1199,6 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
       setFileList(info.fileList.slice(-1));
     }
   };
-
-  // Reset state khi đóng modal
   useEffect(() => {
     if (!visible) {
       setAllData([]);
