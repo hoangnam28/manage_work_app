@@ -22,7 +22,6 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
-      // Convert dates to ISO string if they exist
       if (values.request_date) {
         values.request_date = values.request_date.format('YYYY-MM-DD');
       }
@@ -58,8 +57,8 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
         }}
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)', // 3 cột bằng nhau
-          gap: '16px', // khoảng cách giữa các item
+          gridTemplateColumns: 'repeat(3, 1fr)', 
+          gap: '16px', 
           padding: '20px'
         }}
       >
