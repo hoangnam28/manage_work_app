@@ -56,13 +56,19 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
           status: 'Pending',
           is_hf: 'FALSE'
         }}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)', // 3 cột bằng nhau
+          gap: '16px', // khoảng cách giữa các item
+          padding: '20px'
+        }}
       >
         <Form.Item
           name="requester_name"
           label="Người yêu cầu"
           rules={[{ required: true, message: 'Vui lòng nhập người yêu cầu' }]}
         >
-          <Input />
+          <Input style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item
@@ -72,64 +78,60 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
         >
           <DatePicker style={{ width: '100%' }} />
         </Form.Item>
-
         <Form.Item
           name="handler"
           label="Người xử lý"
         >
-          <Input />
+          <Input style={{ width: '100%' }} />
         </Form.Item>
-
         <Form.Item
           name="status"
           label="Trạng thái"
           rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
         >
-          <Select>
+          <Select style={{ width: '100%' }}>
             <Option value="Pending">Pending</Option>
             <Option value="Approve">Approve</Option>
             <Option value="Cancel">Cancel</Option>
           </Select>
         </Form.Item>
-
         <Form.Item
           name="complete_date"
           label="Ngày hoàn thành"
         >
           <DatePicker style={{ width: '100%' }} />
         </Form.Item>
-
         <Form.Item
           name="vendor"
-          label="Nhà cung cấp"
+          label="Vendor"
         >
-          <Input />
+          <Input style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item
           name="family"
-          label="Họ vật liệu"
+          label="Family"
         >
-          <Input />
+          <Input style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item
           name="prepreg_count"
-          label="Số lớp prepreg"
+          label="PREPREG Count"
         >
           <InputNumber style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item
           name="nominal_thickness"
-          label="Độ dày danh nghĩa"
+          label="Nominal Thickness"
         >
           <InputNumber style={{ width: '100%' }} step={0.001} />
         </Form.Item>
 
         <Form.Item
           name="spec_thickness"
-          label="Độ dày spec"
+          label="Spec Thickness"
         >
           <InputNumber style={{ width: '100%' }} step={0.001} />
         </Form.Item>
@@ -143,10 +145,11 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
 
         <Form.Item
           name="use_type"
-          label="Loại sử dụng"
+          label="USE Type"
         >
-          <Input />
-        </Form.Item>        <Form.Item
+          <Input style={{ width: '100%' }} />
+        </Form.Item>
+        <Form.Item
           name="top_foil_cu_weight"
           label="Top Foil Cu Weight"
           rules={[{ required: true, message: 'Vui lòng chọn ít nhất một giá trị' }]}
@@ -156,7 +159,6 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
             placeholder="Chọn một hoặc nhiều giá trị"
             style={{ width: '100%' }}
             onChange={(values) => {
-              // Khi thay đổi giá trị top_foil_cu_weight, cập nhật lại form
               form.setFieldsValue({
                 top_foil_cu_weight: values
               });
@@ -168,12 +170,11 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
             <Option value="2">2</Option>
           </Select>
         </Form.Item>
-
         <Form.Item
           name="bot_foil_cu_weight"
           label="Bottom Foil Cu Weight"
         >
-          <Input />
+          <Input style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item
@@ -182,7 +183,6 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
         >
           <InputNumber style={{ width: '100%' }} />
         </Form.Item>
-
         <Form.Item
           name="tg_max"
           label="Tg Max"
@@ -194,45 +194,41 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
           name="center_glass"
           label="Center Glass"
         >
-          <Input />
+          <Input style={{ width: '100%' }} />
         </Form.Item>
-
         <Form.Item
           name="dk_01g"
           label="Dk @ 0.1GHz"
         >
           <InputNumber style={{ width: '100%' }} step={0.0001} />
         </Form.Item>
-
         <Form.Item
           name="df_01g"
           label="Df @ 0.1GHz"
         >
           <InputNumber style={{ width: '100%' }} step={0.0001} />
         </Form.Item>
-
         <Form.Item
           name="is_hf"
           label="High Frequency"
         >
-          <Select>
+          <Select style={{ width: '100%' }}>
             <Option value="TRUE">Có</Option>
             <Option value="FALSE">Không</Option>
           </Select>
         </Form.Item>
-
         <Form.Item
           name="data_source"
           label="Nguồn dữ liệu"
+          style={{ gridColumn: 'span 2' }}
         >
           <Input.TextArea />
         </Form.Item>
-
         <Form.Item
           name="filename"
           label="Tên file"
         >
-          <Input />
+          <Input style={{ width: '100%' }} />
         </Form.Item>
       </Form>
     </Modal>
