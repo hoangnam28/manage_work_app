@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { Form, Input, Button, Card } from 'antd';
-import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './Login.css';
 import { Toaster, toast } from 'sonner';
+import axiosInstance from '../utils/axiosConfig';
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
   const handleLogin = async (values) => {
     setLoading(true);
     try {
@@ -16,10 +15,11 @@ const Login = () => {
         company_id: values.company_id.trim(),
         password_hash: values.password_hash.trim()
       };
-      const response = await axios.post('http://192.84.105.173:5000/api/auth/login', loginData);
+      const response = await axiosInstance.post('/auth/login', loginData);
 
       if (response.data.accessToken) {
         localStorage.setItem('accessToken', response.data.accessToken);
+        localStorage.setItem('refreshToken', response.data.refreshToken);
         localStorage.setItem('userInfo', JSON.stringify(response.data.user));
 
         toast.success('Đăng nhập thành công');
