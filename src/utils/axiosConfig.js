@@ -9,24 +9,18 @@ const axiosInstance = axios.create({
 
 let isRefreshing = false;
 let refreshSubscribers = [];
-
-// Function to add new subscribers
 const subscribeTokenRefresh = (cb) => refreshSubscribers.push(cb);
-
-// Function to notify all subscribers with new token
 const onRefreshed = (token) => {
   refreshSubscribers.map(cb => cb(token));
   refreshSubscribers = [];
 };
 
-// Function to handle refresh failure
 const onRefreshError = (error) => {
   refreshSubscribers = [];
-  // Redirect to login and clear all stored tokens
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('userInfo');
-  window.location.href = '/login';
+  window.location.href = '/';
 };
 
 axiosInstance.interceptors.request.use(
@@ -80,11 +74,10 @@ axiosInstance.interceptors.response.use(
         localStorage.setItem('accessToken', accessToken);
         localStorage.setItem('refreshToken', newRefreshToken);
 
-        // Update authorization header
+        // Update the axios instance headers and the original request headers
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
 
-        // Notify all subscribers about the new token
         onRefreshed(accessToken);
         isRefreshing = false;
 

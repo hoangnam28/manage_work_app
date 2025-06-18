@@ -1,41 +1,69 @@
 import React, { useEffect } from 'react';
 import { Modal, Form, Input, DatePicker, Select, InputNumber } from 'antd';
 import moment from 'moment';
+import { toast } from 'sonner';
 
 const { Option } = Select;
 
 const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
   const [form] = Form.useForm();
-
-  useEffect(() => {
-    if (open && editingRecord) {
-      form.setFieldsValue({
-        ...editingRecord,
-        request_date: editingRecord.request_date ? moment(editingRecord.request_date) : null,
-        complete_date: editingRecord.complete_date ? moment(editingRecord.complete_date) : null,
-      });
-    } else {
-      form.resetFields();
+  useEffect(() => {    if (open) {
+      if (editingRecord) {
+        const formattedRecord = Object.keys(editingRecord).reduce((acc, key) => {
+          if (key.toUpperCase() === 'ID') {
+            acc.id = editingRecord[key];
+          }
+          acc[key.toLowerCase()] = editingRecord[key];
+          return acc;
+        }, {});
+        form.setFieldsValue({
+          ...formattedRecord,
+          request_date: formattedRecord.request_date ? moment(formattedRecord.request_date) : null,
+          complete_date: formattedRecord.complete_date ? moment(formattedRecord.complete_date) : null,         
+          top_foil_cu_weight: formattedRecord.top_foil_cu_weight || null
+        });
+      } else {
+        form.resetFields();
+        form.setFieldsValue({
+          status: 'Pending',
+          is_hf: 'FALSE'
+        });
+      }
     }
-  }, [open, editingRecord, form]);
-
-  const handleSubmit = async () => {
+  }, [open, editingRecord, form]);const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       if (values.request_date) {
-        values.request_date = values.request_date.format('YYYY-MM-DD');
+        values.request_date = values.request_date.toDate().toISOString();
       }
       if (values.complete_date) {
-        values.complete_date = values.complete_date.format('YYYY-MM-DD');
+        values.complete_date = values.complete_date.toDate().toISOString();
+      }      
+      if (editingRecord) {
+        const recordId = editingRecord.ID || editingRecord.id;
+        if (!recordId) {
+          throw new Error('Không tìm thấy ID bản ghi');
+        }
+        values.id = recordId;
       }
-      onSubmit(values);
+
+      await onSubmit(values);
+      
+      if (editingRecord) {
+        toast.success('Cập nhật thành công!');
+      } else {
+        toast.success('Thêm mới thành công!');
+        form.resetFields(); 
+      }
+
     } catch (error) {
       console.error('Validation failed:', error);
+      toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu'));
     }
   };
   return (
     <Modal
-      title={editingRecord ? 'Sửa Material Core' : 'Thêm Material Core'} 
+      title={editingRecord ? 'Sửa Material Core' : 'Thêm Material Core'}
       open={open}
       onOk={handleSubmit}
       onCancel={onCancel}
@@ -57,8 +85,8 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
         }}
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(3, 1fr)', 
-          gap: '16px', 
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: '16px',
           padding: '20px'
         }}
       >
@@ -147,19 +175,18 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
           label="USE Type"
         >
           <Input style={{ width: '100%' }} />
-        </Form.Item>
-        <Form.Item
+        </Form.Item>        <Form.Item
           name="top_foil_cu_weight"
           label="Top Foil Cu Weight"
-          rules={[{ required: true, message: 'Vui lòng chọn ít nhất một giá trị' }]}
+          rules={[{ required: true, message: editingRecord ? 'Vui lòng chọn một giá trị' : 'Vui lòng chọn ít nhất một giá trị' }]}
         >
           <Select
-            mode="multiple"
-            placeholder="Chọn một hoặc nhiều giá trị"
+            mode={editingRecord ? undefined : "multiple"}
+            placeholder={editingRecord ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị"}
             style={{ width: '100%' }}
-            onChange={(values) => {
+            onChange={(value) => {
               form.setFieldsValue({
-                top_foil_cu_weight: values
+                top_foil_cu_weight: editingRecord ? value : (Array.isArray(value) ? value : [value])
               });
             }}
           >
@@ -228,6 +255,101 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
           label="Tên file"
         >
           <Input style={{ width: '100%' }} />
+        </Form.Item>
+        <div style={{ gridColumn: 'span 3', marginTop: '20px', marginBottom: '10px' }}>
+          <h3>Thông số DK/DF theo tần số</h3>
+        </div>
+
+        <Form.Item name="dk_0_001ghz" label="DK @ 0.001GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <Form.Item name="df_0_001ghz" label="DF @ 0.001GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <div />
+        <Form.Item name="dk_0_01ghz" label="DK @ 0.01GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <Form.Item name="df_0_01ghz" label="DF @ 0.01GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <div />
+        <Form.Item name="dk_0_02ghz" label="DK @ 0.02GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <Form.Item name="df_0_02ghz" label="DF @ 0.02GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <div /> 
+        <Form.Item name="dk_2ghz" label="DK @ 2GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <Form.Item name="df_2ghz" label="DF @ 2GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <div /> 
+        <Form.Item name="dk_2_45ghz" label="DK @ 2.45GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <Form.Item name="df_2_45ghz" label="DF @ 2.45GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <div /> 
+        <Form.Item name="dk_3ghz" label="DK @ 3GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <Form.Item name="df_3ghz" label="DF @ 3GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <div /> 
+        <Form.Item name="dk_5ghz" label="DK @ 5GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <Form.Item name="df_5ghz" label="DF @ 5GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <div /> 
+
+        <Form.Item name="dk_5ghz_2" label="DK @ 5GHz (2nd)">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <Form.Item name="df_5ghz_2" label="DF @ 5GHz (2nd)">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <div /> 
+        <Form.Item name="dk_8ghz" label="DK @ 8GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <Form.Item name="df_8ghz" label="DF @ 8GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <div /> 
+        <Form.Item name="dk_10ghz" label="DK @ 10GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <Form.Item name="df_10ghz" label="DF @ 10GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <div /> 
+        <Form.Item name="dk_15ghz" label="DK @ 15GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <Form.Item name="df_15ghz" label="DF @ 15GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <div /> 
+        <Form.Item name="dk_16ghz" label="DK @ 16GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <Form.Item name="df_16ghz" label="DF @ 16GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <div /> 
+        <Form.Item name="dk_20ghz" label="DK @ 20GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+        </Form.Item>
+        <Form.Item name="df_20ghz" label="DF @ 20GHz">
+          <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
         </Form.Item>
       </Form>
     </Modal>
