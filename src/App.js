@@ -6,6 +6,7 @@ import Impedance from './pages/Impedance';
 import PrivateRoute from './routes/PrivateRoute';
 import UserManagement from './pages/UserList';
 import MaterialCore from './pages/MaterialCore';
+import MaterialProperties from './pages/MaterialProperties';
 
 function App() {
   return (
@@ -27,12 +28,21 @@ function App() {
               <Impedance />
             </PrivateRoute>
           } 
-        />        <Route path="/user-management" element={<UserManagement />} />
+        />        
+        <Route path="/user-management" element={<UserManagement />} />
         <Route 
           path="/material-core" 
           element={
             <PrivateRoute>
               <MaterialCore />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/material-properties" 
+          element={
+            <PrivateRoute>
+              <MaterialProperties />
             </PrivateRoute>
           } 
         />

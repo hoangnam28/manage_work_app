@@ -201,6 +201,18 @@ const MaterialCore = () => {
       width: 150
     },
     {
+      title: 'Dk @ 0.1GHz (Legacy)',
+      dataIndex: 'DK_01G',
+      key: 'dk_01g',
+      width: 120
+    },
+    {
+      title: 'Df @ 0.1GHz (Legacy)',
+      dataIndex: 'DF_01G',
+      key: 'df_01g',
+      width: 120
+    },
+    {
       title: 'Dk @ 0.001GHz',
       dataIndex: 'DK_0_001GHZ',
       key: 'dk_0_001ghz',
@@ -357,15 +369,87 @@ const MaterialCore = () => {
       width: 120
     },
     {
-      title: 'Dk @ 0.1GHz (Legacy)',
-      dataIndex: 'DK_01G',
-      key: 'dk_01g',
+      title: 'Dk @ 25GHz',
+      dataIndex: 'DK_25GHZ',
+      key: 'dk_25ghz',
       width: 120
     },
     {
-      title: 'Df @ 0.1GHz (Legacy)',
-      dataIndex: 'DF_01G',
-      key: 'df_01g',
+      title: 'Df @ 25GHz',
+      dataIndex: 'DF_25GHZ',
+      key: 'df_25ghz',
+      width: 120
+    },
+    {
+      title: 'Dk @ 30GHz',
+      dataIndex: 'DK_30GHZ',
+      key: 'dk_30ghz',
+      width: 120
+    },
+    {
+      title: 'Df @ 30GHz',
+      dataIndex: 'DF_30GHZ',
+      key: 'df_30ghz',
+      width: 120
+    },
+    {
+      title: 'Dk @ 35GHz',
+      dataIndex: 'DK_35GHZ',
+      key: 'dk_35ghz',
+      width: 120
+    },
+    {
+      title: 'Df @ 35GHz',
+      dataIndex: 'DF_35GHZ',
+      key: 'df_35ghz',
+      width: 120
+    },
+    {
+      title: 'Dk @ 40GHz',
+      dataIndex: 'DK_40GHZ',
+      key: 'dk_40ghz',
+      width: 120
+    },
+    {
+      title: 'Df @ 40GHz',
+      dataIndex: 'DF_40GHZ',
+      key: 'df_40ghz',
+      width: 120
+    },
+    {
+      title: 'Dk @ 45GHz',
+      dataIndex: 'DK_45GHZ',
+      key: 'dk_45ghz',
+      width: 120
+    },
+    {
+      title: 'Df @ 45GHz',
+      dataIndex: 'DF_45GHZ',
+      key: 'df_45ghz',
+      width: 120
+    },
+    {
+      title: 'Dk @ 50GHz',
+      dataIndex: 'DK_50GHZ',
+      key: 'dk_50ghz',
+      width: 120
+    },
+    {
+      title: 'Df @ 50GHz',
+      dataIndex: 'DF_50GHZ',
+      key: 'df_50ghz',
+      width: 120
+    },
+    {
+      title: 'Dk @ 55GHz',
+      dataIndex: 'DK_55GHZ',
+      key: 'dk_55ghz',
+      width: 120
+    },
+    {
+      title: 'Df @ 55GHz',
+      dataIndex: 'DF_55GHZ',
+      key: 'df_55ghz',
       width: 120
     },
     {

@@ -34,9 +34,19 @@ const SideBar = ({ onLogout, userId }) => {
       label: <Link to="/impedance">Impedance</Link>,
     },
     {
-      key: '/material-core',
+      key: 'material',
       icon: <FileSearchOutlined />,
-      label: <Link to="/material-core">Material Core</Link>,
+      label: 'Material',
+      children: [
+        {
+          key: '/material-core',
+          label: <Link to="/material-core">Material Core</Link>,
+        },
+        {
+          key: '/material-properties',
+          label: <Link to="/material-properties">Material Properties</Link>,
+        }
+      ]
     },
     {
       key: '/user-management',
