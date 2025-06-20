@@ -14,7 +14,7 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
       setError(null);
       setSuccessMessage(null);
       const initialValues = {};
-      for (let i = 1; i <= 135; i++) {
+      for (let i = 1; i <= 136; i++) {
         const key = `IMP_${i}`;
         if (currentRecord[key] !== undefined) {
           initialValues[key.toLowerCase()] = currentRecord[key];
@@ -196,6 +196,7 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
       case 133: return 'Chân đường mạch L';
       case 134: return 'S (µm)';
       case 135: return 'GAP ｺﾌﾟﾚﾅｰ (µm)';
+      case 136: return 'Coupon Code';
       default: return `Imp ${index}`;
     }
   };
@@ -450,16 +451,16 @@ const UpdateImpedanceModal = ({ visible, onCancel, onUpdate, currentRecord }) =>
                 {renderImpedanceFields(122, 126)}
               </Row>
             </TabPane>
-            <TabPane tab="17. So sánh kết quả giữa mô phỏng và thực tế" key="17">
+            <TabPane tab="17. So sánh kết quả giữa mô phỏng và thực tế - Coupon Code" key="17">
               <Alert
                 message="So sánh các thông số kỹ thuật"
-                description="Bao gồm: Độ dày đồng (µm), Độ dày PP-GND1, DK-GND1, Độ dày PP-GND2, DK-GND2, L (Đỉnh/Chân đường mạch), S (µm), GAP (µm), Kết quả đánh giá"
+                description="Bao gồm: Độ dày đồng (µm), Độ dày PP-GND1, DK-GND1, Độ dày PP-GND2, DK-GND2, L (Đỉnh/Chân đường mạch), S (µm), GAP (µm), Kết quả đánh giá - Coupon Code"
                 type="info"
                 showIcon
                 style={{ marginBottom: 16 }}
               />
               <Row gutter={16}>
-                {renderImpedanceFields(127, 135)}
+                {renderImpedanceFields(127, 136)}
               </Row>
             </TabPane>
             <TabPane tab="18. Ghi chú bổ sung" key="18">

@@ -27,27 +27,36 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
             blankrows: false, 
             defval: null 
           });
+
           if (!data || data.length === 0) {
             reject(new Error('File không có dữ liệu.'));
             return;
           }
+
           const transformedData = data.map((row, rowIndex) => {
             const transformedRow = {};
             transformedRow['IMP_1'] = null;
-            for (let i = 0; i < 134; i++) {
+
+            for (let i = 0; i < 136; i++) {
               const value = row[i];
               const impKey = `IMP_${i + 2}`;
+
               if (
                 value === undefined ||
                 value === null ||
                 value === '' ||
-                value === '-' ||
                 String(value).toLowerCase() === 'nan' ||
                 String(value).toLowerCase() === 'null'
               ) {
                 transformedRow[impKey] = null;
                 continue;
               }
+
+              if (value === '-') {
+                transformedRow[impKey] = '-';
+                continue;
+              }
+
               if (typeof value === 'number') {
                 if (Number.isFinite(value) && !isNaN(value)) {
                   transformedRow[impKey] = value;
@@ -56,8 +65,17 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
                 }
                 continue;
               }
+
+              // Xử lý chuỗi
               if (typeof value === 'string') {
                 const trimmedValue = value.trim();
+                
+                // Nếu là dấu gạch ngang với khoảng trắng
+                if (trimmedValue === '-') {
+                  transformedRow[impKey] = '-';
+                  continue;
+                }
+
                 const numValue = parseFloat(trimmedValue.replace(/,/g, ''));
 
                 if (!isNaN(numValue) && Number.isFinite(numValue) && trimmedValue.match(/^[-+]?\d*\.?\d+$/)) {
@@ -68,12 +86,22 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
                 continue;
               }
             }
+
             const noteValue = row[134];
-            if (noteValue !== undefined && noteValue !== null && String(noteValue).trim() !== '' && String(noteValue).toLowerCase() !== 'nan' && String(noteValue).toLowerCase() !== 'null') {
-              transformedRow['NOTE'] = String(noteValue).trim();
+            if (noteValue !== undefined && noteValue !== null) {
+              if (noteValue === '-') {
+                transformedRow['NOTE'] = '-';
+              } else if (String(noteValue).trim() !== '' && 
+                        String(noteValue).toLowerCase() !== 'nan' && 
+                        String(noteValue).toLowerCase() !== 'null') {
+                transformedRow['NOTE'] = String(noteValue).trim();
+              } else {
+                transformedRow['NOTE'] = null;
+              }
             } else {
               transformedRow['NOTE'] = null;
             }
+
             return transformedRow;
           });
 
@@ -1176,6 +1204,13 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
           align: 'center',
         },
       ]
+    },
+    {
+      title: 'Coupon Code',
+      dataIndex: 'IMP_136',
+      key: 'imp_136',
+      width: 100,
+      align: 'center',
     },
     {
       title: 'Ghi chú',

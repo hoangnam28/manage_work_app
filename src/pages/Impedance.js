@@ -300,7 +300,8 @@ const Impedance = () => {
         'So sánh kết quả giữa mô phỏng và thực tế| L (µm)| Đỉnh đường mạch': item.IMP_132,
         'So sánh kết quả giữa mô phỏng và thực tế| L (µm)| Chân đường mạch': item.IMP_133,
         'So sánh kết quả giữa mô phỏng và thực tế| S (µm)': item.IMP_134,
-        'So sánh kết quả giữa mô phỏng và thực tế| GAP ｺﾌﾟﾚﾅｰ (µm)': item.IMP_135,
+        'So sánh kết quả giữa mô phỏng và thực tế| GAP ｺﾌﾟﾚﾅｰ (µm)': item.IMP_135, 
+        'Coupon Code': item.IMP_136,
         'Ghi chú': item.NOTE || item.note
       }));
 
