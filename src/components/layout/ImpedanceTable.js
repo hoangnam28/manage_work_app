@@ -10,6 +10,12 @@ const renderColumnTitle = (text) => (
   </div>
 );
 
+// Hàm render giá trị, hiển thị '-' nếu trống
+const renderCell = (value) => {
+  if (value === null || value === undefined || value === '') return '-';
+  return value;
+};
+
 const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
   const [tableData, setTableData] = useState([]);
   const [newRowId, setNewRowId] = useState(null);
@@ -122,6 +128,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_1',
       align: 'center',
       fixed: 'left',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('Mã Hàng'),
@@ -129,6 +136,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_2',
       align: 'center',
       fixed: 'left',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('Mã hàng tham khảo'),
@@ -136,6 +144,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_3',
       width: 100,
       align: 'center',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('Khách hàng'),
@@ -143,6 +152,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_4',
       width: 100,
       align: 'center',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('Loại khách hàng'),
@@ -150,6 +160,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_5',
       width: 100,
       align: 'center',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('Ứng dụng'),
@@ -157,6 +168,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_6',
       width: 100,
       align: 'center',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('Phân loại sản xuất'),
@@ -164,6 +176,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_7',
       width: 100,
       align: 'center',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('Độ dày bo (µm)'),
@@ -171,6 +184,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_8',
       width: 100,
       align: 'center',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('Cấu trúc lớp'),
@@ -178,6 +192,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_9',
       width: 100,
       align: 'center',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('CCL'),
@@ -185,6 +200,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_10',
       width: 100,
       align: 'center',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('PP'),
@@ -192,6 +208,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_11',
       width: 100,
       align: 'center',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('Mực phủ sơn'),
@@ -199,6 +216,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_12',
       width: 100,
       align: 'center',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('Lấp lỗ vĩnh viễn BVH'),
@@ -206,6 +224,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_13',
       width: 100,
       align: 'center',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('Lấp lỗ vĩnh viễn TH'),
@@ -213,6 +232,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       key: 'imp_14',
       width: 100,
       align: 'center',
+      render: renderCell,
     },
     {
       title: renderColumnTitle('Thông số vật liệu'),
@@ -226,6 +246,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_15',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Tỷ lệ đồng còn lại lớp IMP'),
@@ -233,6 +254,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_16',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Tỷ lệ đồng còn lại lớp GND1'),
@@ -240,6 +262,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_17',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Tỷ lê đồng còn lại lớp GND2'),
@@ -247,6 +270,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_18',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
 
           ],
@@ -260,6 +284,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_19',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Độ dày (µm)'),
@@ -267,6 +292,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_20',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('% Nhựa'),
@@ -274,6 +300,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_21',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
           ]
         },
@@ -286,6 +313,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_22',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Độ dày (µm)'),
@@ -293,6 +321,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_23',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('% Nhựa'),
@@ -300,6 +329,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_24',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
           ]
         },
@@ -315,6 +345,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_25',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('Dung sai IMP'),
@@ -322,6 +353,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_26',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('Loại IMP'),
@@ -329,6 +361,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_27',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('Lớp IMP'),
@@ -336,6 +369,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_28',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('GAP'),
@@ -343,6 +377,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_29',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('Lớp IMP'),
@@ -350,6 +385,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_30',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('Lớp GND1'),
@@ -357,6 +393,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_31',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('Lớp GND2'),
@@ -364,6 +401,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_32',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('L (µm)'),
@@ -371,6 +409,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_33',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('S (µm)'),
@@ -378,6 +417,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_34',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('GAP'),
@@ -385,6 +425,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_35',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
       ],
     },
@@ -397,6 +438,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_36',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('Phủ sơn'),
@@ -407,6 +449,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_37',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Độ dày phủ sơn trên đồng'),
@@ -414,6 +457,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_38',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Độ dày phủ sơn trên PP'),
@@ -421,6 +465,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_39',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('DK'),
@@ -428,6 +473,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_40',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
           ]
         },
@@ -437,6 +483,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_41',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('Lớp GND1'),
@@ -447,6 +494,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_42',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Độ dày(µm)'),
@@ -454,6 +502,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_43',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('DK'),
@@ -461,6 +510,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_44',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
           ]
         },
@@ -473,6 +523,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_45',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Độ dày (µm)'),
@@ -480,6 +531,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_46',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('DK'),
@@ -487,6 +539,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_47',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
           ]
         },
@@ -499,6 +552,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_48',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Chân đường mạch'),
@@ -506,6 +560,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_49',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
           ]
         },
@@ -515,6 +570,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_50',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('GAP'),
@@ -522,6 +578,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_51',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
       ],
     },
@@ -537,6 +594,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_52',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('No 2'),
@@ -544,6 +602,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_53',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('No 3'),
@@ -551,6 +610,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_54',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('No 4'),
@@ -558,6 +618,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_55',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('No 5'),
@@ -565,6 +626,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_56',
               width: 100,
               align: 'center',
+              render: renderCell,
             },            
             {
               title: renderColumnTitle('AVG'),
@@ -572,6 +634,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_57',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Result'),
@@ -579,6 +642,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_58',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
           ]
         },        {
@@ -592,6 +656,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_59',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('No 2'),
@@ -599,6 +664,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_60',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('No 3'),
@@ -606,6 +672,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_61',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('No 4'),
@@ -613,6 +680,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_62',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('No 5'),
@@ -620,6 +688,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_63',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('AVG'),
@@ -627,6 +696,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_64',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
               ]
             },
@@ -639,6 +709,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_65',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('No 2'),
@@ -646,6 +717,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_66',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('No 3'),
@@ -653,6 +725,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_67',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('No 4'),
@@ -660,6 +733,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_68',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('No 5'),
@@ -667,6 +741,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_69',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('AVG'),
@@ -674,6 +749,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_70',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
               ]
             },
@@ -686,6 +762,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_71',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('No 2'),
@@ -693,6 +770,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_72',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('No 3'),
@@ -700,6 +778,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_73',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('No 4'),
@@ -707,6 +786,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_74',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('No 5'),
@@ -714,6 +794,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_75',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
                 {
                   title: renderColumnTitle('AVG'),
@@ -721,6 +802,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                   key: 'imp_76',
                   width: 100,
                   align: 'center',
+                  render: renderCell,
                 },
               ]
             },
@@ -729,6 +811,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               dataIndex: 'IMP_77',
               key: 'imp_77',
               width: 100,
+              render: renderCell,
             },
           ]
         },
@@ -740,36 +823,42 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               dataIndex: 'IMP_78',
               key: 'imp_78',
               width: 100,
+              render: renderCell,
             },
             {
               title: renderColumnTitle('No 2'),
               dataIndex: 'IMP_79',
               key: 'imp_79',
               width: 100,
+              render: renderCell, 
             },
             {
               title: renderColumnTitle('No 3'),
               dataIndex: 'IMP_80',
               key: 'imp_80',  
               width: 100,
+              render: renderCell,
             },
             {
               title: renderColumnTitle('No 4'),
               dataIndex: 'IMP_81',
               key: 'imp_81',
               width: 100,
+              render: renderCell,
             },
             {
               title: renderColumnTitle('No 5'),
               dataIndex: 'IMP_82',
               key: 'imp_82',
               width: 100,
+              render: renderCell,
             },
             {
               title: renderColumnTitle('AVG'),
               dataIndex: 'IMP_83',
               key: 'imp_83',
               width: 100,
+              render: renderCell,
             },
           ]
         },
@@ -783,31 +872,37 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                 dataIndex: 'IMP_84',
                 key: 'imp_84',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 2'),
                 dataIndex: 'IMP_85',
                 key: 'imp_85',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 3'),
                 dataIndex: 'IMP_86',
                 key: 'imp_86',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 4'),
                 dataIndex: 'IMP_87',
                 key: 'imp_87',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 5'),
                 dataIndex: 'IMP_88',
                 key: 'imp_88',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('AVG'),
                 dataIndex: 'IMP_89',
                 key: 'imp_89',
                 width: 100,
+                render: renderCell,
               },
             ]
            },
@@ -816,6 +911,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
             dataIndex: 'IMP_90',
             key: 'imp_90',
             width: 100,
+            render: renderCell,
            }
           ]
         },
@@ -829,31 +925,37 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                 dataIndex: 'IMP_91',
                 key: 'imp_91',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 2'),
                 dataIndex: 'IMP_92',
                 key: 'imp_92',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 3'),
                 dataIndex: 'IMP_93',
                 key: 'imp_93',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 4'),
                 dataIndex: 'IMP_94',
                 key: 'imp_94',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 5'),
                 dataIndex: 'IMP_95',
                 key: 'imp_95',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('AVG'),
                 dataIndex: 'IMP_96',
                 key: 'imp_96',
                 width: 100,
+                render: renderCell,
               },
             ]
            },
@@ -862,6 +964,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
             dataIndex: 'IMP_97',
             key: 'imp_97',
             width: 100,
+            render: renderCell,
            }
           ]
         },
@@ -875,31 +978,37 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                 dataIndex: 'IMP_98',
                 key: 'imp_98',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 2'),
                 dataIndex: 'IMP_99',
                 key: 'imp_99',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 3'),
                 dataIndex: 'IMP_100',
                 key: 'imp_100',
                 width: 100,
+                render: renderCell, 
               },
               {title: renderColumnTitle('No 4'),
                 dataIndex: 'IMP_101',
                 key: 'imp_101',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 5'),
                 dataIndex: 'IMP_102',
                 key: 'imp_102',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('AVG'),
                 dataIndex: 'IMP_103',
                 key: 'imp_103',
                 width: 100,
+                render: renderCell,
               },
             ]
            },
@@ -910,31 +1019,37 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                 dataIndex: 'IMP_104',
                 key: 'imp_104',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 2'),
                 dataIndex: 'IMP_105',
                 key: 'imp_105',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 3'),
                 dataIndex: 'IMP_106',
                 key: 'imp_106',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 4'),
                 dataIndex: 'IMP_107',
                 key: 'imp_107',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('No 5'),
                 dataIndex: 'IMP_108',
                 key: 'imp_108',
                 width: 100,
+                render: renderCell,
               },
               {title: renderColumnTitle('AVG'),
                 dataIndex: 'IMP_109',
                 key: 'imp_109',
                 width: 100,
+                render: renderCell,
               },
             ]
            }
@@ -947,31 +1062,37 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               dataIndex: 'IMP_110',
               key: 'imp_110',
               width: 100,
+              render: renderCell,
             },
             {title: renderColumnTitle('No 2'),
               dataIndex: 'IMP_111',
               key: 'imp_111',
               width: 100,
+              render: renderCell,
             },
             {title: renderColumnTitle('No 3'),
               dataIndex: 'IMP_112',
               key: 'imp_112',
               width: 100,
+              render: renderCell,
             },
             {title: renderColumnTitle('No 4'),
               dataIndex: 'IMP_113',
               key: 'imp_113',
               width: 100,
+              render: renderCell,
             },
             {title: renderColumnTitle('No 5'),
               dataIndex: 'IMP_114',
               key: 'imp_114',
               width: 100,
+              render: renderCell,
             },
             {title: renderColumnTitle('AVG'),
               dataIndex: 'IMP_115',
               key: 'imp_115',
               width: 100,
+              render: renderCell,
             },
           ]
         },
@@ -982,31 +1103,37 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               dataIndex: 'IMP_116',
               key: 'imp_116',
               width: 100,
+              render: renderCell,
             },
             {title: renderColumnTitle('No 2'),
               dataIndex: 'IMP_117',
               key: 'imp_117',
               width: 100,
+              render: renderCell,
             },
             {title: renderColumnTitle('No 3'),
               dataIndex: 'IMP_118',
               key: 'imp_118',
               width: 100,
+              render: renderCell,
             },
             {title: renderColumnTitle('No 4'),
               dataIndex: 'IMP_119',
               key: 'imp_119',
               width: 100,
+              render: renderCell,
             },
             {title: renderColumnTitle('No 5'),
               dataIndex: 'IMP_120',
               key: 'imp_120',
               width: 100,
+              render: renderCell,
             },
             {title: renderColumnTitle('AVG'),
               dataIndex: 'IMP_121',
               key: 'imp_121',
               width: 100,
+              render: renderCell,
             },
           ]
         }
@@ -1021,6 +1148,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_122', 
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('Phủ sơn'),
@@ -1031,6 +1159,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_123',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Độ dày phủ sơn trên đồng'),
@@ -1038,6 +1167,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_124',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Độ dày phủ sơn trên PP'),
@@ -1045,6 +1175,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_125',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('DK'),
@@ -1052,6 +1183,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_126',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
           ]
         },
@@ -1061,6 +1193,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_127',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('Lớp GND1'),
@@ -1071,6 +1204,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_128',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('DK'),
@@ -1078,6 +1212,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_129',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
           ]
         },
@@ -1090,6 +1225,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_130',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('DK'),
@@ -1097,6 +1233,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_131',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
           ]
         },
@@ -1109,6 +1246,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_132',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
             {
               title: renderColumnTitle('Chân đường mạch'),
@@ -1116,6 +1254,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_133',
               width: 100,
               align: 'center',
+              render: renderCell,
             },
           ]
         },
@@ -1125,6 +1264,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_134',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
         {
           title: renderColumnTitle('GAP'),
@@ -1132,14 +1272,24 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
           key: 'imp_135',
           width: 100,
           align: 'center',
+          render: renderCell,
         },
       ]
+    },
+    {
+      title: renderColumnTitle('Coupon Code'),
+      dataIndex: 'IMP_136',
+      key: 'imp_136',
+      width: 100,
+      align: 'center',
+      render: renderCell, 
     },
     {
       title: renderColumnTitle('Ghi chú'),
       dataIndex: 'NOTE',
       key: 'note',
       width: 200,
+      render: renderCell,
     },
 
   ];
