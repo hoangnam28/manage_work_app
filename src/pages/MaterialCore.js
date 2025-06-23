@@ -83,8 +83,14 @@ const MaterialCore = () => {
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (recordId) => {
     try {
+      // Đảm bảo lấy đúng id, ưu tiên id, nếu không có thì lấy ID
+      const id = Number(recordId?.id ?? recordId?.ID ?? recordId);
+      if (!id || isNaN(id)) {
+        toast.error('ID không hợp lệ, không thể xóa!');
+        return;
+      }
       await deleteMaterialCore(id);
       toast.success('Xóa thành công');
       fetchData();
@@ -488,7 +494,7 @@ const MaterialCore = () => {
           />
           <Popconfirm
             title="Xác nhận xóa?"
-            onConfirm={() => handleDelete(record.id)}
+            onConfirm={() => handleDelete(record)}
             okText="Có"
             cancelText="Không"
           >
