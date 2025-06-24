@@ -33,3 +33,16 @@ export const deleteMaterialCore = async (id) => {
   });
   return response.data;
 };
+
+export const exportMaterialCore = async (data) => {
+  const token = localStorage.getItem('accessToken');
+  const response = await axios.post(
+    `${API_URL}/material-core/export`,
+    { data },
+    {
+      headers: { Authorization: `Bearer ${token}` },
+      responseType: 'blob', 
+    }
+  );
+  return response;
+};

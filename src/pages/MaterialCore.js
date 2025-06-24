@@ -10,7 +10,8 @@ import {
   fetchMaterialCoreList, 
   createMaterialCore,
   updateMaterialCore,
-  deleteMaterialCore 
+  deleteMaterialCore,
+  exportMaterialCore
 } from '../utils/material-core-api';
 import CreateMaterialCoreModal from '../components/modal/CreateMaterialCoreModal';
 import { toast } from 'sonner';
@@ -97,6 +98,21 @@ const MaterialCore = () => {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      const response = await exportMaterialCore(data);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'MaterialCoreExport.xlsx');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      toast.error('Lỗi khi xuất file');
+    }
+  };
+
   const columns = [
     {
       title: 'Người yêu cầu',
@@ -168,10 +184,17 @@ const MaterialCore = () => {
       width: 120
     },
     {
-      title: 'Loại sử dụng',
+      title: 'USE_TYPE',
       dataIndex: 'USE_TYPE',
       key: 'use_type',
       width: 150
+    },
+    {
+      title: 'RIGID',
+      dataIndex: 'RIGID',
+      key: 'rigid',
+      width: 120,
+      render: (value) => value === 'TRUE' ? 'Có' : 'Không'
     },
     {
       title: 'Top Foil Cu Weight',
@@ -507,16 +530,25 @@ const MaterialCore = () => {
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <h1>Material Core</h1>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditingRecord(null);
-              setModalVisible(true);
-            }}
-          >
-            Thêm mới
-          </Button>
+          <div>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditingRecord(null);
+                setModalVisible(true);
+              }}
+              style={{ marginRight: 8 }}
+            >
+              Thêm mới
+            </Button>
+            <Button
+              type="default"
+              onClick={handleExport}
+            >
+              Xuất Excel
+            </Button>
+          </div>
         </div>
 
         <Table

@@ -148,7 +148,8 @@ const Impedance = () => {
       const errorMessage = error.response?.data?.error || 'Lỗi khi xóa dữ liệu';
       toast.error(errorMessage);
     }
-  }; const exportToExcel = async () => {
+  };
+  const exportToExcel = async () => {
     if (filteredData.length === 0) {
       toast.error('Không có dữ liệu để xuất');
       return;
@@ -302,7 +303,6 @@ const Impedance = () => {
         'So sánh kết quả giữa mô phỏng và thực tế| S (µm)': item.IMP_134,
         'So sánh kết quả giữa mô phỏng và thực tế| GAP ｺﾌﾟﾚﾅｰ (µm)': item.IMP_135, 
         'Coupon Code': item.IMP_136,
-        'Ghi chú': item.NOTE || item.note
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(mappedData);

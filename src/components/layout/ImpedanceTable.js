@@ -1321,14 +1321,6 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       ]
     },
 
-    {
-      title: renderColumnTitle('Ghi chú'),
-      dataIndex: 'NOTE',
-      key: 'note',
-      width: 200,
-      render: renderCell,
-    },
-
   ];
   const rowClassName = (record) => {
     return record.imp_id === newRowId ? 'ant-table-row-new' : '';
