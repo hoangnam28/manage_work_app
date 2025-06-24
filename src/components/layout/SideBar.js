@@ -40,11 +40,11 @@ const SideBar = ({ onLogout, userId }) => {
       children: [
         {
           key: '/material-core',
-          label: <Link to="/material-core">Material Core</Link>,
+          label: <Link to="/material-core">Materials Core</Link>,
         },
         {
           key: '/material-properties',
-          label: <Link to="/material-properties">Material Properties</Link>,
+          label: <Link to="/material-properties">Materials Properties</Link>,
         }
       ]
     },

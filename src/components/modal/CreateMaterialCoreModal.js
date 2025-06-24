@@ -189,7 +189,18 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               <Form.Item
                 name="top_foil_cu_weight"
                 label="Top Foil Cu Weight"
-                rules={[{ required: true, message: editingRecord ? 'Vui lòng chọn một giá trị' : 'Vui lòng chọn ít nhất một giá trị' }]}
+                rules={[{ required: true, message: editingRecord ? 'Vui lòng chọn một giá trị' : 'Vui lòng chọn ít nhất một giá trị' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const bot = getFieldValue('bot_foil_cu_weight');
+                      if (!value || !bot) return Promise.resolve();
+                      if (Array.isArray(value) && Array.isArray(bot) && value.length !== bot.length) {
+                        return Promise.reject(new Error('Số lượng giá trị Top/Bot Foil Cu Weight phải bằng nhau'));
+                      }
+                      return Promise.resolve();
+                    }
+                  })
+                ]}
               >
                 <Select
                   mode={editingRecord ? undefined : "multiple"}
@@ -204,8 +215,28 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               <Form.Item
                 name="bot_foil_cu_weight"
                 label="Bottom Foil Cu Weight"
+                rules={[{ required: true, message: editingRecord ? 'Vui lòng chọn một giá trị' : 'Vui lòng chọn ít nhất một giá trị' },
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      const top = getFieldValue('top_foil_cu_weight');
+                      if (!value || !top) return Promise.resolve();
+                      if (Array.isArray(value) && Array.isArray(top) && value.length !== top.length) {
+                        return Promise.reject(new Error('Số lượng giá trị Top/Bot Foil Cu Weight phải bằng nhau'));
+                      }
+                      return Promise.resolve();
+                    }
+                  })
+                ]}
               >
-                <Input />
+                <Select
+                  mode={editingRecord ? undefined : "multiple"}
+                  placeholder={editingRecord ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị"}
+                >
+                  <Option value="L">L</Option>
+                  <Option value="H">H</Option>
+                  <Option value="1">1</Option>
+                  <Option value="2">2</Option>
+                </Select>
               </Form.Item>
               <Form.Item
                 name="tg_min"

@@ -40,17 +40,14 @@ const MaterialCore = () => {
   }, []);
   const handleCreate = async (values) => {
     try {
-      const { top_foil_cu_weight, ...restValues } = values;
-      const createPromises = top_foil_cu_weight.map(weight => 
-        createMaterialCore({
-          ...restValues,
-          top_foil_cu_weight: weight
-        })
-      );
-
-      await Promise.all(createPromises);
-      
-      toast.success(`Đã thêm thành công ${top_foil_cu_weight.length} bản ghi`);
+      const topArr = Array.isArray(values.top_foil_cu_weight) ? values.top_foil_cu_weight : [values.top_foil_cu_weight];
+      const botArr = Array.isArray(values.bot_foil_cu_weight) ? values.bot_foil_cu_weight : [values.bot_foil_cu_weight];
+      await createMaterialCore({
+        ...values,
+        top_foil_cu_weight: topArr,
+        bot_foil_cu_weight: botArr
+      });
+      toast.success(`Đã thêm thành công ${topArr.length} bản ghi`);
       setModalVisible(false);
       fetchData();
     } catch (error) {
@@ -509,7 +506,7 @@ const MaterialCore = () => {
     <MainLayout>
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-          <h1>Quản lý Material Core</h1>
+          <h1>Material Core</h1>
           <Button
             type="primary"
             icon={<PlusOutlined />}
