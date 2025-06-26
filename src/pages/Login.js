@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Form, Input, Button, Card } from 'antd';
 import { useNavigate } from 'react-router-dom';
@@ -7,7 +8,8 @@ import axiosInstance from '../utils/axiosConfig';
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
+
   const handleLogin = async (values) => {
     setLoading(true);
     try {
@@ -15,6 +17,7 @@ const Login = () => {
         company_id: values.company_id.trim(),
         password_hash: values.password_hash.trim()
       };
+
       const response = await axiosInstance.post('/auth/login', loginData);
 
       if (response.data.accessToken) {

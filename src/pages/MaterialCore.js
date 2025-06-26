@@ -329,6 +329,18 @@ const MaterialCore = () => {
       width: 120
     },
     {
+      title: 'Dk_4GHz',
+      dataIndex: 'DK_4GHZ',
+      key: 'dk_4ghz',
+      width: 120
+    },
+    {
+      title: 'Df_4GHz',
+      dataIndex: 'DF_4GHZ',
+      key: 'df_4ghz',
+      width: 120
+    },
+    {
       title: 'Dk_5GHz',
       dataIndex: 'DK_5GHZ',
       key: 'dk_5ghz',
@@ -341,15 +353,27 @@ const MaterialCore = () => {
       width: 120
     },
     {
-      title: 'Dk_5GHz_2',
-      dataIndex: 'DK_5GHZ_2',
-      key: 'dk_5ghz_2',
+      title: 'Dk_6GHz',
+      dataIndex: 'DK_6GHZ',
+      key: 'dk_6ghz',
       width: 120
     },
     {
-      title: 'Df_5GHz_2',
-      dataIndex: 'DF_5GHZ_2',
-      key: 'df_5ghz_2',
+      title: 'Df_6GHz',
+      dataIndex: 'DF_6GHZ',
+      key: 'df_6ghz',
+      width: 120
+    },
+    {
+      title: 'Dk_7GHz',
+      dataIndex: 'DK_7GHZ',
+      key: 'dk_7ghz',
+      width: 120
+    },
+    {
+      title: 'Df_7GHz',
+      dataIndex: 'DF_7GHZ',
+      key: 'df_7ghz',
       width: 120
     },
     {
@@ -362,6 +386,18 @@ const MaterialCore = () => {
       title: 'Df_8GHz',
       dataIndex: 'DF_8GHZ',
       key: 'df_8ghz',
+      width: 120
+    },
+    {
+      title: 'Dk_9GHz',
+      dataIndex: 'DK_9GHZ',
+      key: 'dk_9ghz',
+      width: 120
+    },
+    {
+      title: 'Df_9GHz',
+      dataIndex: 'DF_9GHZ',
+      key: 'df_9ghz',
       width: 120
     },
     {

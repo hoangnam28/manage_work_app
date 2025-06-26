@@ -1,7 +1,9 @@
 import axios from 'axios';
+import { toast } from 'sonner';
 
 const axiosInstance = axios.create({
   baseURL: 'http://192.84.105.173:5000/api',
+  timeout: 30000, // 30 seconds timeout
   headers: {
     'Content-Type': 'application/json',
   }
@@ -9,49 +11,80 @@ const axiosInstance = axios.create({
 
 let isRefreshing = false;
 let refreshSubscribers = [];
+
 const subscribeTokenRefresh = (cb) => refreshSubscribers.push(cb);
+
 const onRefreshed = (token) => {
-  refreshSubscribers.map(cb => cb(token));
+  refreshSubscribers.forEach(cb => cb(token));
   refreshSubscribers = [];
 };
 
 const onRefreshError = (error) => {
+  refreshSubscribers.forEach(cb => cb(null, error));
   refreshSubscribers = [];
+  
+  // Clear all auth data
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('userInfo');
-  window.location.href = '/';
+  
+  // Show error message
+  toast.error('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
+  
+  // Redirect to login after a short delay
+  setTimeout(() => {
+    window.location.href = '/';
+  }, 1500);
 };
 
+// Request interceptor
 axiosInstance.interceptors.request.use(
-  config => {
+  (config) => {
     const token = localStorage.getItem('accessToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  error => {
+  (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
+// Response interceptor
 axiosInstance.interceptors.response.use(
-  response => response,
-  async error => {
+  (response) => response,
+  async (error) => {
     const originalRequest = error.config;
 
-    // If the error status is 401 and there is no originalRequest._retry flag,
-    // it means the token has expired and we need to refresh it
+    // Handle network errors
+    if (!error.response) {
+      toast.error('Lỗi kết nối mạng, vui lòng kiểm tra internet');
+      return Promise.reject(error);
+    }
+
+    // Handle 401 errors (token expired)
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
         // Wait for the refresh to complete
         try {
-          const token = await new Promise(resolve => subscribeTokenRefresh(resolve));
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return axiosInstance(originalRequest);
-        } catch (err) {
-          return Promise.reject(err);
+          const token = await new Promise((resolve, reject) => {
+            subscribeTokenRefresh((newToken, refreshError) => {
+              if (refreshError) {
+                reject(refreshError);
+              } else {
+                resolve(newToken);
+              }
+            });
+          });
+          
+          if (token) {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return axiosInstance(originalRequest);
+          }
+        } catch (refreshError) {
+          return Promise.reject(refreshError);
         }
       }
 
@@ -59,37 +92,122 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       const refreshToken = localStorage.getItem('refreshToken');
+      
       if (!refreshToken) {
-        onRefreshError(new Error('No refresh token'));
+        isRefreshing = false;
+        onRefreshError(new Error('No refresh token available'));
         return Promise.reject(error);
       }
 
       try {
-        const response = await axiosInstance.post('/auth/refresh-token', {
-          refreshToken: refreshToken
-        });
+        // Call refresh endpoint
+        const refreshResponse = await axios.post(
+          'http://192.84.105.173:5000/api/auth/refresh',
+          { refreshToken },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            timeout: 10000
+          }
+        );
 
-        const { accessToken, refreshToken: newRefreshToken } = response.data;
+        const { accessToken, refreshToken: newRefreshToken } = refreshResponse.data;
         
-        localStorage.setItem('accessToken', accessToken);
-        localStorage.setItem('refreshToken', newRefreshToken);
+        if (!accessToken) {
+          throw new Error('No access token received from refresh');
+        }
 
-        // Update the axios instance headers and the original request headers
+        // Update stored tokens
+        localStorage.setItem('accessToken', accessToken);
+        if (newRefreshToken) {
+          localStorage.setItem('refreshToken', newRefreshToken);
+        }
+
+        // Update headers for future requests
         axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
 
+        // Notify all waiting requests
         onRefreshed(accessToken);
         isRefreshing = false;
 
+        // Retry the original request
         return axiosInstance(originalRequest);
       } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
         isRefreshing = false;
         onRefreshError(refreshError);
         return Promise.reject(refreshError);
       }
     }
+
+    // Handle other HTTP errors
+    switch (error.response?.status) {
+      case 400:
+        toast.error(error.response.data?.message || 'Dữ liệu không hợp lệ');
+        break;
+      case 403:
+        toast.error('Bạn không có quyền thực hiện thao tác này');
+        break;
+      case 404:
+        toast.error('Không tìm thấy dữ liệu yêu cầu');
+        break;
+      case 409:
+        toast.error(error.response.data?.message || 'Dữ liệu đã tồn tại');
+        break;
+      case 422:
+        toast.error(error.response.data?.message || 'Dữ liệu không đúng định dạng');
+        break;
+      case 429:
+        toast.error('Quá nhiều yêu cầu, vui lòng thử lại sau');
+        break;
+      case 500:
+        toast.error('Lỗi máy chủ, vui lòng thử lại sau');
+        break;
+      case 502:
+      case 503:
+      case 504:
+        toast.error('Máy chủ tạm thời không khả dụng, vui lòng thử lại sau');
+        break;
+      default:
+        if (error.response?.status >= 500) {
+          toast.error('Lỗi máy chủ, vui lòng thử lại sau');
+        } else if (!error.response.data?.message) {
+          toast.error('Có lỗi xảy ra, vui lòng thử lại');
+        }
+        break;
+    }
+
     return Promise.reject(error);
   }
 );
+
+// Helper function to check if user is authenticated
+export const isAuthenticated = () => {
+  const token = localStorage.getItem('accessToken');
+  const refreshToken = localStorage.getItem('refreshToken');
+  return !!(token && refreshToken);
+};
+
+// Helper function to get current user info
+export const getCurrentUser = () => {
+  try {
+    const userInfo = localStorage.getItem('userInfo');
+    return userInfo ? JSON.parse(userInfo) : null;
+  } catch (error) {
+    console.error('Error parsing user info:', error);
+    return null;
+  }
+};
+
+// Helper function to manually logout
+export const logout = () => {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+  localStorage.removeItem('userInfo');
+  delete axiosInstance.defaults.headers.common['Authorization'];
+  window.location.href = '/';
+};
 
 export default axiosInstance;

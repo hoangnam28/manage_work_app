@@ -377,6 +377,18 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>
+              <Form.Item
+                name="dk_4ghz"
+                label="DK @ 4GHz"
+              >
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+              </Form.Item>
+              <Form.Item
+                name="df_4ghz"
+                label="DF @ 4GHz"
+              >
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+              </Form.Item>
 
               <Form.Item
                 name="dk_5ghz"
@@ -391,14 +403,26 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>
               <Form.Item
-                name="dk_5ghz_2"
-                label="DK @ 5GHz (2)"
+                name="dk_6ghz"
+                label="DK @ 3GHz"
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>
               <Form.Item
-                name="df_5ghz_2"
-                label="DF @ 5GHz (2)"
+                name="df_6ghz"
+                label="DF @ 3GHz"
+              >
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+              </Form.Item>
+              <Form.Item
+                name="dk_7ghz"
+                label="DK @ 3GHz"
+              >
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+              </Form.Item>
+              <Form.Item
+                name="df_7ghz"
+                label="DF @ 3GHz"
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>
@@ -411,6 +435,18 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               <Form.Item
                 name="df_8ghz"
                 label="DF @ 8GHz"
+              >
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+              </Form.Item>
+              <Form.Item
+                name="dk_9ghz"
+                label="DK @ 3GHz"
+              >
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+              </Form.Item>
+              <Form.Item
+                name="df_9ghz"
+                label="DF @ 3GHz"
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>
