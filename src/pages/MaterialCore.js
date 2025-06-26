@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Space, Popconfirm } from 'antd';
-import { 
-  EditOutlined, 
-  DeleteOutlined, 
-  PlusOutlined 
+import {
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
-import { 
-  fetchMaterialCoreList, 
+import {
+  fetchMaterialCoreList,
   createMaterialCore,
   updateMaterialCore,
   deleteMaterialCore,
@@ -40,26 +40,44 @@ const MaterialCore = () => {
     fetchData();
   }, []);
   const handleCreate = async (values) => {
+  try {
+    let requesterName = 'Unknown';
     try {
-      const topArr = Array.isArray(values.top_foil_cu_weight) ? values.top_foil_cu_weight : [values.top_foil_cu_weight];
-      const botArr = Array.isArray(values.bot_foil_cu_weight) ? values.bot_foil_cu_weight : [values.bot_foil_cu_weight];
-      await createMaterialCore({
-        ...values,
-        top_foil_cu_weight: topArr,
-        bot_foil_cu_weight: botArr
-      });
-      toast.success(`Đã thêm thành công ${topArr.length} bản ghi`);
-      setModalVisible(false);
-      fetchData();
-    } catch (error) {
-      console.error('Error creating material core:', error);
-      toast.error('Lỗi khi thêm mới');
+      const userStr = localStorage.getItem('userInfo'); 
+      if (userStr) {
+        const userObj = JSON.parse(userStr);
+        requesterName = userObj.username || 'Unknown';
+      }
+    } catch (e) {
+      requesterName = localStorage.getItem('username') || 'Unknown';
     }
-  };
+
+    const today = new Date();
+    const topArr = Array.isArray(values.top_foil_cu_weight) ? values.top_foil_cu_weight : [values.top_foil_cu_weight];
+    const botArr = Array.isArray(values.bot_foil_cu_weight) ? values.bot_foil_cu_weight : [values.bot_foil_cu_weight];
+
+    await createMaterialCore({
+      ...values,
+      requester_name: requesterName,
+      request_date: today,
+      status: 'Pending',
+      top_foil_cu_weight: topArr,
+      bot_foil_cu_weight: botArr
+    });
+
+    toast.success(`Đã thêm thành công ${topArr.length} bản ghi`);
+    setModalVisible(false);
+    fetchData();
+  } catch (error) {
+    console.error('Error creating material core:', error);
+    toast.error('Lỗi khi thêm mới');
+  }
+};
+
   const handleUpdate = async (values) => {
     try {
       const recordId = editingRecord.ID || editingRecord.id;
-      
+
       if (!recordId) {
         throw new Error('ID không hợp lệ');
       }
@@ -104,7 +122,7 @@ const MaterialCore = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'MaterialCoreExport.xlsx');
+      link.setAttribute('download', 'MaterialCoreExport.xlsm');
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -148,37 +166,37 @@ const MaterialCore = () => {
       render: (date) => date ? new Date(date).toLocaleDateString() : ''
     },
     {
-      title: 'Nhà cung cấp',
+      title: 'Vendor',
       dataIndex: 'VENDOR',
       key: 'vendor',
       width: 150
     },
     {
-      title: 'Họ vật liệu',
+      title: 'Family',
       dataIndex: 'FAMILY',
       key: 'family',
       width: 150
     },
     {
-      title: 'Số lớp prepreg',
+      title: 'PREPREG_Count',
       dataIndex: 'PREPREG_COUNT',
       key: 'prepreg_count',
       width: 120
     },
     {
-      title: 'Độ dày danh nghĩa',
+      title: 'Nominal_Thickness',
       dataIndex: 'NOMINAL_THICKNESS',
       key: 'nominal_thickness',
       width: 150
     },
     {
-      title: 'Độ dày spec',
+      title: 'Spec_Thickness',
       dataIndex: 'SPEC_THICKNESS',
       key: 'spec_thickness',
       width: 120
     },
     {
-      title: 'Preference Class',
+      title: 'Preference_Class',
       dataIndex: 'PREFERENCE_CLASS',
       key: 'preference_class',
       width: 120
@@ -197,302 +215,302 @@ const MaterialCore = () => {
       render: (value) => value === 'TRUE' ? 'Có' : 'Không'
     },
     {
-      title: 'Top Foil Cu Weight',
+      title: 'Top_Foil_Cu_Weight',
       dataIndex: 'TOP_FOIL_CU_WEIGHT',
       key: 'top_foil_cu_weight',
       width: 150
     },
     {
-      title: 'Bottom Foil Cu Weight',
+      title: 'Bottom_Foil_Cu_Weight',
       dataIndex: 'BOT_FOIL_CU_WEIGHT',
       key: 'bot_foil_cu_weight',
       width: 150
     },
     {
-      title: 'Tg Min',
+      title: 'Tg_Min',
       dataIndex: 'TG_MIN',
       key: 'tg_min',
       width: 100
     },
     {
-      title: 'Tg Max',
+      title: 'Tg_Max',
       dataIndex: 'TG_MAX',
       key: 'tg_max',
       width: 100
     },
     {
-      title: 'Center Glass',
+      title: 'Center_Glass',
       dataIndex: 'CENTER_GLASS',
       key: 'center_glass',
       width: 150
     },
     {
-      title: 'Dk @ 0.1GHz (Legacy)',
+      title: 'Dk @ 0.1GHz',
       dataIndex: 'DK_01G',
       key: 'dk_01g',
       width: 120
     },
     {
-      title: 'Df @ 0.1GHz (Legacy)',
+      title: 'Df @ 0.1GHz',
       dataIndex: 'DF_01G',
       key: 'df_01g',
       width: 120
     },
     {
-      title: 'Dk @ 0.001GHz',
+      title: 'Dk_0_001GHz',
       dataIndex: 'DK_0_001GHZ',
       key: 'dk_0_001ghz',
       width: 120
     },
     {
-      title: 'Df @ 0.001GHz',
+      title: 'Df_0_001GHz',
       dataIndex: 'DF_0_001GHZ',
       key: 'df_0_001ghz',
       width: 120
     },
     {
-      title: 'Dk @ 0.01GHz',
+      title: 'Dk_0_01GHz',
       dataIndex: 'DK_0_01GHZ',
       key: 'dk_0_01ghz',
       width: 120
     },
     {
-      title: 'Df @ 0.01GHz',
+      title: 'Df_0_01GHz',
       dataIndex: 'DF_0_01GHZ',
       key: 'df_0_01ghz',
       width: 120
     },
     {
-      title: 'Dk @ 0.02GHz',
+      title: 'Dk_0_02GHz',
       dataIndex: 'DK_0_02GHZ',
       key: 'dk_0_02ghz',
       width: 120
     },
     {
-      title: 'Df @ 0.02GHz',
+      title: 'Df_0_02GHz',
       dataIndex: 'DF_0_02GHZ',
       key: 'df_0_02ghz',
       width: 120
     },
     {
-      title: 'Dk @ 2GHz',
+      title: 'Dk_2GHz',
       dataIndex: 'DK_2GHZ',
       key: 'dk_2ghz',
       width: 120
     },
     {
-      title: 'Df @ 2GHz',
+      title: 'Df_2GHz',
       dataIndex: 'DF_2GHZ',
       key: 'df_2ghz',
       width: 120
     },
     {
-      title: 'Dk @ 2.45GHz',
+      title: 'Dk_2_45GHz',
       dataIndex: 'DK_2_45GHZ',
       key: 'dk_2_45ghz',
       width: 120
     },
     {
-      title: 'Df @ 2.45GHz',
+      title: 'Df_2_45GHz',
       dataIndex: 'DF_2_45GHZ',
       key: 'df_2_45ghz',
       width: 120
     },
     {
-      title: 'Dk @ 3GHz',
+      title: 'Dk_3GHz',
       dataIndex: 'DK_3GHZ',
       key: 'dk_3ghz',
       width: 120
     },
     {
-      title: 'Df @ 3GHz',
+      title: 'Df_3GHz',
       dataIndex: 'DF_3GHZ',
       key: 'df_3ghz',
       width: 120
     },
     {
-      title: 'Dk @ 5GHz',
+      title: 'Dk_5GHz',
       dataIndex: 'DK_5GHZ',
       key: 'dk_5ghz',
       width: 120
     },
     {
-      title: 'Df @ 5GHz',
+      title: 'Df_5GHz',
       dataIndex: 'DF_5GHZ',
       key: 'df_5ghz',
       width: 120
     },
     {
-      title: 'Dk @ 5GHz_2',
+      title: 'Dk_5GHz_2',
       dataIndex: 'DK_5GHZ_2',
       key: 'dk_5ghz_2',
       width: 120
     },
     {
-      title: 'Df @ 5GHz_2',
+      title: 'Df_5GHz_2',
       dataIndex: 'DF_5GHZ_2',
       key: 'df_5ghz_2',
       width: 120
     },
     {
-      title: 'Dk @ 8GHz',
+      title: 'Dk_8GHz',
       dataIndex: 'DK_8GHZ',
       key: 'dk_8ghz',
       width: 120
     },
     {
-      title: 'Df @ 8GHz',
+      title: 'Df_8GHz',
       dataIndex: 'DF_8GHZ',
       key: 'df_8ghz',
       width: 120
     },
     {
-      title: 'Dk @ 10GHz',
+      title: 'Dk_10GHz',
       dataIndex: 'DK_10GHZ',
       key: 'dk_10ghz',
       width: 120
     },
     {
-      title: 'Df @ 10GHz',
+      title: 'Df_10GHz',
       dataIndex: 'DF_10GHZ',
       key: 'df_10ghz',
       width: 120
     },
     {
-      title: 'Dk @ 15GHz',
+      title: 'Dk_15GHz',
       dataIndex: 'DK_15GHZ',
       key: 'dk_15ghz',
       width: 120
     },
     {
-      title: 'Df @ 15GHz',
+      title: 'Df_15GHz',
       dataIndex: 'DF_15GHZ',
       key: 'df_15ghz',
       width: 120
     },
     {
-      title: 'Dk @ 16GHz',
+      title: 'Dk_16GHz',
       dataIndex: 'DK_16GHZ',
       key: 'dk_16ghz',
       width: 120
     },
     {
-      title: 'Df @ 16GHz',
+      title: 'Df_16GHz',
       dataIndex: 'DF_16GHZ',
       key: 'df_16ghz',
       width: 120
     },
     {
-      title: 'Dk @ 20GHz',
+      title: 'Dk_20GHz',
       dataIndex: 'DK_20GHZ',
       key: 'dk_20ghz',
       width: 120
     },
     {
-      title: 'Df @ 20GHz',
+      title: 'Df_20GHz',
       dataIndex: 'DF_20GHZ',
       key: 'df_20ghz',
       width: 120
     },
     {
-      title: 'Dk @ 25GHz',
+      title: 'Dk_25GHz',
       dataIndex: 'DK_25GHZ',
       key: 'dk_25ghz',
       width: 120
     },
     {
-      title: 'Df @ 25GHz',
+      title: 'Df_25GHz',
       dataIndex: 'DF_25GHZ',
       key: 'df_25ghz',
       width: 120
     },
     {
-      title: 'Dk @ 30GHz',
+      title: 'Dk_30GHz',
       dataIndex: 'DK_30GHZ',
       key: 'dk_30ghz',
       width: 120
     },
     {
-      title: 'Df @ 30GHz',
+      title: 'Df_30GHz',
       dataIndex: 'DF_30GHZ',
       key: 'df_30ghz',
       width: 120
     },
     {
-      title: 'Dk @ 35GHz',
+      title: 'Dk_35GHz',
       dataIndex: 'DK_35GHZ',
       key: 'dk_35ghz',
       width: 120
     },
     {
-      title: 'Df @ 35GHz',
+      title: 'Df_35GHz',
       dataIndex: 'DF_35GHZ',
       key: 'df_35ghz',
       width: 120
     },
     {
-      title: 'Dk @ 40GHz',
+      title: 'Dk_40GHz',
       dataIndex: 'DK_40GHZ',
       key: 'dk_40ghz',
       width: 120
     },
     {
-      title: 'Df @ 40GHz',
+      title: 'Df_40GHz',
       dataIndex: 'DF_40GHZ',
       key: 'df_40ghz',
       width: 120
     },
     {
-      title: 'Dk @ 45GHz',
+      title: 'Dk_45GHz',
       dataIndex: 'DK_45GHZ',
       key: 'dk_45ghz',
       width: 120
     },
     {
-      title: 'Df @ 45GHz',
+      title: 'Df_45GHz',
       dataIndex: 'DF_45GHZ',
       key: 'df_45ghz',
       width: 120
     },
     {
-      title: 'Dk @ 50GHz',
+      title: 'Dk_50GHz',
       dataIndex: 'DK_50GHZ',
       key: 'dk_50ghz',
       width: 120
     },
     {
-      title: 'Df @ 50GHz',
+      title: 'Df_50GHz',
       dataIndex: 'DF_50GHZ',
       key: 'df_50ghz',
       width: 120
     },
     {
-      title: 'Dk @ 55GHz',
+      title: 'Dk_55GHz',
       dataIndex: 'DK_55GHZ',
       key: 'dk_55ghz',
       width: 120
     },
     {
-      title: 'Df @ 55GHz',
+      title: 'Df_55GHz',
       dataIndex: 'DF_55GHZ',
       key: 'df_55ghz',
       width: 120
     },
     {
-      title: 'High Frequency',
+      title: 'IS_HF',
       dataIndex: 'IS_HF',
       key: 'is_hf',
       width: 120,
       render: (value) => value === 'TRUE' ? 'Có' : 'Không'
     },
     {
-      title: 'Nguồn dữ liệu',
+      title: 'DATA_SOURCE',
       dataIndex: 'DATA_SOURCE',
       key: 'data_source',
       width: 200
     },
     {
-      title: 'Tên file',
+      title: 'FILE_NAME',
       dataIndex: 'FILENAME',
       key: 'filename',
       width: 200

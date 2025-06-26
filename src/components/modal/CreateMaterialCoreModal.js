@@ -85,7 +85,9 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
           is_hf: 'FALSE'
         }}
       >
-        <Tabs defaultActiveKey="1">
+        
+          <Tabs defaultActiveKey="1">
+            { editingRecord && (
           <TabPane tab="1. Thông tin yêu cầu" key="1">
             <Alert
               message="Thông tin yêu cầu"
@@ -134,7 +136,8 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               </Form.Item>
             </div>
           </TabPane>
-
+          )},
+       
           <TabPane tab="2. Thông số kỹ thuật" key="2">
             <Alert
               message="Thông số kỹ thuật"

@@ -509,7 +509,7 @@ const MaterialProperties = () => {
     <MainLayout>
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-          <h1>Material Core</h1>
+          <h1>Material Properties</h1>
           <Button
             type="primary"
             icon={<PlusOutlined />}
