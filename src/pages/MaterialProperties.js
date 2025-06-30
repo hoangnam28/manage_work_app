@@ -7,12 +7,12 @@ import {
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import { 
-  fetchMaterialCoreList, 
-  createMaterialCore,
-  updateMaterialCore,
-  deleteMaterialCore 
-} from '../utils/material-core-api';
-import CreateMaterialCoreModal from '../components/modal/CreateMaterialCoreModal';
+  fetchMaterialPpList, 
+  createMaterialPp,
+  updateMaterialPp,
+  deleteMaterialPp 
+} from '../utils/material-pp-api';
+import CreateMaterialPpModal from '../components/modal/CreateMaterialPPModal';
 import { toast } from 'sonner';
 import './MaterialCore.css';
 
@@ -25,7 +25,7 @@ const MaterialProperties = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const response = await fetchMaterialCoreList();
+      const response = await fetchMaterialPpList();
       setData(response.data || []);
     } catch (error) {
       console.error('Error fetching material core data:', error);
@@ -40,17 +40,26 @@ const MaterialProperties = () => {
   }, []);
   const handleCreate = async (values) => {
     try {
-      const { top_foil_cu_weight, ...restValues } = values;
-      const createPromises = top_foil_cu_weight.map(weight => 
-        createMaterialCore({
-          ...restValues,
-          top_foil_cu_weight: weight
-        })
-      );
-
-      await Promise.all(createPromises);
-      
-      toast.success(`Đã thêm thành công ${top_foil_cu_weight.length} bản ghi`);
+      let requesterName = 'Unknown';
+      try {
+        const userStr = localStorage.getItem('userInfo'); 
+        if (userStr) {
+          const userObj = JSON.parse(userStr);
+          requesterName = userObj.username || 'Unknown';
+        }
+      } catch (e) {
+        requesterName = localStorage.getItem('username') || 'Unknown';
+      }
+  
+      const today = new Date();
+  
+      await createMaterialPp({
+        ...values,
+        name: requesterName,
+        request_date: today,
+        status: 'Pending',
+      });
+  
       setModalVisible(false);
       fetchData();
     } catch (error) {
@@ -72,7 +81,7 @@ const MaterialProperties = () => {
         values
       });
 
-      await updateMaterialCore(recordId, values);
+      await updateMaterialPp(recordId, values);
       toast.success('Cập nhật thành công');
       setModalVisible(false);
       setEditingRecord(null);
@@ -91,7 +100,7 @@ const MaterialProperties = () => {
         toast.error('ID không hợp lệ, không thể xóa!');
         return;
       }
-      await deleteMaterialCore(id);
+      await deleteMaterialPp(id);
       toast.success('Xóa thành công');
       fetchData();
     } catch (error) {
@@ -103,8 +112,8 @@ const MaterialProperties = () => {
   const columns = [
     {
       title: 'Người yêu cầu',
-      dataIndex: 'REQUESTER_NAME',
-      key: 'requester_name',
+      dataIndex: 'NAME',
+      key: 'name',
       width: 150,
       fixed: 'left'
     },
@@ -141,7 +150,7 @@ const MaterialProperties = () => {
       width: 150
     },
     {
-      title: 'Họ vật liệu',
+      title: 'FAMILY',
       dataIndex: 'FAMILY',
       key: 'family',
       width: 150
@@ -174,18 +183,6 @@ const MaterialProperties = () => {
       title: 'Loại sử dụng',
       dataIndex: 'USE_TYPE',
       key: 'use_type',
-      width: 150
-    },
-    {
-      title: 'Top Foil Cu Weight',
-      dataIndex: 'TOP_FOIL_CU_WEIGHT',
-      key: 'top_foil_cu_weight',
-      width: 150
-    },
-    {
-      title: 'Bottom Foil Cu Weight',
-      dataIndex: 'BOT_FOIL_CU_WEIGHT',
-      key: 'bot_foil_cu_weight',
       width: 150
     },
     {
@@ -291,6 +288,18 @@ const MaterialProperties = () => {
       width: 120
     },
     {
+      title: 'Dk @ 4GHz',
+      dataIndex: 'DK_4GHZ',
+      key: 'dk_4ghz',
+      width: 120
+    },
+    {
+      title: 'Df @ 4GHz',
+      dataIndex: 'DF_4GHZ',
+      key: 'df_4ghz',
+      width: 120
+    },
+    {
       title: 'Dk @ 5GHz',
       dataIndex: 'DK_5GHZ',
       key: 'dk_5ghz',
@@ -387,92 +396,20 @@ const MaterialProperties = () => {
       width: 120
     },
     {
-      title: 'Dk @ 30GHz',
-      dataIndex: 'DK_30GHZ',
-      key: 'dk_30ghz',
-      width: 120
-    },
-    {
-      title: 'Df @ 30GHz',
-      dataIndex: 'DF_30GHZ',
-      key: 'df_30ghz',
-      width: 120
-    },
-    {
-      title: 'Dk @ 35GHz',
-      dataIndex: 'DK_35GHZ',
-      key: 'dk_35ghz',
-      width: 120
-    },
-    {
-      title: 'Df @ 35GHz',
-      dataIndex: 'DF_35GHZ',
-      key: 'df_35ghz',
-      width: 120
-    },
-    {
-      title: 'Dk @ 40GHz',
-      dataIndex: 'DK_40GHZ',
-      key: 'dk_40ghz',
-      width: 120
-    },
-    {
-      title: 'Df @ 40GHz',
-      dataIndex: 'DF_40GHZ',
-      key: 'df_40ghz',
-      width: 120
-    },
-    {
-      title: 'Dk @ 45GHz',
-      dataIndex: 'DK_45GHZ',
-      key: 'dk_45ghz',
-      width: 120
-    },
-    {
-      title: 'Df @ 45GHz',
-      dataIndex: 'DF_45GHZ',
-      key: 'df_45ghz',
-      width: 120
-    },
-    {
-      title: 'Dk @ 50GHz',
-      dataIndex: 'DK_50GHZ',
-      key: 'dk_50ghz',
-      width: 120
-    },
-    {
-      title: 'Df @ 50GHz',
-      dataIndex: 'DF_50GHZ',
-      key: 'df_50ghz',
-      width: 120
-    },
-    {
-      title: 'Dk @ 55GHz',
-      dataIndex: 'DK_55GHZ',
-      key: 'dk_55ghz',
-      width: 120
-    },
-    {
-      title: 'Df @ 55GHz',
-      dataIndex: 'DF_55GHZ',
-      key: 'df_55ghz',
-      width: 120
-    },
-    {
-      title: 'High Frequency',
+      title: 'IS_HF',
       dataIndex: 'IS_HF',
       key: 'is_hf',
       width: 120,
       render: (value) => value === 'TRUE' ? 'Có' : 'Không'
     },
     {
-      title: 'Nguồn dữ liệu',
+      title: 'DATA_SOURCE',
       dataIndex: 'DATA_SOURCE',
       key: 'data_source',
       width: 200
     },
     {
-      title: 'Tên file',
+      title: 'FILE NAME',
       dataIndex: 'FILENAME',
       key: 'filename',
       width: 200
@@ -536,7 +473,7 @@ const MaterialProperties = () => {
           }}
         />
 
-        <CreateMaterialCoreModal
+        <CreateMaterialPpModal
           open={modalVisible}
           onCancel={() => {
             setModalVisible(false);

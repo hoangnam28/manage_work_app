@@ -6,9 +6,10 @@ import { toast } from 'sonner';
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
+const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
   const [form] = Form.useForm();
-  useEffect(() => {    if (open) {
+  useEffect(() => {
+    if (open) {
       if (editingRecord) {
         const formattedRecord = Object.keys(editingRecord).reduce((acc, key) => {
           if (key.toUpperCase() === 'ID') {
@@ -20,8 +21,7 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
         form.setFieldsValue({
           ...formattedRecord,
           request_date: formattedRecord.request_date ? moment(formattedRecord.request_date) : null,
-          complete_date: formattedRecord.complete_date ? moment(formattedRecord.complete_date) : null,         
-          top_foil_cu_weight: formattedRecord.top_foil_cu_weight || null
+          complete_date: formattedRecord.complete_date ? moment(formattedRecord.complete_date) : null,
         });
       } else {
         form.resetFields();
@@ -31,7 +31,7 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
         });
       }
     }
-  }, [open, editingRecord, form]);const handleSubmit = async () => {
+  }, [open, editingRecord, form]); const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       if (values.request_date) {
@@ -39,7 +39,7 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
       }
       if (values.complete_date) {
         values.complete_date = values.complete_date.toDate().toISOString();
-      }      
+      }
       if (editingRecord) {
         const recordId = editingRecord.ID || editingRecord.id;
         if (!recordId) {
@@ -49,12 +49,12 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
       }
 
       await onSubmit(values);
-      
+
       if (editingRecord) {
         toast.success('Cập nhật thành công!');
       } else {
         toast.success('Thêm mới thành công!');
-        form.resetFields(); 
+        form.resetFields();
       }
 
     } catch (error) {
@@ -64,7 +64,7 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
   };
   return (
     <Modal
-      title={editingRecord ? 'Sửa Material Core' : 'Thêm Material Core'}
+      title={editingRecord ? 'Sửa Material PP' : 'Thêm Material PP'}
       open={open}
       onOk={handleSubmit}
       onCancel={onCancel}
@@ -85,59 +85,59 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
           is_hf: 'FALSE'
         }}
       >
-        
-          <Tabs defaultActiveKey="1">
-            { editingRecord && (
-          <TabPane tab="1. Thông tin yêu cầu" key="1">
-            <Alert
-              message="Thông tin yêu cầu"
-              description="Thông tin người yêu cầu và trạng thái xử lý"
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-              <Form.Item
-                name="requester_name"
-                label="Người yêu cầu"
-                rules={[{ required: true, message: 'Vui lòng nhập người yêu cầu' }]}
-              >
-                <Input />
-              </Form.Item>
-              <Form.Item
-                name="request_date"
-                label="Ngày yêu cầu"
-                rules={[{ required: true, message: 'Vui lòng chọn ngày yêu cầu' }]}
-              >
-                <DatePicker style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item
-                name="handler"
-                label="Người xử lý"
-              >
-                <Input />
-              </Form.Item>
-              <Form.Item
-                name="status"
-                label="Trạng thái"
-                rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
-              >
-                <Select>
-                  <Option value="Pending">Pending</Option>
-                  <Option value="Approve">Approve</Option>
-                  <Option value="Cancel">Cancel</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item
-                name="complete_date"
-                label="Ngày hoàn thành"
-              >
-                <DatePicker style={{ width: '100%' }} />
-              </Form.Item>
-            </div>
-          </TabPane>
+
+        <Tabs defaultActiveKey="1">
+          {editingRecord && (
+            <TabPane tab="1. Thông tin yêu cầu" key="1">
+              <Alert
+                message="Thông tin yêu cầu"
+                description="Thông tin người yêu cầu và trạng thái xử lý"
+                type="info"
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                <Form.Item
+                  name="requester_name"
+                  label="Người yêu cầu"
+                  rules={[{ required: true, message: 'Vui lòng nhập người yêu cầu' }]}
+                >
+                  <Input />
+                </Form.Item>
+                <Form.Item
+                  name="request_date"
+                  label="Ngày yêu cầu"
+                  rules={[{ required: true, message: 'Vui lòng chọn ngày yêu cầu' }]}
+                >
+                  <DatePicker style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item
+                  name="handler"
+                  label="Người xử lý"
+                >
+                  <Input />
+                </Form.Item>
+                <Form.Item
+                  name="status"
+                  label="Trạng thái"
+                  rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
+                >
+                  <Select>
+                    <Option value="Pending">Pending</Option>
+                    <Option value="Approve">Approve</Option>
+                    <Option value="Cancel">Cancel</Option>
+                  </Select>
+                </Form.Item>
+                <Form.Item
+                  name="complete_date"
+                  label="Ngày hoàn thành"
+                >
+                  <DatePicker style={{ width: '100%' }} />
+                </Form.Item>
+              </div>
+            </TabPane>
           )},
-       
+
           <TabPane tab="2. Thông số kỹ thuật" key="2">
             <Alert
               message="Thông số kỹ thuật"
@@ -190,58 +190,6 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
                 <Input />
               </Form.Item>
               <Form.Item
-                name="top_foil_cu_weight"
-                label="Top Foil Cu Weight"
-                rules={[{ required: true, message: editingRecord ? 'Vui lòng chọn một giá trị' : 'Vui lòng chọn ít nhất một giá trị' },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      const bot = getFieldValue('bot_foil_cu_weight');
-                      if (!value || !bot) return Promise.resolve();
-                      if (Array.isArray(value) && Array.isArray(bot) && value.length !== bot.length) {
-                        return Promise.reject(new Error('Số lượng giá trị Top/Bot Foil Cu Weight phải bằng nhau'));
-                      }
-                      return Promise.resolve();
-                    }
-                  })
-                ]}
-              >
-                <Select
-                  mode={editingRecord ? undefined : "multiple"}
-                  placeholder={editingRecord ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị"}
-                >
-                  <Option value="L">L</Option>
-                  <Option value="H">H</Option>
-                  <Option value="1">1</Option>
-                  <Option value="2">2</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item
-                name="bot_foil_cu_weight"
-                label="Bottom Foil Cu Weight"
-                rules={[{ required: true, message: editingRecord ? 'Vui lòng chọn một giá trị' : 'Vui lòng chọn ít nhất một giá trị' },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      const top = getFieldValue('top_foil_cu_weight');
-                      if (!value || !top) return Promise.resolve();
-                      if (Array.isArray(value) && Array.isArray(top) && value.length !== top.length) {
-                        return Promise.reject(new Error('Số lượng giá trị Top/Bot Foil Cu Weight phải bằng nhau'));
-                      }
-                      return Promise.resolve();
-                    }
-                  })
-                ]}
-              >
-                <Select
-                  mode={editingRecord ? undefined : "multiple"}
-                  placeholder={editingRecord ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị"}
-                >
-                  <Option value="L">L</Option>
-                  <Option value="H">H</Option>
-                  <Option value="1">1</Option>
-                  <Option value="2">2</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item
                 name="tg_min"
                 label="Tg Min"
               >
@@ -254,20 +202,14 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
-                name="center_glass"
-                label="Center Glass"
-              >
-                <Input />
-              </Form.Item>
-              <Form.Item
                 name="dk_01g"
-                label="DK_0.1GHz"
+                label="DK @ 0.1GHz"
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>
               <Form.Item
                 name="df_01g"
-                label="DF_0.1GHz"
+                label="DF @ 0.1GHz"
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>
@@ -282,13 +224,13 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               </Form.Item>
               <Form.Item
                 name="data_source"
-                label="DATA_SOURCE"
+                label="Nguồn dữ liệu"
               >
                 <Input.TextArea />
               </Form.Item>
               <Form.Item
                 name="filename"
-                label="FILE_NAME"
+                label="Tên file"
               >
                 <Input />
               </Form.Item>
@@ -512,80 +454,6 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>
-              <Form.Item
-                name="dk_30ghz"
-                label="DK_30GHz"
-              >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
-              </Form.Item>
-              <Form.Item
-                name="df_30ghz"
-                label="DF_30GHz"
-              >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
-              </Form.Item>
-
-              <Form.Item
-                name="dk_35ghz"
-                label="DK_35GHz"
-              >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
-              </Form.Item>
-              <Form.Item
-                name="df_35ghz"
-                label="DF_35GHz"
-              >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
-              </Form.Item>
-              <Form.Item
-                name="dk_40ghz"
-                label="DK_40GHz"
-              >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
-              </Form.Item>
-              <Form.Item
-                name="df_40ghz"
-                label="DF_40GHz"
-              >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
-              </Form.Item>
-              <Form.Item
-                name="dk_45ghz"
-                label="DK_45GHz"
-              >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
-              </Form.Item>
-              <Form.Item
-                name="df_45ghz"
-                label="DF_45GHz"
-              >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
-              </Form.Item>
-
-              <Form.Item
-                name="dk_50ghz"
-                label="DK_50GHz"
-              >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
-              </Form.Item>
-              <Form.Item
-                name="df_50ghz"
-                label="DF_50GHz"
-              >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
-              </Form.Item>
-              <Form.Item
-                name="dk_55ghz"
-                label="DK_55GHz"
-              >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
-              </Form.Item>
-              <Form.Item
-                name="df_55ghz"
-                label="DF_55GHz"
-              >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
-              </Form.Item>
             </div>
           </TabPane>
         </Tabs>
@@ -594,4 +462,4 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
   );
 };
 
-export default MaterialCoreModal;
+export default MaterialPPModal;
