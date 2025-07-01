@@ -98,7 +98,7 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               />
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
                 <Form.Item
-                  name="requester_name"
+                  name="name"
                   label="Người yêu cầu"
                   rules={[{ required: true, message: 'Vui lòng nhập người yêu cầu' }]}
                 >
@@ -160,26 +160,26 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
                 <Input />
               </Form.Item>
               <Form.Item
-                name="prepreg_count"
-                label="PREPREG Count"
+                name="glass_style"
+                label="GLASS_STYLE"
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
-                name="nominal_thickness"
-                label="Nominal Thickness"
+                name="resin_percentage"
+                label="RESIN_PERCENTAGE"
               >
                 <InputNumber style={{ width: '100%' }} step={0.001} />
               </Form.Item>
               <Form.Item
-                name="spec_thickness"
-                label="Spec Thickness"
+                name="rav_thickness"
+                label="RAV_THICKNESS"
               >
                 <InputNumber style={{ width: '100%' }} step={0.001} />
               </Form.Item>
               <Form.Item
                 name="preference_class"
-                label="Preference Class"
+                label="PREFERENCE CLASS"
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>

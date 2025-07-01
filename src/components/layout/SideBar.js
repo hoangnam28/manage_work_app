@@ -44,7 +44,7 @@ const SideBar = ({ onLogout, userId }) => {
         },
         {
           key: '/material-properties',
-          label: <Link to="/material-properties">Materials Properties</Link>,
+          label: <Link to="/material-properties">Materials Prepreg</Link>,
         }
       ]
     },

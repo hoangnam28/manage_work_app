@@ -14,7 +14,7 @@ import {
   exportMaterialCore
 } from '../utils/material-core-api';
 import CreateMaterialCoreModal from '../components/modal/CreateMaterialCoreModal';
-import { toast } from 'sonner';
+import { toast, Toaster } from 'sonner';
 import './MaterialCore.css';
 
 const MaterialCore = () => {
@@ -581,6 +581,7 @@ const MaterialCore = () => {
 
   return (
     <MainLayout>
+      <Toaster position="top-right" richColors />
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <h1>Material Core</h1>

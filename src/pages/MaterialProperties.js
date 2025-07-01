@@ -13,7 +13,7 @@ import {
   deleteMaterialPp 
 } from '../utils/material-pp-api';
 import CreateMaterialPpModal from '../components/modal/CreateMaterialPPModal';
-import { toast } from 'sonner';
+import { toast, Toaster} from 'sonner';
 import './MaterialCore.css';
 
 const MaterialProperties = () => {
@@ -144,7 +144,7 @@ const MaterialProperties = () => {
       render: (date) => date ? new Date(date).toLocaleDateString() : ''
     },
     {
-      title: 'Nhà cung cấp',
+      title: 'VENDOR',
       dataIndex: 'VENDOR',
       key: 'vendor',
       width: 150
@@ -156,187 +156,199 @@ const MaterialProperties = () => {
       width: 150
     },
     {
-      title: 'Số lớp prepreg',
-      dataIndex: 'PREPREG_COUNT',
-      key: 'prepreg_count',
+      title: 'GLASS_STYLE',
+      dataIndex: 'GLASS_STYLE',
+      key: 'glass_style',
       width: 120
     },
     {
-      title: 'Độ dày danh nghĩa',
-      dataIndex: 'NOMINAL_THICKNESS',
-      key: 'nominal_thickness',
+      title: 'RESIN_PERCENTAGE',
+      dataIndex: 'RESIN_PERCENTAGE',
+      key: 'resin_percentage',
       width: 150
     },
     {
-      title: 'Độ dày spec',
-      dataIndex: 'SPEC_THICKNESS',
-      key: 'spec_thickness',
+      title: 'RAV_THICKNESS',
+      dataIndex: 'RAV_THICKNESS',
+      key: 'rav_thickness',
       width: 120
     },
     {
-      title: 'Preference Class',
+      title: 'PREFERENCE_CLASS',
       dataIndex: 'PREFERENCE_CLASS',
       key: 'preference_class',
       width: 120
     },
     {
-      title: 'Loại sử dụng',
+      title: 'USE_TYPE',
       dataIndex: 'USE_TYPE',
       key: 'use_type',
       width: 150
     },
     {
-      title: 'Tg Min',
+      title: 'TG_MIN',
       dataIndex: 'TG_MIN',
       key: 'tg_min',
       width: 100
     },
     {
-      title: 'Tg Max',
+      title: 'TG_MAX',
       dataIndex: 'TG_MAX',
       key: 'tg_max',
       width: 100
     },
     {
-      title: 'Center Glass',
+      title: 'CENTER_GLASS',
       dataIndex: 'CENTER_GLASS',
       key: 'center_glass',
       width: 150
     },
     {
-      title: 'Dk @ 0.1GHz (Legacy)',
+      title: 'DK_01G',
       dataIndex: 'DK_01G',
       key: 'dk_01g',
       width: 120
     },
     {
-      title: 'Df @ 0.1GHz (Legacy)',
+      title: 'DF_01G',
       dataIndex: 'DF_01G',
       key: 'df_01g',
       width: 120
     },
     {
-      title: 'Dk @ 0.001GHz',
+      title: 'DK_0_001GHZ',
       dataIndex: 'DK_0_001GHZ',
       key: 'dk_0_001ghz',
       width: 120
     },
     {
-      title: 'Df @ 0.001GHz',
+      title: 'DF_0_001GHZ',
       dataIndex: 'DF_0_001GHZ',
       key: 'df_0_001ghz',
       width: 120
     },
     {
-      title: 'Dk @ 0.01GHz',
+      title: 'DK_0_01GHZ',
       dataIndex: 'DK_0_01GHZ',
       key: 'dk_0_01ghz',
       width: 120
     },
     {
-      title: 'Df @ 0.01GHz',
+      title: 'DF_0_01GHZ',
       dataIndex: 'DF_0_01GHZ',
       key: 'df_0_01ghz',
       width: 120
     },
     {
-      title: 'Dk @ 0.02GHz',
+      title: 'DK_0_02GHZ',
       dataIndex: 'DK_0_02GHZ',
       key: 'dk_0_02ghz',
       width: 120
     },
     {
-      title: 'Df @ 0.02GHz',
+      title: 'DF_0_02GHZ',
       dataIndex: 'DF_0_02GHZ',
       key: 'df_0_02ghz',
       width: 120
     },
     {
-      title: 'Dk @ 2GHz',
+      title: 'DK_2GHZ',
       dataIndex: 'DK_2GHZ',
       key: 'dk_2ghz',
       width: 120
     },
     {
-      title: 'Df @ 2GHz',
+      title: 'DF_2GHZ',
       dataIndex: 'DF_2GHZ',
       key: 'df_2ghz',
       width: 120
     },
     {
-      title: 'Dk @ 2.45GHz',
+      title: 'DK_2_45GHZ',
       dataIndex: 'DK_2_45GHZ',
       key: 'dk_2_45ghz',
       width: 120
     },
     {
-      title: 'Df @ 2.45GHz',
+      title: 'DF_2_45GHZ',
       dataIndex: 'DF_2_45GHZ',
       key: 'df_2_45ghz',
       width: 120
     },
     {
-      title: 'Dk @ 3GHz',
+      title: 'DK_3GHZ',
       dataIndex: 'DK_3GHZ',
       key: 'dk_3ghz',
       width: 120
     },
     {
-      title: 'Df @ 3GHz',
+      title: 'DF_3GHZ',
       dataIndex: 'DF_3GHZ',
       key: 'df_3ghz',
       width: 120
     },
     {
-      title: 'Dk @ 4GHz',
+      title: 'DK_4GHz',
       dataIndex: 'DK_4GHZ',
       key: 'dk_4ghz',
       width: 120
     },
     {
-      title: 'Df @ 4GHz',
+      title: 'DF_4GHz',
       dataIndex: 'DF_4GHZ',
       key: 'df_4ghz',
       width: 120
     },
     {
-      title: 'Dk @ 5GHz',
+      title: 'DK_5GHz',
       dataIndex: 'DK_5GHZ',
       key: 'dk_5ghz',
       width: 120
     },
     {
-      title: 'Df @ 5GHz',
+      title: 'DF_5GHz',
       dataIndex: 'DF_5GHZ',
       key: 'df_5ghz',
       width: 120
     },
     {
-      title: 'Dk @ 5GHz_2',
-      dataIndex: 'DK_5GHZ_2',
-      key: 'dk_5ghz_2',
+      title: 'DK_6GHz',
+      dataIndex: 'DK_6GHZ',
+      key: 'dk_6ghz',
       width: 120
     },
     {
-      title: 'Df @ 5GHz_2',
-      dataIndex: 'DF_5GHZ_2',
-      key: 'df_5ghz_2',
+      title: 'DF_7GHz',
+      dataIndex: 'DF_7GHZ',
+      key: 'df_5ghz',
       width: 120
     },
     {
-      title: 'Dk @ 8GHz',
+      title: 'DK_8GHz',
       dataIndex: 'DK_8GHZ',
       key: 'dk_8ghz',
       width: 120
     },
     {
-      title: 'Df @ 8GHz',
+      title: 'DF_8GHz',
       dataIndex: 'DF_8GHZ',
       key: 'df_8ghz',
       width: 120
     },
     {
-      title: 'Dk @ 10GHz',
+      title: 'DK_9GHz',
+      dataIndex: 'DK_9GHZ',
+      key: 'dk_9ghz',
+      width: 120
+    },
+    {
+      title: 'DF_9GHz',
+      dataIndex: 'DF_9GHZ',
+      key: 'df_9ghz',
+      width: 120
+    },
+    {
+      title: 'DK_10GHz',
       dataIndex: 'DK_10GHZ',
       key: 'dk_10ghz',
       width: 120
@@ -444,9 +456,10 @@ const MaterialProperties = () => {
 
   return (
     <MainLayout>
+      <Toaster position="top-right" richColors />
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-          <h1>Material Properties</h1>
+          <h1>Material Prepreg</h1>
           <Button
             type="primary"
             icon={<PlusOutlined />}

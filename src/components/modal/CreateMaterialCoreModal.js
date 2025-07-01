@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Modal, Form, Input, DatePicker, Select, InputNumber, Tabs, Alert } from 'antd';
 import moment from 'moment';
-import { toast } from 'sonner';
+import { toast} from 'sonner';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
