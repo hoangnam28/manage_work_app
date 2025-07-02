@@ -150,36 +150,44 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               <Form.Item
                 name="vendor"
                 label="Vendor"
+                rules={[{required: true, message:"Vui lòng nhập Vendor"}]}
+                
               >
-                <Input />
+                <Input
+                placeholder={ "Nhập một vendor ví dụ: Noya" }/>
               </Form.Item>
               <Form.Item
                 name="family"
                 label="Family"
-              >
+                rules={[{required: true, message:"Vui lòng nhập FAMILY"}]}
+              > 
                 <Input />
               </Form.Item>
               <Form.Item
                 name="prepreg_count"
                 label="PREPREG Count"
+                rules={[{required: true, message:"Vui lòng nhập PREPREG COUNT"}]}
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="nominal_thickness"
                 label="Nominal Thickness"
+                rules={[{required: true, message:"Vui lòng nhập NOMINAL THICKNESS"}]}
               >
                 <InputNumber style={{ width: '100%' }} step={0.001} />
               </Form.Item>
               <Form.Item
                 name="spec_thickness"
                 label="Spec Thickness"
+                rules={[{required: true, message:"Vui lòng nhập SPEC THICKNESS"}]}
               >
                 <InputNumber style={{ width: '100%' }} step={0.001} />
               </Form.Item>
               <Form.Item
                 name="preference_class"
                 label="Preference Class"
+                rules={[{required: true, message:"Vui lòng nhập PREFERENCE CLASS"}]}
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
@@ -244,18 +252,21 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               <Form.Item
                 name="tg_min"
                 label="Tg Min"
+                rules={[{required: true, message:"Vui lòng nhập TG_MIN"}]}
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="tg_max"
                 label="Tg Max"
+                rules={[{required: true, message:"Vui lòng nhập TG_MAX"}]}
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="center_glass"
                 label="Center Glass"
+                rules={[{required: true, message:"Vui lòng nhập CENTER_GLASS"}]}
               >
                 <Input />
               </Form.Item>

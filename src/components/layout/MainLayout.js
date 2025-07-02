@@ -10,6 +10,7 @@ const MainLayout = ({ children }) => {
 
   const handleLogout = () => {
     localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('userInfo');
     navigate('/'); 
   };

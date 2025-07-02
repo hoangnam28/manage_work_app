@@ -168,8 +168,9 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               <Form.Item
                 name="resin_percentage"
                 label="RESIN_PERCENTAGE"
+                rules={[{ required: true, message: 'Nhập 1 hoặc nhiều giá trị, cách nhau bởi dấu phẩy' }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.001} />
+                <Input placeholder="Ví dụ: 72,73,74" />
               </Form.Item>
               <Form.Item
                 name="rav_thickness"
