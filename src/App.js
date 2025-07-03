@@ -7,6 +7,7 @@ import PrivateRoute from './routes/PrivateRoute';
 import UserManagement from './pages/UserList';
 import MaterialCore from './pages/MaterialCore';
 import MaterialProperties from './pages/MaterialProperties';
+import DecideBoard from './pages/DecideBoard';
 
 function App() {
   return (
@@ -43,6 +44,14 @@ function App() {
           element={
             <PrivateRoute>
               <MaterialProperties />
+            </PrivateRoute>
+          } 
+        />
+        <Route 
+          path="/decide-use" 
+          element={
+            <PrivateRoute>
+              <DecideBoard />
             </PrivateRoute>
           } 
         />

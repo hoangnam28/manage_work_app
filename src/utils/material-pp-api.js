@@ -43,7 +43,6 @@ export const exportMaterialPp = async (data) => {
     });
     return result;
   };
-  // Nếu là mảng thì map, nếu không thì giữ nguyên
   const normalizedData = Array.isArray(data) ? data.map(normalizeKeys) : data;
   const response = await axios.post(
     `${API_URL}/material-pp/export-xlsm`,

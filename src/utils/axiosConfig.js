@@ -23,21 +23,17 @@ const onRefreshError = (error) => {
   refreshSubscribers.forEach(cb => cb(null, error));
   refreshSubscribers = [];
   
-  // Clear all auth data
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('userInfo');
   
-  // Show error message
   toast.error('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
   
-  // Redirect to login after a short delay
   setTimeout(() => {
     window.location.href = '/';
   }, 1500);
 };
 
-// Request interceptor
 axiosInstance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
@@ -52,22 +48,18 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response interceptor
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
-    // Handle network errors
     if (!error.response) {
       toast.error('Lỗi kết nối mạng, vui lòng kiểm tra internet');
       return Promise.reject(error);
     }
 
-    // Handle 401 errors (token expired)
     if (error.response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        // Wait for the refresh to complete
         try {
           const token = await new Promise((resolve, reject) => {
             subscribeTokenRefresh((newToken, refreshError) => {
@@ -100,7 +92,6 @@ axiosInstance.interceptors.response.use(
       }
 
       try {
-        // Call refresh endpoint
         const refreshResponse = await axios.post(
           'http://192.84.105.173:5000/api/auth/refresh',
           { refreshToken },
