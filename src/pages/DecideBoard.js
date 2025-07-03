@@ -1,59 +1,77 @@
-
 import { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select } from 'antd';
 import MainLayout from '../components/layout/MainLayout';
 import { Toaster, toast } from 'sonner';
-import { fetchMaterialDecideList, fetchMaterialDecideCustomerList, createMaterialDecide } from '../utils/decide-board';
+import { fetchMaterialDecideList, fetchMaterialDecideCustomerList, createMaterialDecide, updateMaterialDecide, deleteMaterialDecide } from '../utils/decide-board';
 
 const DecideBoard = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [customerOptions, setCustomerOptions] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingRecord, setEditingRecord] = useState(null);
   const [form] = Form.useForm();
+  const [editForm] = Form.useForm();
 
   // Lấy danh sách customer code cho gợi ý
   useEffect(() => {
     const fetchCustomers = async () => {
+      console.log('Fetching customers...');
       try {
         const customers = await fetchMaterialDecideCustomerList();
-        setCustomerOptions(customers.map(item => ({
-          value: item.customer_part_number,
-          label: item.customer_part_number
-        })));
+        console.log('Raw customers received:', customers?.length || 0);
+
+        const processedOptions = (Array.isArray(customers) ? customers : [])
+          .map(item => {
+            // Trim và normalize dữ liệu
+            const trimmed = (item.customer_part_number || '').trim();
+            return trimmed;
+          })
+          .filter(value => value.length > 0) // Loại bỏ empty strings
+          .filter((value, index, self) => self.indexOf(value) === index) // Remove duplicates
+          .sort() // Sort alphabetically
+          .map(value => ({
+            value: value,
+            label: value
+          }));
+
+        console.log('Processed customer options:', processedOptions.length);
+        setCustomerOptions(processedOptions);
+
       } catch (err) {
+        console.error('Error fetching customers:', err);
         setCustomerOptions([]);
       }
     };
     fetchCustomers();
   }, []);
-
   // Lấy toàn bộ dữ liệu bảng
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const list = await fetchMaterialDecideList();
+      setData(list);
+    } catch (err) {
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const list = await fetchMaterialDecideList();
-        setData(list);
-      } catch (err) {
-        setData([]);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
-
   const columns = [
     {
       title: "Mã sản phẩm",
-      dataIndex: "customer_code",
+      dataIndex: "CUSTOMER_CODE",
       rowSpan: 2,
       align: "center"
     },
     {
       title: "Loại bo",
-      dataIndex: "type_board",
+      dataIndex: "TYPE_BOARD",
       align: "center"
     },
     {
@@ -61,12 +79,12 @@ const DecideBoard = () => {
       children: [
         {
           title: "Kích thước Tối ưu",
-          dataIndex: "size_normal",
+          dataIndex: "SIZE_NORMAL",
           align: "center"
         },
         {
           title: "Tỷ lệ %",
-          dataIndex: "rate_normal",
+          dataIndex: "RATE_NORMAL",
           align: "center"
         }
       ]
@@ -76,12 +94,12 @@ const DecideBoard = () => {
       children: [
         {
           title: "Kích thước bo to",
-          dataIndex: "size_big",
+          dataIndex: "SIZE_BIG",
           align: "center"
         },
         {
           title: "Tỷ lệ %",
-          dataIndex: "rate_big",
+          dataIndex: "RATE_BIG",
           align: "center"
         }
       ]
@@ -91,22 +109,120 @@ const DecideBoard = () => {
       children: [
         {
           title: "Yêu cầu sử dụng bo to",
-          dataIndex: "request",
-          align: "center"
+          dataIndex: "REQUEST",
+          align: "center",
+          render: (value) => value === 'TRUE' ? 'Có' : value === 'FALSE' ? 'Không' : value
         },
         {
           title: "Xác nhận",
-          dataIndex: "confirm_by",
+          dataIndex: "CONFIRM_BY",
           align: "center"
         }
       ]
     },
     {
       title: "Note",
-      dataIndex: "note",
+      dataIndex: "NOTE",
       align: "center"
+    },
+    {
+      title: "Xác nhận",
+      key: "action_confirm",
+      align: "center",
+      render: (_, record) => (
+        <Button
+          type="primary"
+          disabled={!!record.CONFIRM_BY}
+          onClick={() => handleConfirm(record)}
+        >
+          Xác nhận
+        </Button>
+      )
+    },
+    {
+      title: "Hành động",
+      key: "edit_action",
+      align: "center",
+      render: (_, record) => (
+        <>
+          <Button style={{ marginRight: 8 }} onClick={() => handleEdit(record)}>Sửa</Button>
+          <Button danger onClick={() => handleDelete(record)}>Xóa</Button>
+        </>
+      )
     }
   ];
+
+  const handleConfirm = async (record) => {
+    // Lấy username hiện tại từ localStorage hoặc context
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+    const username = userInfo.username || '';
+    if (!username) {
+      toast.error('Không tìm thấy thông tin người dùng!');
+      return;
+    }
+    try {
+      const rowId = record.id !== undefined ? record.id : record.ID;
+      await updateMaterialDecide(rowId, { confirm_by: username });
+      toast.success('Xác nhận thành công!');
+      fetchData();
+    } catch (err) {
+      toast.error('Lỗi xác nhận!');
+    }
+  };
+
+  const handleEdit = (record) => {
+    setEditingRecord(record);
+    // Điền sẵn dữ liệu vào form sửa
+    editForm.setFieldsValue({
+      customer_part_number: record.CUSTOMER_CODE || '',
+      type_board: record.TYPE_BOARD || '',
+      size_normal: record.SIZE_NORMAL || '',
+      rate_normal: record.RATE_NORMAL || '',
+      size_big: record.SIZE_BIG || '',
+      rate_big: record.RATE_BIG || '',
+      note: record.NOTE || ''
+    });
+    setEditModalVisible(true);
+  };
+
+  const handleEditOk = async () => {
+    try {
+      const values = await editForm.validateFields();
+      const rowId = editingRecord.id !== undefined ? editingRecord.id : editingRecord.ID;
+      await updateMaterialDecide(rowId, {
+        customer_code: (values.customer_part_number || '').trim(),
+        type_board: (values.type_board || '').trim(),
+        size_normal: (values.size_normal || '').trim(),
+        rate_normal: (values.rate_normal || '').trim(),
+        size_big: (values.size_big || '').trim(),
+        rate_big: (values.rate_big || '').trim(),
+        note: (values.note || '').trim()
+      });
+      toast.success('Cập nhật thành công!');
+      setEditModalVisible(false);
+      setEditingRecord(null);
+      fetchData();
+    } catch (err) {
+      toast.error('Lỗi cập nhật!');
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditModalVisible(false);
+    setEditingRecord(null);
+  };
+
+  const handleDelete = async (record) => {
+    const rowId = record.id !== undefined ? record.id : record.ID;
+    try {
+      await deleteMaterialDecide(rowId);
+      toast.success('Xóa thành công!');
+      fetchData();
+    } catch (err) {
+      toast.error('Lỗi xóa!');
+    }
+  };
+
   return (
     <MainLayout>
       <Toaster position="top-right" richColors />
@@ -147,15 +263,23 @@ const DecideBoard = () => {
             form
               .validateFields()
               .then(async (values) => {
-                await fetch(createMaterialDecide, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(values)
-                });
+                // Đảm bảo tất cả trường đều có giá trị, loại bỏ undefined
+                const cleanValues = {
+                  customer_part_number: (values.customer_part_number || '').trim(),
+                  type_board: (values.type_board || '').trim(),
+                  size_normal: (values.size_normal || '').trim(),
+                  rate_normal: (values.rate_normal || '').trim(),
+                  size_big: (values.size_big || '').trim(),
+                  rate_big: (values.rate_big || '').trim(),
+                  request: 'FALSE',
+                  confirm_by: '',
+                  note: (values.note || '').trim(),
+                };
+                await createMaterialDecide(cleanValues);
                 toast.success('Tạo mới thành công');
                 setModalVisible(false);
                 form.resetFields();
-                // reload data
+                fetchData();
               })
               .catch(() => { });
           }}
@@ -170,6 +294,7 @@ const DecideBoard = () => {
                 showSearch
                 options={customerOptions}
                 placeholder="Chọn hoặc nhập mã sản phẩm"
+                optionFilterProp="label"
                 filterOption={(input, option) =>
                   (option?.value ?? '').toString().toLowerCase().includes((input ?? '').toString().toLowerCase())
                 }
@@ -190,15 +315,57 @@ const DecideBoard = () => {
             <Form.Item name="rate_big" label="Tỷ lệ % (Bo to)">
               <Input />
             </Form.Item>
-            <Form.Item name="request" label="Yêu cầu sử dụng bo to">
-              <Select>
-                <Select.Option value="Có">Có</Select.Option>
-                <Select.Option value="Không">Không</Select.Option>
-              </Select>
-            </Form.Item>
-            <Form.Item name="confirm_by" label="Xác nhận">
+            <Form.Item name="note" label="Note">
               <Input />
             </Form.Item>
+          </Form>
+        </Modal>
+        <Modal
+          title="Sửa thông tin"
+          open={editModalVisible}
+          onOk={handleEditOk}
+          onCancel={handleEditCancel}
+          okText="Lưu"
+          cancelText="Hủy"
+        >
+          <Form form={editForm} layout="vertical">
+            <Form.Item
+              name="customer_part_number"
+              label="Mã sản phẩm"
+              rules={[{ required: true, message: 'Bắt buộc' }]}
+            >
+              <Select
+                showSearch
+                options={customerOptions}
+                placeholder="Chọn hoặc nhập mã sản phẩm"
+                optionFilterProp="label"
+                filterOption={(input, option) =>
+                  (option?.value ?? '').toString().toLowerCase().includes((input ?? '').toString().toLowerCase())
+                }
+              />
+            </Form.Item>
+            <Form.Item name="type_board" label="Loại bo" rules={[{ required: true }]}>
+              <Input />
+            </Form.Item>
+            <Form.Item name="size_normal" label="Kích thước Tối ưu">
+              <Input />
+            </Form.Item>
+            <Form.Item name="rate_normal" label="Tỷ lệ % (Bo thường)">
+              <Input />
+            </Form.Item>
+            <Form.Item name="size_big" label="Kích thước bo to">
+              <Input />
+            </Form.Item>
+            <Form.Item name="rate_big" label="Tỷ lệ % (Bo to)">
+              <Input />
+            </Form.Item>
+            {/* ✅ THÊM FIELD REQUEST */}
+            {/* <Form.Item name="request" label="Yêu cầu sử dụng bo to">
+              <Select>
+                <Select.Option value="TRUE">Có</Select.Option>
+                <Select.Option value="FALSE">Không</Select.Option>
+              </Select>
+            </Form.Item> */}
             <Form.Item name="note" label="Note">
               <Input />
             </Form.Item>
