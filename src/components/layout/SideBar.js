@@ -79,7 +79,7 @@ const SideBar = ({ onLogout, userId }) => {
       icon: <CheckCircleOutlined />,
       label: (
         <Link to="/decide-use" style={location.pathname === '/decide-use' ? { color: '#1890ff', fontWeight: 600 } : {}}>
-          Decide Using Board
+          Board Large Size
         </Link>
       )
     },

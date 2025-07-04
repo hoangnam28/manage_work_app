@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Spin, Descriptions, message } from 'antd';
+import { Button, Spin, Descriptions, message, Popconfirm } from 'antd';
 import axios from '../utils/axios';
 import MainLayout from '../components/layout/MainLayout';
 import { toast, Toaster } from 'sonner';
@@ -10,7 +10,6 @@ const DecideBoardDetail = () => {
   const navigate = useNavigate();
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [confirming, setConfirming] = useState(false);
 
   useEffect(() => {
     const fetchDetail = async () => {
@@ -27,27 +26,23 @@ const DecideBoardDetail = () => {
     fetchDetail();
   }, [id]);
 
-  const handleConfirm = async () => {
-    setConfirming(true);
+  const handleConfirm = async (requestValue = 'TRUE') => {
+
     try {
-      // Lấy username từ localStorage hoặc context
       const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
       const username = userInfo.username || '';
       if (!username) {
         message.error('Không tìm thấy thông tin người dùng!');
-        setConfirming(false);
         return;
       }
-      await axios.put(`/large-size/update/${id}`, { confirm_by: username });
+      await axios.put(`/large-size/update/${id}`, { confirm_by: username, request: requestValue });
       message.success('Xác nhận thành công!');
       toast.success('Xác nhận thành công!');
       navigate('/decide-use');
     } catch (err) {
       message.error('Lỗi xác nhận!');
       toast.error('Lỗi xác nhận!');
-    } finally {
-      setConfirming(false);
-    }
+    } 
   };
 
   if (loading) return <Spin />;
@@ -71,14 +66,24 @@ const DecideBoardDetail = () => {
           <Descriptions.Item label="Ghi chú">{record.NOTE}</Descriptions.Item>
         </Descriptions>
         {!record.CONFIRM_BY && (
-          <Button
-            type="primary"
-            style={{ marginTop: 24 }}
-            loading={confirming}
-            onClick={handleConfirm}
-          >
-            Xác nhận
-          </Button>
+          <div style={{ marginTop: 24, display: 'flex', gap: 16 }}>
+            <Popconfirm
+              title="Bạn chắc chắn sử dụng bo to cho mã này?"
+              onConfirm={() => handleConfirm('TRUE')}
+              okText="Xác nhận"
+              cancelText="Hủy"
+            >
+              <Button type="primary" size="large">Có sử dụng bo to</Button>
+            </Popconfirm>
+            <Popconfirm
+              title="Bạn chắc chắn KHÔNG sử dụng bo to cho mã này?"
+              onConfirm={() => handleConfirm('FALSE')}
+              okText="Xác nhận"
+              cancelText="Hủy"
+            >
+              <Button type="default" size="large">Không sử dụng bo to</Button>
+            </Popconfirm>
+          </div>
         )}
       </div>
     </MainLayout>

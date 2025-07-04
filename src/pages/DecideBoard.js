@@ -1,8 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, Popconfirm, Space } from 'antd';
 import MainLayout from '../components/layout/MainLayout';
 import { Toaster, toast } from 'sonner';
+import {
+  DeleteOutlined,
+  EditOutlined,
+} from '@ant-design/icons';
 import { fetchMaterialDecideList, fetchMaterialDecideCustomerList, createMaterialDecide, updateMaterialDecide, deleteMaterialDecide } from '../utils/decide-board';
+import { useNavigate } from 'react-router-dom';
 
 const DecideBoard = () => {
   const [data, setData] = useState([]);
@@ -13,6 +18,7 @@ const DecideBoard = () => {
   const [editingRecord, setEditingRecord] = useState(null);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
+  const navigate = useNavigate();
 
   // Lấy danh sách customer code cho gợi ý
   useEffect(() => {
@@ -67,7 +73,16 @@ const DecideBoard = () => {
       title: "Mã sản phẩm",
       dataIndex: "CUSTOMER_CODE",
       rowSpan: 2,
-      align: "center"
+      align: "center",
+      render: (value, record) => (
+        <Button
+          type="link"
+          style={{ padding: 0 }}
+          onClick={() => navigate(`/decide-board/${record.id !== undefined ? record.id : record.ID}`)}
+        >
+          {value}
+        </Button>
+      )
     },
     {
       title: "Loại bo",
@@ -105,20 +120,21 @@ const DecideBoard = () => {
       ]
     },
     {
-      title: "Bộ phận PC",
-      children: [
-        {
-          title: "Yêu cầu sử dụng bo to",
-          dataIndex: "REQUEST",
-          align: "center",
-          render: (value) => value === 'TRUE' ? 'Có' : value === 'FALSE' ? 'Không' : value
-        },
-        {
-          title: "Xác nhận",
-          dataIndex: "CONFIRM_BY",
-          align: "center"
-        }
-      ]
+      title: "Yêu cầu sử dụng bo to",
+      dataIndex: "REQUEST",
+      align: "center",
+      render: (value) => value === 'TRUE' ? 'Có' : value === 'FALSE' ? 'Không' : ''
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "STATUS",
+      align: "center",
+      render: (_, record) => record.CONFIRM_BY ? <span style={{ color: '#52c41a' }}>Đã xác nhận</span> : <span style={{ color: '#faad14' }}>Chưa xác nhận</span>
+    },
+    {
+      title: "Người Xác nhận",
+      dataIndex: "CONFIRM_BY",
+      align: "center"
     },
     {
       title: "Note",
@@ -126,49 +142,33 @@ const DecideBoard = () => {
       align: "center"
     },
     {
-      title: "Xác nhận",
-      key: "action_confirm",
-      align: "center",
-      render: (_, record) => (
-        <Button
-          type="primary"
-          disabled={!!record.CONFIRM_BY}
-          onClick={() => handleConfirm(record)}
-        >
-          Xác nhận
-        </Button>
-      )
-    },
-    {
       title: "Hành động",
       key: "edit_action",
       align: "center",
       render: (_, record) => (
         <>
-          <Button style={{ marginRight: 8 }} onClick={() => handleEdit(record)}>Sửa</Button>
-          <Button danger onClick={() => handleDelete(record)}>Xóa</Button>
+        <Space size="middle">
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            onClick={() => {
+              handleEdit(record);
+            }}
+          />
+          <Popconfirm
+            title="Bạn có chắc chắn muốn xóa mã hàng này?"
+            onConfirm={() => handleDelete(record)}
+            okText="Có"
+            cancelText="Không"
+          >
+            <Button type="primary" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+          </Space>
         </>
       )
     }
   ];
 
-  const handleConfirm = async (record) => {
-    // Lấy username hiện tại từ localStorage hoặc context
-    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-    const username = userInfo.username || '';
-    if (!username) {
-      toast.error('Không tìm thấy thông tin người dùng!');
-      return;
-    }
-    try {
-      const rowId = record.id !== undefined ? record.id : record.ID;
-      await updateMaterialDecide(rowId, { confirm_by: username });
-      toast.success('Xác nhận thành công!');
-      fetchData();
-    } catch (err) {
-      toast.error('Lỗi xác nhận!');
-    }
-  };
 
   const handleEdit = (record) => {
     setEditingRecord(record);
@@ -228,7 +228,7 @@ const DecideBoard = () => {
       <Toaster position="top-right" richColors />
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-          <h1>Decide Using Board</h1>
+          <h1>Board Large Size</h1>
           <Button
             type="primary"
             onClick={() => setModalVisible(true)}
@@ -359,13 +359,6 @@ const DecideBoard = () => {
             <Form.Item name="rate_big" label="Tỷ lệ % (Bo to)">
               <Input />
             </Form.Item>
-            {/* ✅ THÊM FIELD REQUEST */}
-            {/* <Form.Item name="request" label="Yêu cầu sử dụng bo to">
-              <Select>
-                <Select.Option value="TRUE">Có</Select.Option>
-                <Select.Option value="FALSE">Không</Select.Option>
-              </Select>
-            </Form.Item> */}
             <Form.Item name="note" label="Note">
               <Input />
             </Form.Item>
