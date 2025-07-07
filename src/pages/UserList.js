@@ -346,6 +346,8 @@ const UserManagement = () => {
                 <Option value="admin">Admin</Option>
                 <Option value="editor">Editor</Option>
                 <Option value="viewer">Viewer</Option>
+                <Option value="imp">Imp</Option>
+                <Option value="bo">Bo</Option>
               </Select>
             </Form.Item>
 

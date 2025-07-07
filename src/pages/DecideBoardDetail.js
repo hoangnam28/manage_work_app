@@ -53,7 +53,20 @@ const DecideBoardDetail = () => {
     <MainLayout>
       <Toaster position="top-right" richColors />
       <div style={{ maxWidth: 600, margin: '40px auto' }}>
-        <h2>Chi tiết yêu cầu sử dụng bo to của mã hàng: {record.CUSTOMER_CODE}</h2>
+        <Button
+          type="link"
+          style={{ marginBottom: 16, paddingLeft: 0, fontSize: 18, display: 'flex', alignItems: 'center' }}
+          onClick={() => navigate('/decide-use')}
+        >
+          <span style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <svg width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" style={{ marginRight: 6 }}>
+              <path fillRule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
+            </svg>
+            Quay lại danh sách
+          </span>
+        </Button>
+        <h2>Chi tiết yêu cầu sử dụng bo to của mã hàng: </h2>
+        <h3>{record.CUSTOMER_CODE}</h3>
         <Descriptions bordered column={1}>
           <Descriptions.Item label="Mã sản phẩm">{record.CUSTOMER_CODE}</Descriptions.Item>
           <Descriptions.Item label="Loại bo">{record.TYPE_BOARD}</Descriptions.Item>

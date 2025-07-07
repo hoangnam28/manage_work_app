@@ -68,12 +68,53 @@ const DecideBoard = () => {
   useEffect(() => {
     fetchData();
   }, []);
+  // Tạo input filter cho từng cột
+  const getColumnSearchProps = dataIndex => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => {
+      const handleClear = () => {
+        clearFilters();
+        // Sau khi xóa filter, reload lại list (reset về trang đầu)
+        fetchData();
+      };
+      return (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder={`Tìm kiếm...`}
+            value={selectedKeys[0]}
+            onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={confirm}
+            style={{ marginBottom: 8, display: 'block' }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={confirm}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Lọc
+            </Button>
+            <Button onClick={handleClear} size="small" style={{ width: 90 }}>
+              Xóa
+            </Button>
+          </Space>
+        </div>
+      );
+    },
+    filterIcon: filtered => <span style={{ color: filtered ? '#1890ff' : undefined }}>🔍</span>,
+    onFilter: (value, record) =>
+      (record[dataIndex] || '').toString().toLowerCase().includes((value || '').toLowerCase()),
+    onFilterDropdownVisibleChange: (visible) => {
+    },
+  });
+
   const columns = [
     {
       title: "Mã sản phẩm",
       dataIndex: "CUSTOMER_CODE",
       rowSpan: 2,
       align: "center",
+      ...getColumnSearchProps('CUSTOMER_CODE'),
       render: (value, record) => (
         <Button
           type="link"
@@ -87,7 +128,8 @@ const DecideBoard = () => {
     {
       title: "Loại bo",
       dataIndex: "TYPE_BOARD",
-      align: "center"
+      align: "center",
+      ...getColumnSearchProps('TYPE_BOARD'),
     },
     {
       title: "Bo Thường",
@@ -95,12 +137,14 @@ const DecideBoard = () => {
         {
           title: "Kích thước Tối ưu",
           dataIndex: "SIZE_NORMAL",
-          align: "center"
+          align: "center",
+          ...getColumnSearchProps('SIZE_NORMAL'),
         },
         {
           title: "Tỷ lệ %",
           dataIndex: "RATE_NORMAL",
-          align: "center"
+          align: "center",
+          ...getColumnSearchProps('RATE_NORMAL'),
         }
       ]
     },
@@ -110,12 +154,14 @@ const DecideBoard = () => {
         {
           title: "Kích thước bo to",
           dataIndex: "SIZE_BIG",
-          align: "center"
+          align: "center",
+          ...getColumnSearchProps('SIZE_BIG'),
         },
         {
           title: "Tỷ lệ %",
           dataIndex: "RATE_BIG",
-          align: "center"
+          align: "center",
+          ...getColumnSearchProps('RATE_BIG'),
         }
       ]
     },
@@ -129,28 +175,31 @@ const DecideBoard = () => {
       title: "Trạng thái",
       dataIndex: "STATUS",
       align: "center",
+      ...getColumnSearchProps('STATUS'),
+      onFilter: (value, record) => (record.CONFIRM_BY ? 'Đã xác nhận' : 'Chưa xác nhận').toLowerCase().includes((value || '').toLowerCase()),
       render: (_, record) => record.CONFIRM_BY ? <span style={{ color: '#52c41a' }}>Đã xác nhận</span> : <span style={{ color: '#faad14' }}>Chưa xác nhận</span>
     },
     {
       title: "Người Xác nhận",
       dataIndex: "CONFIRM_BY",
-      align: "center"
+      align: "center",
+      ...getColumnSearchProps('CONFIRM_BY'),
     },
     {
       title: "Note",
       dataIndex: "NOTE",
-      align: "center"
+      align: "center",
     },
     {
       title: "Hành động",
       key: "edit_action",
       align: "center",
       render: (_, record) => (
-        <>
         <Space size="middle">
           <Button
             type="primary"
             icon={<EditOutlined />}
+            disabled={!!record.CONFIRM_BY}
             onClick={() => {
               handleEdit(record);
             }}
@@ -163,11 +212,32 @@ const DecideBoard = () => {
           >
             <Button type="primary" danger icon={<DeleteOutlined />} />
           </Popconfirm>
-          </Space>
-        </>
+        </Space>
       )
     }
   ];
+
+  // Xuất Excel tất cả dữ liệu đang lọc
+  const handleExportExcel = () => {
+    const exportData = data.map(row => ({
+      'Mã sản phẩm': row.CUSTOMER_CODE,
+      'Loại bo': row.TYPE_BOARD,
+      'Kích thước Tối ưu': row.SIZE_NORMAL,
+      'Tỷ lệ % (Bo thường)': row.RATE_NORMAL,
+      'Kích thước bo to': row.SIZE_BIG,
+      'Tỷ lệ % (Bo to)': row.RATE_BIG,
+      'Yêu cầu sử dụng bo to': row.REQUEST === 'TRUE' ? 'Có' : row.REQUEST === 'FALSE' ? 'Không' : '',
+      'Trạng thái': row.CONFIRM_BY ? 'Đã xác nhận' : 'Chưa xác nhận',
+      'Người xác nhận': row.CONFIRM_BY,
+      'Note': row.NOTE
+    }));
+    import('xlsx').then(XLSX => {
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'DecideBoard');
+      XLSX.writeFile(wb, 'DecideBoardExport.xlsx');
+    });
+  };
 
 
   const handleEdit = (record) => {
@@ -229,12 +299,20 @@ const DecideBoard = () => {
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <h1>Board Large Size</h1>
-          <Button
-            type="primary"
-            onClick={() => setModalVisible(true)}
-          >
-            Thêm mới
-          </Button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <Button
+              type="primary"
+              onClick={() => setModalVisible(true)}
+            >
+              Thêm mới
+            </Button>
+            <Button
+              type="default"
+              onClick={handleExportExcel}
+            >
+              Xuất Excel
+            </Button>
+          </div>
         </div>
 
         <Table
