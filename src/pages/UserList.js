@@ -62,13 +62,13 @@ const UserManagement = () => {
       const userData = editingUser ? {
         username: values.username.trim(),
         ...(values.password_hash && { password_hash: values.password_hash }),
-        ...(values.role && { role: values.role })
+        ...(values.role && { role: Array.isArray(values.role) ? values.role : [values.role] })
       } : {
         username: values.username.trim(),
         company_id: values.company_id.trim(),
         password_hash: values.password_hash,
         department: values.department?.trim(),
-        role: values.role
+        role: Array.isArray(values.role) ? values.role : [values.role]
       };
 
       if (editingUser) {
@@ -126,7 +126,7 @@ const UserManagement = () => {
     setEditingUser(user);
     form.setFieldsValue({
       username: user.USERNAME,
-      role: user.ROLE
+      role: typeof user.ROLE === 'string' ? user.ROLE.split(',').map(r => r.trim()) : user.ROLE
     });
     setIsModalVisible(true);
   };
@@ -192,18 +192,23 @@ const UserManagement = () => {
         const roleColors = {
           admin: 'red',
           editor: 'blue',
-          viewer: 'green'
+          viewer: 'green',
+          imp: 'purple',
+          bo: 'orange'
         };
         const roleNames = {
           admin: 'Admin',
           editor: 'Editor',
-          viewer: 'Viewer'
+          viewer: 'Viewer',
+          imp: 'Imp',
+          bo: 'Bo'
         };
-        return (
-          <span style={{ color: roleColors[role] }}>
-            {roleNames[role] || role}
+        const rolesArr = typeof role === 'string' ? role.split(',').map(r => r.trim()) : Array.isArray(role) ? role : [];
+        return rolesArr.map(r => (
+          <span key={r} style={{ color: roleColors[r] || 'black', marginRight: 8 }}>
+            {roleNames[r] || r}
           </span>
-        );
+        ));
       }
     },
     {
@@ -342,7 +347,7 @@ const UserManagement = () => {
               label="Vai trò"
               rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
             >
-              <Select>
+              <Select mode="multiple" allowClear placeholder="Chọn vai trò">
                 <Option value="admin">Admin</Option>
                 <Option value="editor">Editor</Option>
                 <Option value="viewer">Viewer</Option>
