@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Popconfirm, Space } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, Popconfirm, Space, AutoComplete } from 'antd';
 import MainLayout from '../components/layout/MainLayout';
 import { Toaster, toast } from 'sonner';
 import {
@@ -52,6 +52,7 @@ const DecideBoard = () => {
     };
     fetchCustomers();
   }, []);
+
   // Lấy toàn bộ dữ liệu bảng
   const fetchData = async () => {
     setLoading(true);
@@ -68,6 +69,7 @@ const DecideBoard = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
   // Tạo input filter cho từng cột
   const getColumnSearchProps = dataIndex => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => {
@@ -250,7 +252,6 @@ const DecideBoard = () => {
     });
   };
 
-
   const handleEdit = (record) => {
     setEditingRecord(record);
     // Điền sẵn dữ liệu vào form sửa
@@ -352,7 +353,6 @@ const DecideBoard = () => {
             form
               .validateFields()
               .then(async (values) => {
-                // Đảm bảo tất cả trường đều có giá trị, loại bỏ undefined
                 const cleanValues = {
                   customer_part_number: (values.customer_part_number || '').trim(),
                   type_board: (values.type_board || '').trim(),
@@ -377,35 +377,58 @@ const DecideBoard = () => {
             <Form.Item
               name="customer_part_number"
               label="Mã sản phẩm"
-              rules={[{ required: true, message: 'Bắt buộc' }]}
+              rules={[{ required: true, message: 'Vui lòng nhập mã sản phẩm' }]}
             >
-              <Select
-                showSearch
+              <AutoComplete
                 options={customerOptions}
-                placeholder="Chọn hoặc nhập mã sản phẩm"
-                optionFilterProp="label"
-                filterOption={(input, option) =>
-                  (option?.value ?? '').toString().toLowerCase().includes((input ?? '').toString().toLowerCase())
+                placeholder="Chọn từ danh sách hoặc nhập mã sản phẩm mới"
+                filterOption={(inputValue, option) =>
+                  option?.label?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                }
+                allowClear
+                backfill={true}
+                dropdownRender={(menu) => (
+                  <div>
+                    {menu}
+                    <div style={{ 
+                      padding: '8px', 
+                      borderTop: '1px solid #f0f0f0',
+                      fontSize: '12px',
+                      color: '#666',
+                      textAlign: 'center'
+                    }}>
+                      Bạn có thể chọn từ danh sách hoặc nhập mã mới
+                    </div>
+                  </div>
+                )}
+                notFoundContent={
+                  <div style={{ 
+                    padding: '8px', 
+                    textAlign: 'center',
+                    color: '#666'
+                  }}>
+                    Không tìm thấy. Bạn có thể nhập mã sản phẩm mới
+                  </div>
                 }
               />
             </Form.Item>
-            <Form.Item name="type_board" label="Loại bo" rules={[{ required: true }]}>
-              <Input />
+            <Form.Item name="type_board" label="Loại bo" rules={[{ required: true, message: 'Vui lòng nhập loại bo' }]}>
+              <Input placeholder="Nhập loại bo" />
             </Form.Item>
-            <Form.Item name="size_normal" label="Kích thước Tối ưu" rules={[{ required: true }]}> 
-              <Input />
+            <Form.Item name="size_normal" label="Kích thước Tối ưu" rules={[{ required: true, message: 'Vui lòng nhập kích thước tối ưu' }]}> 
+              <Input placeholder="Nhập kích thước tối ưu" />
             </Form.Item>
-            <Form.Item name="rate_normal" label="Tỷ lệ % (Bo thường)" rules={[{ required: true }]}>
-              <Input />
+            <Form.Item name="rate_normal" label="Tỷ lệ % (Bo thường)" rules={[{ required: true, message: 'Vui lòng nhập tỷ lệ %' }]}>
+              <Input placeholder="Nhập tỷ lệ %" />
             </Form.Item>
-            <Form.Item name="size_big" label="Kích thước bo to" rules={[{ required: true }]}>
-              <Input />
+            <Form.Item name="size_big" label="Kích thước bo to" rules={[{ required: true, message: 'Vui lòng nhập kích thước bo to' }]}>
+              <Input placeholder="Nhập kích thước bo to" />
             </Form.Item>
-            <Form.Item name="rate_big" label="Tỷ lệ % (Bo to)" rules={[{ required: true }]}>
-              <Input />
+            <Form.Item name="rate_big" label="Tỷ lệ % (Bo to)" rules={[{ required: true, message: 'Vui lòng nhập tỷ lệ %' }]}>
+              <Input placeholder="Nhập tỷ lệ %" />
             </Form.Item>
             <Form.Item name="note" label="Note">
-              <Input />
+              <Input placeholder="Nhập ghi chú (không bắt buộc)" />
             </Form.Item>
           </Form>
         </Modal>
@@ -421,35 +444,58 @@ const DecideBoard = () => {
             <Form.Item
               name="customer_part_number"
               label="Mã sản phẩm"
-              rules={[{ required: true, message: 'Bắt buộc' }]}
+              rules={[{ required: true, message: 'Vui lòng nhập mã sản phẩm' }]}
             >
-              <Select
-                showSearch
+              <AutoComplete
                 options={customerOptions}
-                placeholder="Chọn hoặc nhập mã sản phẩm"
-                optionFilterProp="label"
-                filterOption={(input, option) =>
-                  (option?.value ?? '').toString().toLowerCase().includes((input ?? '').toString().toLowerCase())
+                placeholder="Chọn từ danh sách hoặc nhập mã sản phẩm mới"
+                filterOption={(inputValue, option) =>
+                  option?.label?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                }
+                allowClear
+                backfill={true}
+                dropdownRender={(menu) => (
+                  <div>
+                    {menu}
+                    <div style={{ 
+                      padding: '8px', 
+                      borderTop: '1px solid #f0f0f0',
+                      fontSize: '12px',
+                      color: '#666',
+                      textAlign: 'center'
+                    }}>
+                      Bạn có thể chọn từ danh sách hoặc nhập mã mới
+                    </div>
+                  </div>
+                )}
+                notFoundContent={
+                  <div style={{ 
+                    padding: '8px', 
+                    textAlign: 'center',
+                    color: '#666'
+                  }}>
+                    Không tìm thấy. Bạn có thể nhập mã sản phẩm mới
+                  </div>
                 }
               />
             </Form.Item>
-            <Form.Item name="type_board" label="Loại bo" rules={[{ required: true }]}>
-              <Input />
+            <Form.Item name="type_board" label="Loại bo" rules={[{ required: true, message: 'Vui lòng nhập loại bo' }]}>
+              <Input placeholder="Nhập loại bo" />
             </Form.Item>
             <Form.Item name="size_normal" label="Kích thước Tối ưu">
-              <Input />
+              <Input placeholder="Nhập kích thước tối ưu" />
             </Form.Item>
             <Form.Item name="rate_normal" label="Tỷ lệ % (Bo thường)">
-              <Input />
+              <Input placeholder="Nhập tỷ lệ %" />
             </Form.Item>
             <Form.Item name="size_big" label="Kích thước bo to">
-              <Input />
+              <Input placeholder="Nhập kích thước bo to" />
             </Form.Item>
             <Form.Item name="rate_big" label="Tỷ lệ % (Bo to)">
-              <Input />
+              <Input placeholder="Nhập tỷ lệ %" />
             </Form.Item>
             <Form.Item name="note" label="Note">
-              <Input />
+              <Input placeholder="Nhập ghi chú (không bắt buộc)" />
             </Form.Item>
           </Form>
         </Modal>
@@ -457,6 +503,5 @@ const DecideBoard = () => {
     </MainLayout>
   );
 };
-
 
 export default DecideBoard;
