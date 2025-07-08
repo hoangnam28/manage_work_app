@@ -51,7 +51,11 @@ const Review = () => {
         }
       });
       setCurrentUser(response.data);
-      const hasPermission = response.data.role === 'admin' || response.data.role === 'editor';
+      let userRoles = response.data.role;
+      if (typeof userRoles === 'string') {
+        userRoles = userRoles.split(',').map(r => r.trim());
+      }
+      const hasPermission = Array.isArray(userRoles) && (userRoles.includes('admin') || userRoles.includes('editor'));
       setHasEditPermission(hasPermission);
 
     } catch (error) {

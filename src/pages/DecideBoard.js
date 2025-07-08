@@ -169,7 +169,18 @@ const DecideBoard = () => {
       title: "Yêu cầu sử dụng bo to",
       dataIndex: "REQUEST",
       align: "center",
-      render: (value) => value === 'TRUE' ? 'Có' : value === 'FALSE' ? 'Không' : ''
+      render: (value) => value === 'TRUE' ? 'Có' : value === 'FALSE' ? 'Không' : '',
+      ...getColumnSearchProps('REQUEST'),
+      filters: [
+        { text: 'Có', value: 'TRUE' },
+        { text: 'Không', value: 'FALSE' }
+      ],
+      onFilter: (value, record) => {
+        const requestValue = record.REQUEST;
+        if (value === 'Có') return requestValue === 'TRUE';
+        if (value === 'Không') return requestValue === 'FALSE';
+        return true; // Trả về true nếu không có filter
+      }
     },
     {
       title: "Trạng thái",
@@ -381,16 +392,16 @@ const DecideBoard = () => {
             <Form.Item name="type_board" label="Loại bo" rules={[{ required: true }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="size_normal" label="Kích thước Tối ưu">
+            <Form.Item name="size_normal" label="Kích thước Tối ưu" rules={[{ required: true }]}> 
               <Input />
             </Form.Item>
-            <Form.Item name="rate_normal" label="Tỷ lệ % (Bo thường)">
+            <Form.Item name="rate_normal" label="Tỷ lệ % (Bo thường)" rules={[{ required: true }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="size_big" label="Kích thước bo to">
+            <Form.Item name="size_big" label="Kích thước bo to" rules={[{ required: true }]}>
               <Input />
             </Form.Item>
-            <Form.Item name="rate_big" label="Tỷ lệ % (Bo to)">
+            <Form.Item name="rate_big" label="Tỷ lệ % (Bo to)" rules={[{ required: true }]}>
               <Input />
             </Form.Item>
             <Form.Item name="note" label="Note">
