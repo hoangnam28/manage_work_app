@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Popconfirm, Space, AutoComplete } from 'antd';
+import { useState, useEffect, useRef } from 'react';
+import { Table, Button, Modal, Form, Input, Popconfirm, Space, AutoComplete } from 'antd';
 import MainLayout from '../components/layout/MainLayout';
 import { Toaster, toast } from 'sonner';
 import {
   DeleteOutlined,
   EditOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import { fetchMaterialDecideList, fetchMaterialDecideCustomerList, createMaterialDecide, updateMaterialDecide, deleteMaterialDecide } from '../utils/decide-board';
 import { useNavigate } from 'react-router-dom';
@@ -18,9 +19,9 @@ const DecideBoard = () => {
   const [editingRecord, setEditingRecord] = useState(null);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
+  const [tableFilters, setTableFilters] = useState({});
   const navigate = useNavigate();
-
-  // Lấy danh sách customer code cho gợi ý
+  const tableRef = useRef();
   useEffect(() => {
     const fetchCustomers = async () => {
       console.log('Fetching customers...');
@@ -58,7 +59,19 @@ const DecideBoard = () => {
     setLoading(true);
     try {
       const list = await fetchMaterialDecideList();
-      setData(list);
+      // Sắp xếp bản ghi mới nhất lên đầu (ưu tiên id lớn nhất)
+      const sorted = Array.isArray(list)
+        ? [...list].sort((a, b) => {
+          // Ưu tiên trường created_at nếu có, nếu không thì dùng id/ID
+          if (a.created_at && b.created_at) {
+            return new Date(b.created_at) - new Date(a.created_at);
+          }
+          const ida = a.id !== undefined ? a.id : a.ID;
+          const idb = b.id !== undefined ? b.id : b.ID;
+          return (idb || 0) - (ida || 0);
+        })
+        : list;
+      setData(sorted);
     } catch (err) {
       setData([]);
     } finally {
@@ -73,11 +86,6 @@ const DecideBoard = () => {
   // Tạo input filter cho từng cột
   const getColumnSearchProps = dataIndex => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => {
-      const handleClear = () => {
-        clearFilters();
-        // Sau khi xóa filter, reload lại list (reset về trang đầu)
-        fetchData();
-      };
       return (
         <div style={{ padding: 8 }}>
           <Input
@@ -85,29 +93,17 @@ const DecideBoard = () => {
             value={selectedKeys[0]}
             onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
             onPressEnter={confirm}
-            style={{ marginBottom: 8, display: 'block' }}
+            style={{ marginBottom: 0, display: 'block' }}
+            autoFocus
           />
-          <Space>
-            <Button
-              type="primary"
-              onClick={confirm}
-              size="small"
-              style={{ width: 90 }}
-            >
-              Lọc
-            </Button>
-            <Button onClick={handleClear} size="small" style={{ width: 90 }}>
-              Xóa
-            </Button>
-          </Space>
         </div>
       );
     },
     filterIcon: filtered => <span style={{ color: filtered ? '#1890ff' : undefined }}>🔍</span>,
     onFilter: (value, record) =>
       (record[dataIndex] || '').toString().toLowerCase().includes((value || '').toLowerCase()),
-    onFilterDropdownVisibleChange: (visible) => {
-    },
+    onFilterDropdownVisibleChange: (visible) => { },
+    filteredValue: tableFilters[dataIndex] || null,
   });
 
   const columns = [
@@ -168,36 +164,40 @@ const DecideBoard = () => {
       ]
     },
     {
-      title: "Yêu cầu sử dụng bo to",
-      dataIndex: "REQUEST",
-      align: "center",
-      render: (value) => value === 'TRUE' ? 'Có' : value === 'FALSE' ? 'Không' : '',
-      ...getColumnSearchProps('REQUEST'),
-      filters: [
-        { text: 'Có', value: 'TRUE' },
-        { text: 'Không', value: 'FALSE' }
+      title: "Bộ phận PC",
+      children: [
+        {
+          title: "Yêu cầu sử dụng bo to",
+          dataIndex: "REQUEST",
+          align: "center",
+          render: (value) => value === 'TRUE' ? 'Có' : value === 'FALSE' ? 'Không' : '',
+          ...getColumnSearchProps('REQUEST'),
+          onFilter: (value, record) => {
+            const v = (value || '').toString().trim().toLowerCase();
+            if (["có", "co", "yes", "true", "1"].includes(v)) return (record.REQUEST || '').toUpperCase() === 'TRUE';
+            if (["không", "khong", "no", "false", "0"].includes(v)) return (record.REQUEST || '').toUpperCase() === 'FALSE';
+            // fallback: so sánh chuỗi hiển thị
+            return (record.REQUEST === 'TRUE' ? 'có' : record.REQUEST === 'FALSE' ? 'không' : '').includes(v);
+          }
+        },
+        {
+          title: "Trạng thái",
+          dataIndex: "STATUS",
+          align: "center",
+          ...getColumnSearchProps('STATUS'),
+          onFilter: (value, record) => (record.CONFIRM_BY ? 'Đã xác nhận' : 'Chưa xác nhận').toLowerCase().includes((value || '').toLowerCase()),
+          render: (_, record) => record.CONFIRM_BY ? <span style={{ color: '#52c41a' }}>Đã xác nhận</span> : <span style={{ color: '#faad14' }}>Chưa xác nhận</span>
+        },
+        {
+          title: "Người Xác nhận",
+          dataIndex: "CONFIRM_BY",
+          align: "center",
+          ...getColumnSearchProps('CONFIRM_BY'),
+        },
       ],
-      onFilter: (value, record) => {
-        const requestValue = record.REQUEST;
-        if (value === 'Có') return requestValue === 'TRUE';
-        if (value === 'Không') return requestValue === 'FALSE';
-        return true; // Trả về true nếu không có filter
-      }
+
     },
-    {
-      title: "Trạng thái",
-      dataIndex: "STATUS",
-      align: "center",
-      ...getColumnSearchProps('STATUS'),
-      onFilter: (value, record) => (record.CONFIRM_BY ? 'Đã xác nhận' : 'Chưa xác nhận').toLowerCase().includes((value || '').toLowerCase()),
-      render: (_, record) => record.CONFIRM_BY ? <span style={{ color: '#52c41a' }}>Đã xác nhận</span> : <span style={{ color: '#faad14' }}>Chưa xác nhận</span>
-    },
-    {
-      title: "Người Xác nhận",
-      dataIndex: "CONFIRM_BY",
-      align: "center",
-      ...getColumnSearchProps('CONFIRM_BY'),
-    },
+
     {
       title: "Note",
       dataIndex: "NOTE",
@@ -222,8 +222,9 @@ const DecideBoard = () => {
             onConfirm={() => handleDelete(record)}
             okText="Có"
             cancelText="Không"
+            disabled={!!record.CONFIRM_BY}
           >
-            <Button type="primary" danger icon={<DeleteOutlined />} />
+            <Button type="primary" danger icon={<DeleteOutlined />} disabled={!!record.CONFIRM_BY} />
           </Popconfirm>
         </Space>
       )
@@ -324,10 +325,21 @@ const DecideBoard = () => {
             >
               Xuất Excel
             </Button>
+            <Button
+              type="default"
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                setTableFilters({});
+                fetchData();
+              }}
+            >
+              Bỏ lọc
+            </Button>
           </div>
         </div>
 
         <Table
+          ref={tableRef}
           columns={columns}
           dataSource={data}
           loading={loading}
@@ -343,6 +355,9 @@ const DecideBoard = () => {
             if (record.STATUS === 'Pending') return 'row-pending';
             if (record.STATUS === 'Cancel') return 'row-cancel';
             return '';
+          }}
+          onChange={(pagination, filters) => {
+            setTableFilters(filters);
           }}
         />
         <Modal
@@ -390,8 +405,8 @@ const DecideBoard = () => {
                 dropdownRender={(menu) => (
                   <div>
                     {menu}
-                    <div style={{ 
-                      padding: '8px', 
+                    <div style={{
+                      padding: '8px',
                       borderTop: '1px solid #f0f0f0',
                       fontSize: '12px',
                       color: '#666',
@@ -402,8 +417,8 @@ const DecideBoard = () => {
                   </div>
                 )}
                 notFoundContent={
-                  <div style={{ 
-                    padding: '8px', 
+                  <div style={{
+                    padding: '8px',
                     textAlign: 'center',
                     color: '#666'
                   }}>
@@ -415,7 +430,7 @@ const DecideBoard = () => {
             <Form.Item name="type_board" label="Loại bo" rules={[{ required: true, message: 'Vui lòng nhập loại bo' }]}>
               <Input placeholder="Nhập loại bo" />
             </Form.Item>
-            <Form.Item name="size_normal" label="Kích thước Tối ưu" rules={[{ required: true, message: 'Vui lòng nhập kích thước tối ưu' }]}> 
+            <Form.Item name="size_normal" label="Kích thước Tối ưu" rules={[{ required: true, message: 'Vui lòng nhập kích thước tối ưu' }]}>
               <Input placeholder="Nhập kích thước tối ưu" />
             </Form.Item>
             <Form.Item name="rate_normal" label="Tỷ lệ % (Bo thường)" rules={[{ required: true, message: 'Vui lòng nhập tỷ lệ %' }]}>
@@ -457,8 +472,8 @@ const DecideBoard = () => {
                 dropdownRender={(menu) => (
                   <div>
                     {menu}
-                    <div style={{ 
-                      padding: '8px', 
+                    <div style={{
+                      padding: '8px',
                       borderTop: '1px solid #f0f0f0',
                       fontSize: '12px',
                       color: '#666',
@@ -469,8 +484,8 @@ const DecideBoard = () => {
                   </div>
                 )}
                 notFoundContent={
-                  <div style={{ 
-                    padding: '8px', 
+                  <div style={{
+                    padding: '8px',
                     textAlign: 'center',
                     color: '#666'
                   }}>
