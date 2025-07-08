@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, Popconfirm, Space, AutoComplete } from 'antd';
+import { Table, Button, Modal, Form, Input, Popconfirm, Space, AutoComplete, Alert } from 'antd';
+import axios from 'axios';
 import MainLayout from '../components/layout/MainLayout';
 import { Toaster, toast } from 'sonner';
 import {
@@ -20,8 +21,34 @@ const DecideBoard = () => {
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
   const [tableFilters, setTableFilters] = useState({});
+  const [isViewer, setIsViewer] = useState(false);
   const navigate = useNavigate();
   const tableRef = useRef();
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const token = localStorage.getItem('accessToken');
+        const userInfo = JSON.parse(localStorage.getItem('userInfo'));
+        if (!token || !userInfo) {
+          setIsViewer(true);
+          return;
+        }
+        const response = await axios.get('http://192.84.105.173:5000/api/auth/profile', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        let userRoles = response.data.role;
+        if (typeof userRoles === 'string') {
+          userRoles = userRoles.split(',').map(r => r.trim());
+        }
+        const onlyViewer = Array.isArray(userRoles) && userRoles.length === 1 && userRoles[0].toLowerCase() === 'viewer';
+        setIsViewer(onlyViewer);
+      } catch (error) {
+        setIsViewer(true);
+      }
+    };
+    fetchUserInfo();
+  }, []);
   useEffect(() => {
     const fetchCustomers = async () => {
       console.log('Fetching customers...');
@@ -316,17 +343,18 @@ const DecideBoard = () => {
             <Button
               type="primary"
               onClick={() => setModalVisible(true)}
+              disabled={isViewer}
             >
               Thêm mới
             </Button>
             <Button
-              type="default"
+              type="primary"
               onClick={handleExportExcel}
             >
               Xuất Excel
             </Button>
             <Button
-              type="default"
+              type="primary"
               icon={<ReloadOutlined />}
               onClick={() => {
                 setTableFilters({});
@@ -338,9 +366,46 @@ const DecideBoard = () => {
           </div>
         </div>
 
+        {isViewer && (
+          <Alert
+            message="Bạn đang ở chế độ chỉ xem. Chỉ người dùng được ủy quyền mới có thể chỉnh sửa dữ liệu."
+            type="info"
+            showIcon
+            style={{ marginBottom: 16 }}
+          />
+        )}
         <Table
           ref={tableRef}
-          columns={columns}
+          columns={columns.map(col => {
+            // Disable action buttons nếu là viewer
+            if (col.key === 'edit_action') {
+              return {
+                ...col,
+                render: (text, record) => (
+                  <Space size="middle">
+                    <Button
+                      type="primary"
+                      icon={<EditOutlined />}
+                      disabled={!!record.CONFIRM_BY || isViewer}
+                      onClick={() => {
+                        handleEdit(record);
+                      }}
+                    />
+                    <Popconfirm
+                      title="Bạn có chắc chắn muốn xóa mã hàng này?"
+                      onConfirm={() => handleDelete(record)}
+                      okText="Có"
+                      cancelText="Không"
+                      disabled={!!record.CONFIRM_BY || isViewer}
+                    >
+                      <Button type="primary" danger icon={<DeleteOutlined />} disabled={!!record.CONFIRM_BY || isViewer} />
+                    </Popconfirm>
+                  </Space>
+                )
+              };
+            }
+            return col;
+          })}
           dataSource={data}
           loading={loading}
           rowKey="id"
