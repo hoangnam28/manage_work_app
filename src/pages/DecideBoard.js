@@ -120,7 +120,7 @@ const DecideBoard = () => {
 
   // Tạo input filter cho từng cột
   const getColumnSearchProps = dataIndex => ({
-    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => {
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm }) => {
       return (
         <div style={{ padding: 8 }}>
           <Input
@@ -247,7 +247,6 @@ const DecideBoard = () => {
           <Button
             type="primary"
             icon={<EditOutlined />}
-            disabled={!!record.CONFIRM_BY}
             onClick={() => {
               handleEdit(record);
             }}
@@ -257,9 +256,8 @@ const DecideBoard = () => {
             onConfirm={() => handleDelete(record)}
             okText="Có"
             cancelText="Không"
-            disabled={!!record.CONFIRM_BY}
           >
-            <Button type="primary" danger icon={<DeleteOutlined />} disabled={!!record.CONFIRM_BY} />
+            <Button type="primary" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
       )
@@ -313,7 +311,9 @@ const DecideBoard = () => {
       type_board: record.TYPE_BOARD || '',
       size_big: record.SIZE_BIG || '',
       rate_big: record.RATE_BIG || '',
-      note: record.NOTE || ''
+      rate_normal: record.RATE_NORMAL || '',
+      note: record.NOTE || '',
+      request: record.REQUEST === 'TRUE' ? 'TRUE' : 'FALSE'
     });
     setEditModalVisible(true);
   };
@@ -325,15 +325,30 @@ const DecideBoard = () => {
       // Ghép lại chuỗi x × y cho size_normal và size_big
       const size_normal = (editSizeNormalX && editSizeNormalY) ? `${editSizeNormalX} × ${editSizeNormalY}` : (editSizeNormalX || editSizeNormalY);
       const size_big = (editSizeBigX && editSizeBigY) ? `${editSizeBigX} × ${editSizeBigY}` : (editSizeBigX || editSizeBigY);
-      await updateMaterialDecide(rowId, {
-        customer_code: (values.customer_part_number || '').trim(),
+
+      // Kiểm tra các trường chính có thay đổi không (bao gồm request)
+      const isTypeBoardChanged = (values.type_board || '').trim() !== (editingRecord.TYPE_BOARD || '').trim();
+      const isSizeNormalChanged = size_normal.trim() !== (editingRecord.SIZE_NORMAL || '').trim();
+      const isRateNormalChanged = (values.rate_normal || '').trim() !== (editingRecord.RATE_NORMAL || '').trim();
+      const isSizeBigChanged = size_big.trim() !== (editingRecord.SIZE_BIG || '').trim();
+      const isRateBigChanged = (values.rate_big || '').trim() !== (editingRecord.RATE_BIG || '').trim();
+      const isRequestChanged = values.request !== (editingRecord.REQUEST === 'TRUE' ? 'TRUE' : 'FALSE');
+
+      // Nếu có thay đổi các trường chính thì reset CONFIRM_BY (trạng thái về "Chưa xác nhận")
+      let updatePayload = {
         type_board: (values.type_board || '').trim(),
         size_normal: size_normal.trim(),
         rate_normal: (values.rate_normal || '').trim(),
         size_big: size_big.trim(),
         rate_big: (values.rate_big || '').trim(),
-        note: (values.note || '').trim()
-      });
+        note: (values.note || '').trim(),
+        request: values.request
+      };
+      if (isTypeBoardChanged || isSizeNormalChanged || isRateNormalChanged || isSizeBigChanged || isRateBigChanged || isRequestChanged) {
+        updatePayload.confirm_by = '';
+      }
+
+      await updateMaterialDecide(rowId, updatePayload);
       toast.success('Cập nhật thành công!');
       setEditModalVisible(false);
       setEditingRecord(null);
@@ -359,19 +374,16 @@ const DecideBoard = () => {
     }
   };
 
-  // Làm tròn số và thêm dấu % cho tỷ lệ, cho phép nhập dấu , và .
   const handleRateInput = (setter) => (e) => {
     let raw = e.target.value;
-    // Giữ lại số, dấu , và .
     let value = raw.replace(/[^0-9.,]/g, '');
-    // Đổi , thành . để parseFloat
     let num = parseFloat(value.replace(',', '.'));
     if (!isNaN(num)) {
       setter(Math.round(num) + '%');
     } else if (value === '') {
       setter('');
     } else {
-      setter(value); // Cho phép nhập tiếp
+      setter(value);
     }
   };
 
@@ -433,7 +445,7 @@ const DecideBoard = () => {
         <Table
           ref={tableRef}
           columns={columns.map(col => {
-            // Disable action buttons nếu là viewer
+            // Disable action buttons nếu là viewer (KHÔNG disable khi đã xác nhận)
             if (col.key === 'edit_action') {
               return {
                 ...col,
@@ -442,7 +454,7 @@ const DecideBoard = () => {
                     <Button
                       type="primary"
                       icon={<EditOutlined />}
-                      disabled={!!record.CONFIRM_BY || isViewer}
+                      disabled={isViewer}
                       onClick={() => {
                         handleEdit(record);
                       }}
@@ -452,9 +464,9 @@ const DecideBoard = () => {
                       onConfirm={() => handleDelete(record)}
                       okText="Có"
                       cancelText="Không"
-                      disabled={!!record.CONFIRM_BY || isViewer}
+                      disabled={isViewer}
                     >
-                      <Button type="primary" danger icon={<DeleteOutlined />} disabled={!!record.CONFIRM_BY || isViewer} />
+                      <Button type="primary" danger icon={<DeleteOutlined />} disabled={isViewer} />
                     </Popconfirm>
                   </Space>
                 )
@@ -485,14 +497,13 @@ const DecideBoard = () => {
           title="Tạo mới"
           open={modalVisible}
           onCancel={() => setModalVisible(false)}
+          width={800} // Tăng chiều rộng modal
           onOk={() => {
             form
               .validateFields()
               .then(async (values) => {
-                // Ghép lại chuỗi x × y cho size_normal và size_big
                 const size_normal = (sizeNormalX && sizeNormalY) ? `${sizeNormalX} × ${sizeNormalY}` : (sizeNormalX || sizeNormalY);
                 const size_big = (sizeBigX && sizeBigY) ? `${sizeBigX} × ${sizeBigY}` : (sizeBigX || sizeBigY);
-                // Làm tròn tỷ lệ và thêm %
                 const rate_normal = values.rate_normal ? Math.round(Number(values.rate_normal.replace(',', '.').replace('%', ''))) + '%' : '';
                 const rate_big = values.rate_big ? Math.round(Number(values.rate_big.replace(',', '.').replace('%', ''))) + '%' : '';
                 const cleanValues = {
@@ -506,134 +517,154 @@ const DecideBoard = () => {
                   confirm_by: '',
                   note: (values.note || '').trim(),
                 };
-                await createMaterialDecide(cleanValues);
-                toast.success('Tạo mới thành công');
-                setModalVisible(false);
-                form.resetFields();
-                setSizeNormalX(''); setSizeNormalY('');
-                setSizeBigX(''); setSizeBigY('');
-                fetchData();
+                try {
+                  await createMaterialDecide(cleanValues);
+                  toast.success('Tạo mới thành công');
+                  setModalVisible(false);
+                  form.resetFields();
+                  setSizeNormalX(''); setSizeNormalY('');
+                  setSizeBigX(''); setSizeBigY('');
+                  fetchData();
+                } catch (err) {
+                  // Ưu tiên lấy message từ BE nếu có
+                  const msg = err?.response?.data?.message || err?.response?.data?.error || err?.message || 'Lỗi tạo mới!';
+                  toast.error(msg);
+                }
               })
               .catch(() => { });
           }}
         >
           <Form form={form} layout="vertical">
-            <Form.Item
-              name="customer_part_number"
-              label="Mã sản phẩm"
-              rules={[{ required: true, message: 'Vui lòng nhập mã sản phẩm' }]}
-            >
-              <AutoComplete
-                options={customerOptions}
-                placeholder="Chọn từ danh sách hoặc nhập mã sản phẩm mới"
-                filterOption={(inputValue, option) =>
-                  option?.label?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
-                }
-                allowClear
-                backfill={true}
-                dropdownRender={(menu) => (
-                  <div>
-                    {menu}
+            {/* Header fields - 2 columns */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <Form.Item
+                name="customer_part_number"
+                label="Mã sản phẩm"
+                rules={[{ required: true, message: 'Vui lòng nhập mã sản phẩm' }]}
+              >
+                <AutoComplete
+                  options={customerOptions}
+                  placeholder="Chọn từ danh sách hoặc nhập mã sản phẩm mới"
+                  filterOption={(inputValue, option) =>
+                    option?.label?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                  }
+                  allowClear
+                  backfill={true}
+                  dropdownRender={(menu) => (
+                    <div>
+                      {menu}
+                      <div style={{
+                        padding: '8px',
+                        borderTop: '1px solid #f0f0f0',
+                        fontSize: '12px',
+                        color: '#666',
+                        textAlign: 'center'
+                      }}>
+                        Bạn có thể chọn từ danh sách hoặc nhập mã mới
+                      </div>
+                    </div>
+                  )}
+                  notFoundContent={
                     <div style={{
                       padding: '8px',
-                      borderTop: '1px solid #f0f0f0',
-                      fontSize: '12px',
-                      color: '#666',
-                      textAlign: 'center'
+                      textAlign: 'center',
+                      color: '#666'
                     }}>
-                      Bạn có thể chọn từ danh sách hoặc nhập mã mới
+                      Không tìm thấy. Bạn có thể nhập mã sản phẩm mới
                     </div>
-                  </div>
-                )}
-                notFoundContent={
-                  <div style={{
-                    padding: '8px',
-                    textAlign: 'center',
-                    color: '#666'
-                  }}>
-                    Không tìm thấy. Bạn có thể nhập mã sản phẩm mới
-                  </div>
-                }
-              />
-            </Form.Item>
-            <Form.Item name="type_board" label="Loại bo" rules={[{ required: true, message: 'Vui lòng nhập loại bo' }]}>
-              <AutoComplete
-                options={[
-                  { value: 'MLB', label: 'MLB' },
-                  { value: 'HDI', label: 'HDI' },
-                  { value: 'ANY', label: 'ANY' }
-                ]}
-                placeholder="Chọn loại bo"
-                filterOption={(inputValue, option) =>
-                  option?.value?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
-                }
-                allowClear
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
-            <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, marginBottom: 20, background: '#fafbfc' }}>
-              <div style={{ fontWeight: 600, marginBottom: 12, color: '#1890ff' }}>Bo thường</div>
-              <Form.Item name="size_normal" label="Kích thước Tối ưu (Bo thường)" rules={[{ required: true, message: 'Vui lòng nhập kích thước tối ưu(bo thường)' }]} style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Input
-                    style={{ width: 110, textAlign: 'left' }}
-                    placeholder="Chiều dài X"
-                    value={sizeNormalX}
-                    onChange={e => setSizeNormalX(e.target.value)}
-                    type="number"
-                  />
-                  <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
-                  <Input
-                    style={{ width: 120, textAlign: 'left' }}
-                    placeholder="Chiều ngắn Y"
-                    value={sizeNormalY}
-                    onChange={e => setSizeNormalY(e.target.value)}
-                    type="number"
-                  />
-                </div>
+                  }
+                />
               </Form.Item>
-              <Form.Item name="rate_normal" label="Tỷ lệ % (Bo thường)" rules={[{ required: true, message: 'Vui lòng nhập tỷ lệ %' }]}> 
-                <Input
-                  placeholder="Nhập tỷ lệ %"
-                  onChange={handleRateInput((val) => form.setFieldsValue({ rate_normal: val }))}
-                  value={form.getFieldValue('rate_normal')}
+
+              <Form.Item name="type_board" label="Loại bo" rules={[{ required: true, message: 'Vui lòng nhập loại bo' }]}>
+                <AutoComplete
+                  options={[
+                    { value: 'MLB', label: 'MLB' },
+                    { value: 'HDI', label: 'HDI' },
+                    { value: 'ANY', label: 'ANY' }
+                  ]}
+                  placeholder="Chọn loại bo"
+                  filterOption={(inputValue, option) =>
+                    option?.value?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                  }
+                  allowClear
+                  style={{ width: '100%' }}
                 />
               </Form.Item>
             </div>
-            <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, marginBottom: 20, background: '#f6ffed' }}>
-              <div style={{ fontWeight: 600, marginBottom: 12, color: '#52c41a' }}>Bo to</div>
-              <Form.Item name="size_big" label="Kích thước bo to" rules={[{ required: true, message: 'Vui lòng nhập kích thước bo to' }]} style={{ marginBottom: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+
+            {/* Bo thường và Bo to - 2 columns */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              {/* Bo thường */}
+              <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, background: '#fafbfc' }}>
+                <div style={{ fontWeight: 600, marginBottom: 12, color: '#1890ff' }}>Bo thường</div>
+                <Form.Item name="size_normal" label="Kích thước Tối ưu" rules={[{ required: true, message: 'Vui lòng nhập kích thước tối ưu(bo thường)' }]} style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Input
+                      style={{ width: 140, textAlign: 'left' }}
+                      placeholder="Chiều dài X"
+                      value={sizeNormalX}
+                      onChange={e => setSizeNormalX(e.target.value)}
+                      type="number"
+                    />
+                    <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
+                    <Input
+                      style={{ width: 140, textAlign: 'left' }}
+                      placeholder="Chiều ngắn Y"
+                      value={sizeNormalY}
+                      onChange={e => setSizeNormalY(e.target.value)}
+                      type="number"
+                    />
+                  </div>
+                </Form.Item>
+                <Form.Item name="rate_normal" label="Tỷ lệ %" rules={[{ required: true, message: 'Vui lòng nhập tỷ lệ %' }]}>
                   <Input
-                    style={{ width: 110, textAlign: 'left' }}
-                    placeholder="Chiều dài X"
-                    value={sizeBigX}
-                    onChange={e => setSizeBigX(e.target.value)}
-                    type="number"
+                    placeholder="Nhập tỷ lệ %"
+                    onChange={handleRateInput((val) => form.setFieldsValue({ rate_normal: val }))}
+                    value={form.getFieldValue('rate_normal')}
                   />
-                  <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
+                </Form.Item>
+              </div>
+
+              {/* Bo to */}
+              <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, background: '#f6ffed' }}>
+                <div style={{ fontWeight: 600, marginBottom: 12, color: '#52c41a' }}>Bo to</div>
+                <Form.Item name="size_big" label="Kích thước bo to" rules={[{ required: true, message: 'Vui lòng nhập kích thước bo to' }]} style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Input
+                      style={{ width: 140, textAlign: 'left' }}
+                      placeholder="Chiều dài X"
+                      value={sizeBigX}
+                      onChange={e => setSizeBigX(e.target.value)}
+                      type="number"
+                    />
+                    <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
+                    <Input
+                      style={{ width: 140, textAlign: 'left' }}
+                      placeholder="Chiều ngắn Y"
+                      value={sizeBigY}
+                      onChange={e => setSizeBigY(e.target.value)}
+                      type="number"
+                    />
+                  </div>
+                </Form.Item>
+                <Form.Item name="rate_big" label="Tỷ lệ %" rules={[{ required: true, message: 'Vui lòng nhập tỷ lệ %' }]}>
                   <Input
-                    style={{ width: 120, textAlign: 'left' }}
-                    placeholder="Chiều ngắn Y"
-                    value={sizeBigY}
-                    onChange={e => setSizeBigY(e.target.value)}
-                    type="number"
+                    placeholder="Nhập tỷ lệ %"
+                    onChange={handleRateInput((val) => form.setFieldsValue({ rate_big: val }))}
+                    value={form.getFieldValue('rate_big')}
                   />
-                </div>
-              </Form.Item>
-              <Form.Item name="rate_big" label="Tỷ lệ % (Bo to)" rules={[{ required: true, message: 'Vui lòng nhập tỷ lệ %' }]}> 
-                <Input
-                  placeholder="Nhập tỷ lệ %"
-                  onChange={handleRateInput((val) => form.setFieldsValue({ rate_big: val }))}
-                  value={form.getFieldValue('rate_big')}
-                />
-              </Form.Item>
+                </Form.Item>
+              </div>
             </div>
+
+            {/* Note field - full width */}
             <Form.Item name="note" label="Note">
               <Input placeholder="Nhập ghi chú (không bắt buộc)" />
             </Form.Item>
           </Form>
         </Modal>
+
         <Modal
           title="Sửa thông tin"
           open={editModalVisible}
@@ -641,113 +672,116 @@ const DecideBoard = () => {
           onCancel={handleEditCancel}
           okText="Lưu"
           cancelText="Hủy"
+          width={800} // Tăng chiều rộng modal
         >
           <Form form={editForm} layout="vertical">
-            <Form.Item
-              name="customer_part_number"
-              label="Mã sản phẩm"
-              rules={[{ required: true, message: 'Vui lòng nhập mã sản phẩm' }]}
-            >
-              <AutoComplete
-                options={customerOptions}
-                placeholder="Chọn từ danh sách hoặc nhập mã sản phẩm mới"
-                filterOption={(inputValue, option) =>
-                  option?.label?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
-                }
-                allowClear
-                backfill={true}
-                dropdownRender={(menu) => (
-                  <div>
-                    {menu}
-                    <div style={{
-                      padding: '8px',
-                      borderTop: '1px solid #f0f0f0',
-                      fontSize: '12px',
-                      color: '#666',
-                      textAlign: 'center'
-                    }}>
-                      Bạn có thể chọn từ danh sách hoặc nhập mã mới
-                    </div>
+            {/* Yêu cầu sử dụng bo to - full width */}
+            <Form.Item name="request" label="Yêu cầu sử dụng bo to" rules={[{ required: true, message: 'Vui lòng chọn yêu cầu sử dụng bo to' }]}
+              style={{ maxWidth: 300 }}>
+              <Input.Group compact>
+                <Form.Item name="request" noStyle>
+                  <select style={{ width: '100%', height: 32 }}>
+                    <option value="TRUE">Có</option>
+                    <option value="FALSE">Không</option>
+                  </select>
+                </Form.Item>
+              </Input.Group>
+            </Form.Item>
+            {/* Header fields - 2 columns */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <Form.Item
+                name="customer_part_number"
+                label="Mã sản phẩm"
+              >
+                <Input
+                  disabled
+                  style={{ background: '#f5f5f5', color: '#888' }}
+                  placeholder="Không cho phép sửa mã sản phẩm"
+                />
+              </Form.Item>
+
+              <Form.Item name="type_board" label="Loại bo" rules={[{ required: true, message: 'Vui lòng nhập loại bo' }]}>
+                <AutoComplete
+                  options={[
+                    { value: 'MLB', label: 'MLB' },
+                    { value: 'HDI', label: 'HDI' },
+                    { value: 'ANY', label: 'ANY' }
+                  ]}
+                  placeholder="Chọn loại bo"
+                  filterOption={(inputValue, option) =>
+                    option?.value?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                  }
+                  allowClear
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </div>
+
+            {/* Bo thường và Bo to - 2 columns */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+              <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, background: '#fafbfc' }}>
+                <div style={{ fontWeight: 600, marginBottom: 12, color: '#1890ff' }}>Bo thường</div>
+                <Form.Item label="Kích thước Tối ưu" required style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Input
+                      style={{ width: 140, textAlign: 'left' }}
+                      placeholder="Chiều dài X"
+                      value={editSizeNormalX}
+                      onChange={e => setEditSizeNormalX(e.target.value)}
+                      type="number"
+                    />
+                    <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
+                    <Input
+                      style={{ width: 140, textAlign: 'left' }}
+                      placeholder="Chiều ngắn Y"
+                      value={editSizeNormalY}
+                      onChange={e => setEditSizeNormalY(e.target.value)}
+                      type="number"
+                    />
                   </div>
-                )}
-                notFoundContent={
-                  <div style={{
-                    padding: '8px',
-                    textAlign: 'center',
-                    color: '#666'
-                  }}>
-                    Không tìm thấy. Bạn có thể nhập mã sản phẩm mới
+                </Form.Item>
+                <Form.Item name="rate_normal" label="Tỷ lệ %">
+                  <Input
+                    placeholder="Nhập tỷ lệ %"
+                    onChange={handleEditRateInput((val) => editForm.setFieldsValue({ rate_normal: val }))}
+                    value={editForm.getFieldValue('rate_normal')}
+                  />
+                </Form.Item>
+              </div>
+
+              {/* Bo to */}
+              <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, background: '#f6ffed' }}>
+                <div style={{ fontWeight: 600, marginBottom: 12, color: '#52c41a' }}>Bo to</div>
+                <Form.Item name="size_big" label="Kích thước bo to" style={{ marginBottom: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Input
+                      style={{ width: 140, textAlign: 'left' }}
+                      placeholder="Chiều dài X"
+                      value={editSizeBigX}
+                      onChange={e => setEditSizeBigX(e.target.value)}
+                      type="number"
+                    />
+                    <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
+                    <Input
+                      style={{ width: 140, textAlign: 'left' }}
+                      placeholder="Chiều ngắn Y"
+                      value={editSizeBigY}
+                      onChange={e => setEditSizeBigY(e.target.value)}
+                      type="number"
+                    />
                   </div>
-                }
-              />
-            </Form.Item>
-            <Form.Item name="type_board" label="Loại bo" rules={[{ required: true, message: 'Vui lòng nhập loại bo' }]}>
-              <AutoComplete
-                options={[
-                  { value: 'MLB', label: 'MLB' },
-                  { value: 'HDI', label: 'HDI' },
-                  { value: 'ANY', label: 'ANY' }
-                ]}
-                placeholder="Chọn loại bo"
-                filterOption={(inputValue, option) =>
-                  option?.value?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
-                }
-                allowClear
-                style={{ width: '100%' }}
-              />
-            </Form.Item>
-            <Form.Item label="Kích thước Tối ưu (Bo thường)" required style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Input
-                  style={{ width: 120, textAlign: 'left' }}
-                  placeholder="Chiều dài X"
-                  value={editSizeNormalX}
-                  onChange={e => setEditSizeNormalX(e.target.value)}
-                  type="number"
-                />
-                <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
-                <Input
-                  style={{ width: 120, textAlign: 'left' }}
-                  placeholder="Chiều ngắn Y"
-                  value={editSizeNormalY}
-                  onChange={e => setEditSizeNormalY(e.target.value)}
-                  type="number"
-                />
+                </Form.Item>
+                <Form.Item name="rate_big" label="Tỷ lệ %">
+                  <Input
+                    placeholder="Nhập tỷ lệ %"
+                    onChange={handleEditRateInput((val) => editForm.setFieldsValue({ rate_big: val }))}
+                    value={editForm.getFieldValue('rate_big')}
+                  />
+                </Form.Item>
               </div>
-            </Form.Item>
-            <Form.Item name="rate_normal" label="Tỷ lệ % (Bo thường)">
-              <Input
-                placeholder="Nhập tỷ lệ %"
-                onChange={handleEditRateInput((val) => editForm.setFieldsValue({ rate_normal: val }))}
-                value={editForm.getFieldValue('rate_normal')}
-              />
-            </Form.Item>
-            <Form.Item name="size_big" label="Kích thước bo to" style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Input
-                  style={{ width: 120, textAlign: 'left' }}
-                  placeholder="Chiều dài X"
-                  value={editSizeBigX}
-                  onChange={e => setEditSizeBigX(e.target.value)}
-                  type="number"
-                />
-                <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
-                <Input
-                  style={{ width: 120, textAlign: 'left' }}
-                  placeholder="Chiều ngắn Y"
-                  value={editSizeBigY}
-                  onChange={e => setEditSizeBigY(e.target.value)}
-                  type="number"
-                />
-              </div>
-            </Form.Item>
-            <Form.Item name="rate_big" label="Tỷ lệ % (Bo to)">
-              <Input
-                placeholder="Nhập tỷ lệ %"
-                onChange={handleEditRateInput((val) => editForm.setFieldsValue({ rate_big: val }))}
-                value={editForm.getFieldValue('rate_big')}
-              />
-            </Form.Item>
+            </div>
+
+            {/* Note field - full width */}
             <Form.Item name="note" label="Note">
               <Input placeholder="Nhập ghi chú (không bắt buộc)" />
             </Form.Item>
