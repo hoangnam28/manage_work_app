@@ -20,6 +20,14 @@ const DecideBoard = () => {
   const [editingRecord, setEditingRecord] = useState(null);
   const [form] = Form.useForm();
   const [editForm] = Form.useForm();
+  const [sizeNormalX, setSizeNormalX] = useState('');
+  const [sizeNormalY, setSizeNormalY] = useState('');
+  const [sizeBigX, setSizeBigX] = useState('');
+  const [sizeBigY, setSizeBigY] = useState('');
+  const [editSizeNormalX, setEditSizeNormalX] = useState('');
+  const [editSizeNormalY, setEditSizeNormalY] = useState('');
+  const [editSizeBigX, setEditSizeBigX] = useState('');
+  const [editSizeBigY, setEditSizeBigY] = useState('');
   const [tableFilters, setTableFilters] = useState({});
   const [isViewer, setIsViewer] = useState(false);
   const navigate = useNavigate();
@@ -282,12 +290,27 @@ const DecideBoard = () => {
 
   const handleEdit = (record) => {
     setEditingRecord(record);
+    // Tách x/y cho size_normal và rate_normal
+    let sizeX = '', sizeY = '';
+    let sizeBigX = '', sizeBigY = '';
+    if (record.SIZE_NORMAL) {
+      const parts = record.SIZE_NORMAL.split('×').map(s => s.trim());
+      sizeX = parts[0] || '';
+      sizeY = parts[1] || '';
+    }
+    if (record.SIZE_BIG) {
+      const parts = record.SIZE_BIG.split('×').map(s => s.trim());
+      sizeBigX = parts[0] || '';
+      sizeBigY = parts[1] || '';
+    }
+    setEditSizeNormalX(sizeX);
+    setEditSizeNormalY(sizeY);
+    setEditSizeBigX(sizeBigX);
+    setEditSizeBigY(sizeBigY);
     // Điền sẵn dữ liệu vào form sửa
     editForm.setFieldsValue({
       customer_part_number: record.CUSTOMER_CODE || '',
       type_board: record.TYPE_BOARD || '',
-      size_normal: record.SIZE_NORMAL || '',
-      rate_normal: record.RATE_NORMAL || '',
       size_big: record.SIZE_BIG || '',
       rate_big: record.RATE_BIG || '',
       note: record.NOTE || ''
@@ -299,12 +322,15 @@ const DecideBoard = () => {
     try {
       const values = await editForm.validateFields();
       const rowId = editingRecord.id !== undefined ? editingRecord.id : editingRecord.ID;
+      // Ghép lại chuỗi x × y cho size_normal và size_big
+      const size_normal = (editSizeNormalX && editSizeNormalY) ? `${editSizeNormalX} × ${editSizeNormalY}` : (editSizeNormalX || editSizeNormalY);
+      const size_big = (editSizeBigX && editSizeBigY) ? `${editSizeBigX} × ${editSizeBigY}` : (editSizeBigX || editSizeBigY);
       await updateMaterialDecide(rowId, {
         customer_code: (values.customer_part_number || '').trim(),
         type_board: (values.type_board || '').trim(),
-        size_normal: (values.size_normal || '').trim(),
+        size_normal: size_normal.trim(),
         rate_normal: (values.rate_normal || '').trim(),
-        size_big: (values.size_big || '').trim(),
+        size_big: size_big.trim(),
         rate_big: (values.rate_big || '').trim(),
         note: (values.note || '').trim()
       });
@@ -333,12 +359,42 @@ const DecideBoard = () => {
     }
   };
 
+  // Làm tròn số và thêm dấu % cho tỷ lệ, cho phép nhập dấu , và .
+  const handleRateInput = (setter) => (e) => {
+    let raw = e.target.value;
+    // Giữ lại số, dấu , và .
+    let value = raw.replace(/[^0-9.,]/g, '');
+    // Đổi , thành . để parseFloat
+    let num = parseFloat(value.replace(',', '.'));
+    if (!isNaN(num)) {
+      setter(Math.round(num) + '%');
+    } else if (value === '') {
+      setter('');
+    } else {
+      setter(value); // Cho phép nhập tiếp
+    }
+  };
+
+  // Tương tự cho form sửa
+  const handleEditRateInput = (setter) => (e) => {
+    let raw = e.target.value;
+    let value = raw.replace(/[^0-9.,]/g, '');
+    let num = parseFloat(value.replace(',', '.'));
+    if (!isNaN(num)) {
+      setter(Math.round(num) + '%');
+    } else if (value === '') {
+      setter('');
+    } else {
+      setter(value);
+    }
+  };
+
   return (
     <MainLayout>
       <Toaster position="top-right" richColors />
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-          <h1>Board Large Size</h1>
+          <h1>Large Size Board</h1>
           <div style={{ display: 'flex', gap: 8 }}>
             <Button
               type="primary"
@@ -433,13 +489,19 @@ const DecideBoard = () => {
             form
               .validateFields()
               .then(async (values) => {
+                // Ghép lại chuỗi x × y cho size_normal và size_big
+                const size_normal = (sizeNormalX && sizeNormalY) ? `${sizeNormalX} × ${sizeNormalY}` : (sizeNormalX || sizeNormalY);
+                const size_big = (sizeBigX && sizeBigY) ? `${sizeBigX} × ${sizeBigY}` : (sizeBigX || sizeBigY);
+                // Làm tròn tỷ lệ và thêm %
+                const rate_normal = values.rate_normal ? Math.round(Number(values.rate_normal.replace(',', '.').replace('%', ''))) + '%' : '';
+                const rate_big = values.rate_big ? Math.round(Number(values.rate_big.replace(',', '.').replace('%', ''))) + '%' : '';
                 const cleanValues = {
                   customer_part_number: (values.customer_part_number || '').trim(),
                   type_board: (values.type_board || '').trim(),
-                  size_normal: (values.size_normal || '').trim(),
-                  rate_normal: (values.rate_normal || '').trim(),
-                  size_big: (values.size_big || '').trim(),
-                  rate_big: (values.rate_big || '').trim(),
+                  size_normal: size_normal.trim(),
+                  rate_normal: rate_normal,
+                  size_big: size_big.trim(),
+                  rate_big: rate_big,
                   request: 'FALSE',
                   confirm_by: '',
                   note: (values.note || '').trim(),
@@ -448,6 +510,8 @@ const DecideBoard = () => {
                 toast.success('Tạo mới thành công');
                 setModalVisible(false);
                 form.resetFields();
+                setSizeNormalX(''); setSizeNormalY('');
+                setSizeBigX(''); setSizeBigY('');
                 fetchData();
               })
               .catch(() => { });
@@ -493,20 +557,78 @@ const DecideBoard = () => {
               />
             </Form.Item>
             <Form.Item name="type_board" label="Loại bo" rules={[{ required: true, message: 'Vui lòng nhập loại bo' }]}>
-              <Input placeholder="Nhập loại bo" />
+              <AutoComplete
+                options={[
+                  { value: 'MLB', label: 'MLB' },
+                  { value: 'HDI', label: 'HDI' },
+                  { value: 'ANY', label: 'ANY' }
+                ]}
+                placeholder="Chọn loại bo"
+                filterOption={(inputValue, option) =>
+                  option?.value?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                }
+                allowClear
+                style={{ width: '100%' }}
+              />
             </Form.Item>
-            <Form.Item name="size_normal" label="Kích thước Tối ưu" rules={[{ required: true, message: 'Vui lòng nhập kích thước tối ưu' }]}>
-              <Input placeholder="Nhập kích thước tối ưu" />
-            </Form.Item>
-            <Form.Item name="rate_normal" label="Tỷ lệ % (Bo thường)" rules={[{ required: true, message: 'Vui lòng nhập tỷ lệ %' }]}>
-              <Input placeholder="Nhập tỷ lệ %" />
-            </Form.Item>
-            <Form.Item name="size_big" label="Kích thước bo to" rules={[{ required: true, message: 'Vui lòng nhập kích thước bo to' }]}>
-              <Input placeholder="Nhập kích thước bo to" />
-            </Form.Item>
-            <Form.Item name="rate_big" label="Tỷ lệ % (Bo to)" rules={[{ required: true, message: 'Vui lòng nhập tỷ lệ %' }]}>
-              <Input placeholder="Nhập tỷ lệ %" />
-            </Form.Item>
+            <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, marginBottom: 20, background: '#fafbfc' }}>
+              <div style={{ fontWeight: 600, marginBottom: 12, color: '#1890ff' }}>Bo thường</div>
+              <Form.Item label="Kích thước Tối ưu (Bo thường)" required style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Input
+                    style={{ width: 110, textAlign: 'left' }}
+                    placeholder="Chiều dài X"
+                    value={sizeNormalX}
+                    onChange={e => setSizeNormalX(e.target.value)}
+                    type="number"
+                  />
+                  <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
+                  <Input
+                    style={{ width: 120, textAlign: 'left' }}
+                    placeholder="Chiều ngắn Y"
+                    value={sizeNormalY}
+                    onChange={e => setSizeNormalY(e.target.value)}
+                    type="number"
+                  />
+                </div>
+              </Form.Item>
+              <Form.Item name="rate_normal" label="Tỷ lệ % (Bo thường)" rules={[{ required: true, message: 'Vui lòng nhập tỷ lệ %' }]}> 
+                <Input
+                  placeholder="Nhập tỷ lệ %"
+                  onChange={handleRateInput((val) => form.setFieldsValue({ rate_normal: val }))}
+                  value={form.getFieldValue('rate_normal')}
+                />
+              </Form.Item>
+            </div>
+            <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, marginBottom: 20, background: '#f6ffed' }}>
+              <div style={{ fontWeight: 600, marginBottom: 12, color: '#52c41a' }}>Bo to</div>
+              <Form.Item name="size_big" label="Kích thước bo to" rules={[{ required: true, message: 'Vui lòng nhập kích thước bo to' }]} style={{ marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Input
+                    style={{ width: 110, textAlign: 'left' }}
+                    placeholder="Chiều dài X"
+                    value={sizeBigX}
+                    onChange={e => setSizeBigX(e.target.value)}
+                    type="number"
+                  />
+                  <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
+                  <Input
+                    style={{ width: 120, textAlign: 'left' }}
+                    placeholder="Chiều ngắn Y"
+                    value={sizeBigY}
+                    onChange={e => setSizeBigY(e.target.value)}
+                    type="number"
+                  />
+                </div>
+              </Form.Item>
+              <Form.Item name="rate_big" label="Tỷ lệ % (Bo to)" rules={[{ required: true, message: 'Vui lòng nhập tỷ lệ %' }]}> 
+                <Input
+                  placeholder="Nhập tỷ lệ %"
+                  onChange={handleRateInput((val) => form.setFieldsValue({ rate_big: val }))}
+                  value={form.getFieldValue('rate_big')}
+                />
+              </Form.Item>
+            </div>
             <Form.Item name="note" label="Note">
               <Input placeholder="Nhập ghi chú (không bắt buộc)" />
             </Form.Item>
@@ -560,19 +682,71 @@ const DecideBoard = () => {
               />
             </Form.Item>
             <Form.Item name="type_board" label="Loại bo" rules={[{ required: true, message: 'Vui lòng nhập loại bo' }]}>
-              <Input placeholder="Nhập loại bo" />
+              <AutoComplete
+                options={[
+                  { value: 'MLB', label: 'MLB' },
+                  { value: 'HDI', label: 'HDI' },
+                  { value: 'ANY', label: 'ANY' }
+                ]}
+                placeholder="Chọn loại bo"
+                filterOption={(inputValue, option) =>
+                  option?.value?.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                }
+                allowClear
+                style={{ width: '100%' }}
+              />
             </Form.Item>
-            <Form.Item name="size_normal" label="Kích thước Tối ưu">
-              <Input placeholder="Nhập kích thước tối ưu" />
+            <Form.Item label="Kích thước Tối ưu (Bo thường)" required style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Input
+                  style={{ width: 120, textAlign: 'left' }}
+                  placeholder="Chiều dài X"
+                  value={editSizeNormalX}
+                  onChange={e => setEditSizeNormalX(e.target.value)}
+                  type="number"
+                />
+                <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
+                <Input
+                  style={{ width: 120, textAlign: 'left' }}
+                  placeholder="Chiều ngắn Y"
+                  value={editSizeNormalY}
+                  onChange={e => setEditSizeNormalY(e.target.value)}
+                  type="number"
+                />
+              </div>
             </Form.Item>
             <Form.Item name="rate_normal" label="Tỷ lệ % (Bo thường)">
-              <Input placeholder="Nhập tỷ lệ %" />
+              <Input
+                placeholder="Nhập tỷ lệ %"
+                onChange={handleEditRateInput((val) => editForm.setFieldsValue({ rate_normal: val }))}
+                value={editForm.getFieldValue('rate_normal')}
+              />
             </Form.Item>
-            <Form.Item name="size_big" label="Kích thước bo to">
-              <Input placeholder="Nhập kích thước bo to" />
+            <Form.Item name="size_big" label="Kích thước bo to" style={{ marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Input
+                  style={{ width: 120, textAlign: 'left' }}
+                  placeholder="Chiều dài X"
+                  value={editSizeBigX}
+                  onChange={e => setEditSizeBigX(e.target.value)}
+                  type="number"
+                />
+                <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
+                <Input
+                  style={{ width: 120, textAlign: 'left' }}
+                  placeholder="Chiều ngắn Y"
+                  value={editSizeBigY}
+                  onChange={e => setEditSizeBigY(e.target.value)}
+                  type="number"
+                />
+              </div>
             </Form.Item>
             <Form.Item name="rate_big" label="Tỷ lệ % (Bo to)">
-              <Input placeholder="Nhập tỷ lệ %" />
+              <Input
+                placeholder="Nhập tỷ lệ %"
+                onChange={handleEditRateInput((val) => editForm.setFieldsValue({ rate_big: val }))}
+                value={editForm.getFieldValue('rate_big')}
+              />
             </Form.Item>
             <Form.Item name="note" label="Note">
               <Input placeholder="Nhập ghi chú (không bắt buộc)" />
