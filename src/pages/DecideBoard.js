@@ -573,7 +573,7 @@ const DecideBoard = () => {
             </Form.Item>
             <div style={{ border: '1px solid #d9d9d9', borderRadius: 8, padding: 16, marginBottom: 20, background: '#fafbfc' }}>
               <div style={{ fontWeight: 600, marginBottom: 12, color: '#1890ff' }}>Bo thường</div>
-              <Form.Item label="Kích thước Tối ưu (Bo thường)" required style={{ marginBottom: 16 }}>
+              <Form.Item name="size_normal" label="Kích thước Tối ưu (Bo thường)" rules={[{ required: true, message: 'Vui lòng nhập kích thước tối ưu(bo thường)' }]} style={{ marginBottom: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Input
                     style={{ width: 110, textAlign: 'left' }}
