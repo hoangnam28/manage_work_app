@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button, Spin, Descriptions, message, Popconfirm } from 'antd';
 import axios from '../utils/axios';
@@ -10,8 +10,40 @@ const DecideBoardDetail = () => {
   const navigate = useNavigate();
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [validId, setValidId] = useState(null);
+  const originalId = useRef(id); // Lưu ID ban đầu
+
+  // Validate ID đơn giản
+  const validateId = (idParam) => {
+    if (!idParam) return false;
+    if (!/^\d+$/.test(idParam)) return false;
+    const numId = parseInt(idParam, 10);
+    if (isNaN(numId) || numId <= 0) return false;
+    return true;
+  };
+
+  // Ngăn chặn sửa ID bằng cách theo dõi thay đổi URL
+  const detectIdChange = () => {
+    if (id !== originalId.current) {
+      message.error('Không được phép thay đổi ID!');
+      navigate('/decide-use', { replace: true });
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
+    // Detect ID change
+    const detectIdChange = () => {
+      if (id !== originalId.current) {
+        message.error('Không được phép thay đổi ID!');
+        navigate('/decide-use', { replace: true });
+        return false;
+      }
+      return true;
+    };
+
+    // Fetch detail
     const fetchDetail = async () => {
       setLoading(true);
       try {
@@ -19,14 +51,37 @@ const DecideBoardDetail = () => {
         setRecord(res.data);
       } catch (err) {
         message.error('Không tìm thấy mã hàng');
+        navigate('/decide-use', { replace: true });
       } finally {
         setLoading(false);
       }
     };
+
+    // Kiểm tra ID có bị thay đổi không
+    if (!detectIdChange()) {
+      return;
+    }
+
+    // Validate ID
+    if (!validateId(id)) {
+      message.error('ID không hợp lệ!');
+      navigate('/decide-use', { replace: true });
+      return;
+    }
+
+    // Chỉ cho phép ID đã được validate
+    setValidId(id);
     fetchDetail();
-  }, [id]);
+  }, [id, navigate]);
+
 
   const handleConfirm = async (requestValue = 'TRUE') => {
+    // Kiểm tra lại ID trước khi thực hiện action
+    if (!detectIdChange() || !validateId(id) || id !== validId) {
+      message.error('Phiên làm việc không hợp lệ!');
+      navigate('/decide-use', { replace: true });
+      return;
+    }
 
     try {
       const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
@@ -45,9 +100,22 @@ const DecideBoardDetail = () => {
     } 
   };
 
-  if (loading) return <Spin />;
+  // Theo dõi thay đổi URL và ngăn chặn sửa ID
 
-  if (!record) return <div>Không tìm thấy mã hàng</div>;
+  if (loading) return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
+
+  if (!record || !validId) {
+    return (
+      <MainLayout>
+        <div style={{ textAlign: 'center', padding: '50px' }}>
+          <h3>Không tìm thấy mã hàng!</h3>
+          <Button type="primary" onClick={() => navigate('/decide-use')}>
+            Quay lại danh sách
+          </Button>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
