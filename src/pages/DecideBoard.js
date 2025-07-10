@@ -30,6 +30,8 @@ const DecideBoard = () => {
   const [editSizeBigY, setEditSizeBigY] = useState('');
   const [tableFilters, setTableFilters] = useState({});
   const [isViewer, setIsViewer] = useState(false);
+  const [canUpdateBo, setCanUpdateBo] = useState(false);
+  const [onlyRequestEdit, setOnlyRequestEdit] = useState(false);
   const navigate = useNavigate();
   const tableRef = useRef();
 
@@ -40,6 +42,7 @@ const DecideBoard = () => {
         const userInfo = JSON.parse(localStorage.getItem('userInfo'));
         if (!token || !userInfo) {
           setIsViewer(true);
+          setCanUpdateBo(false);
           return;
         }
         const response = await axios.get('http://192.84.105.173:5000/api/auth/profile', {
@@ -51,8 +54,20 @@ const DecideBoard = () => {
         }
         const onlyViewer = Array.isArray(userRoles) && userRoles.length === 1 && userRoles[0].toLowerCase() === 'viewer';
         setIsViewer(onlyViewer);
+
+        // Check company_id permission
+        const allowedCompanyIds = ['000107','003512','024287','026965','014077','001748'];
+        // Ưu tiên lấy từ userInfo nếu có, nếu không lấy từ response.data
+        let companyId = userInfo?.company_id || response.data?.company_id;
+        if (typeof companyId === 'number') companyId = companyId.toString().padStart(6, '0');
+        if (typeof companyId === 'string') companyId = companyId.padStart(6, '0');
+        setCanUpdateBo(allowedCompanyIds.includes(companyId));
+        // Các user chỉ được sửa trường request (không được sửa trường khác)
+        const onlyRequestIds = ['000107','003512','024287','026965','014077','001748'];
+        setOnlyRequestEdit(onlyRequestIds.includes(companyId));
       } catch (error) {
         setIsViewer(true);
+        setCanUpdateBo(false);
       }
     };
     fetchUserInfo();
@@ -672,21 +687,9 @@ const DecideBoard = () => {
           onCancel={handleEditCancel}
           okText="Lưu"
           cancelText="Hủy"
-          width={800} // Tăng chiều rộng modal
+          width={800}
         >
           <Form form={editForm} layout="vertical">
-            {/* Yêu cầu sử dụng bo to - full width */}
-            <Form.Item name="request" label="Yêu cầu sử dụng bo to" rules={[{ required: true, message: 'Vui lòng chọn yêu cầu sử dụng bo to' }]}
-              style={{ maxWidth: 300 }}>
-              <Input.Group compact>
-                <Form.Item name="request" noStyle>
-                  <select style={{ width: '100%', height: 32 }}>
-                    <option value="TRUE">Có</option>
-                    <option value="FALSE">Không</option>
-                  </select>
-                </Form.Item>
-              </Input.Group>
-            </Form.Item>
             {/* Header fields - 2 columns */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
               <Form.Item
@@ -700,7 +703,7 @@ const DecideBoard = () => {
                 />
               </Form.Item>
 
-              <Form.Item name="type_board" label="Loại bo" rules={[{ required: true, message: 'Vui lòng nhập loại bo' }]}>
+              <Form.Item name="type_board" label="Loại bo" rules={[{ required: true, message: 'Vui lòng nhập loại bo' }]}> 
                 <AutoComplete
                   options={[
                     { value: 'MLB', label: 'MLB' },
@@ -713,6 +716,7 @@ const DecideBoard = () => {
                   }
                   allowClear
                   style={{ width: '100%' }}
+                  disabled={onlyRequestEdit}
                 />
               </Form.Item>
             </div>
@@ -729,6 +733,7 @@ const DecideBoard = () => {
                       value={editSizeNormalX}
                       onChange={e => setEditSizeNormalX(e.target.value)}
                       type="number"
+                      disabled={onlyRequestEdit}
                     />
                     <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
                     <Input
@@ -737,6 +742,7 @@ const DecideBoard = () => {
                       value={editSizeNormalY}
                       onChange={e => setEditSizeNormalY(e.target.value)}
                       type="number"
+                      disabled={onlyRequestEdit}
                     />
                   </div>
                 </Form.Item>
@@ -745,6 +751,7 @@ const DecideBoard = () => {
                     placeholder="Nhập tỷ lệ %"
                     onChange={handleEditRateInput((val) => editForm.setFieldsValue({ rate_normal: val }))}
                     value={editForm.getFieldValue('rate_normal')}
+                    disabled={onlyRequestEdit}
                   />
                 </Form.Item>
               </div>
@@ -760,6 +767,7 @@ const DecideBoard = () => {
                       value={editSizeBigX}
                       onChange={e => setEditSizeBigX(e.target.value)}
                       type="number"
+                      disabled={onlyRequestEdit}
                     />
                     <span style={{ fontWeight: 'bold', fontSize: 18, lineHeight: 1 }}>×</span>
                     <Input
@@ -768,6 +776,7 @@ const DecideBoard = () => {
                       value={editSizeBigY}
                       onChange={e => setEditSizeBigY(e.target.value)}
                       type="number"
+                      disabled={onlyRequestEdit}
                     />
                   </div>
                 </Form.Item>
@@ -776,14 +785,32 @@ const DecideBoard = () => {
                     placeholder="Nhập tỷ lệ %"
                     onChange={handleEditRateInput((val) => editForm.setFieldsValue({ rate_big: val }))}
                     value={editForm.getFieldValue('rate_big')}
+                    disabled={onlyRequestEdit}
                   />
                 </Form.Item>
               </div>
             </div>
+            {/* Yêu cầu sử dụng bo to - full width */}
+            <Form.Item name="request" label="Yêu cầu sử dụng bo to" rules={[{ required: true, message: 'Vui lòng chọn yêu cầu sử dụng bo to' }]}
+              style={{ maxWidth: 300 }}>
+              <Input.Group compact>
+                <Form.Item name="request" noStyle>
+                  <select style={{ width: '100%', height: 32 }} disabled={!canUpdateBo}>
+                    <option value="TRUE">Có</option>
+                    <option value="FALSE">Không</option>
+                  </select>
+                </Form.Item>
+              </Input.Group>
+              {!canUpdateBo && (
+                <div style={{ color: '#faad14', marginTop: 4, fontSize: 13 }}>
+                  Bạn không có quyền cập nhật yêu cầu sử dụng bo. Vui lòng liên hệ quản trị viên nếu cần hỗ trợ.
+                </div>
+              )}
+            </Form.Item>
 
             {/* Note field - full width */}
             <Form.Item name="note" label="Note">
-              <Input placeholder="Nhập ghi chú (không bắt buộc)" />
+              <Input placeholder="Nhập ghi chú (không bắt buộc)" disabled={onlyRequestEdit} />
             </Form.Item>
           </Form>
         </Modal>
