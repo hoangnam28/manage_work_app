@@ -40,3 +40,11 @@ export const deleteMaterialDecide = async (id) => {
   });
   return response.data;
 };
+
+export const restoreMaterialDecide = async (id) => {
+  const token = localStorage.getItem('accessToken');
+  const response = await axios.put(`${API_URL}/large-size/restore/${id}`, {}, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};

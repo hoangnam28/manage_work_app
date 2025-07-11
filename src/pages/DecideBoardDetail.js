@@ -57,7 +57,6 @@ const DecideBoardDetail = () => {
       }
     };
 
-    // Kiểm tra ID có bị thay đổi không
     if (!detectIdChange()) {
       return;
     }
@@ -69,7 +68,6 @@ const DecideBoardDetail = () => {
       return;
     }
 
-    // Chỉ cho phép ID đã được validate
     setValidId(id);
     fetchDetail();
   }, [id, navigate]);
@@ -99,8 +97,6 @@ const DecideBoardDetail = () => {
       toast.error('Lỗi xác nhận!');
     } 
   };
-
-  // Theo dõi thay đổi URL và ngăn chặn sửa ID
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
 
