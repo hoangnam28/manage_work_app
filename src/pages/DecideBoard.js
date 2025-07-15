@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Table, Button, Modal, Form, Input, Popconfirm, Space, AutoComplete, Alert, Tag } from 'antd';
+import { Table, Button, Modal, Form, Input, Popconfirm, Space, AutoComplete, Alert, Tag, } from 'antd';
 import axios from '../utils/axios';
 import MainLayout from '../components/layout/MainLayout';
 import { Toaster, toast } from 'sonner';
@@ -8,7 +8,8 @@ import {
   EditOutlined,
   ReloadOutlined,
   HistoryOutlined,
-  UndoOutlined
+  UndoOutlined,
+  EyeOutlined
 } from '@ant-design/icons';
 import { fetchMaterialDecideList, fetchMaterialDecideCustomerList, createMaterialDecide, updateMaterialDecide, deleteMaterialDecide, restoreMaterialDecide } from '../utils/decide-board';
 import { useNavigate } from 'react-router-dom';
@@ -61,14 +62,14 @@ const DecideBoard = () => {
         setIsViewer(onlyViewer);
 
         // Check company_id permission
-        const allowedCompanyIds = ['000107','003512','024287','026965','014077','001748'];
+        const allowedCompanyIds = ['000107', '003512', '024287', '026965', '014077', '001748'];
         // Ưu tiên lấy từ userInfo nếu có, nếu không lấy từ response.data
         let companyId = userInfo?.company_id || response.data?.company_id;
         if (typeof companyId === 'number') companyId = companyId.toString().padStart(6, '0');
         if (typeof companyId === 'string') companyId = companyId.padStart(6, '0');
         setCanUpdateBo(allowedCompanyIds.includes(companyId));
         // Các user chỉ được sửa trường request (không được sửa trường khác)
-        const onlyRequestIds = ['000107','003512','024287','026965','014077','001748'];
+        const onlyRequestIds = ['000107', '003512', '024287', '026965', '014077', '001748'];
         setOnlyRequestEdit(onlyRequestIds.includes(companyId));
       } catch (error) {
         setIsViewer(true);
@@ -227,7 +228,11 @@ const DecideBoard = () => {
           title: "Yêu cầu sử dụng bo to",
           dataIndex: "REQUEST",
           align: "center",
-          render: (value) => value === 'TRUE' ? 'Có' : value === 'FALSE' ? 'Không' : '',
+          render: (value, record) => {
+            // Nếu chưa xác nhận thì để trống
+            if (!record.CONFIRM_BY) return '';
+            return value === 'TRUE' ? 'Có' : value === 'FALSE' ? 'Không' : '';
+          },
           ...getColumnSearchProps('REQUEST'),
           onFilter: (value, record) => {
             const v = (value || '').toString().trim().toLowerCase();
@@ -501,6 +506,14 @@ const DecideBoard = () => {
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <h1>Large Size Board</h1>
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
+            onClick={() => window.open('/user_guide_large_size.pdf', '_blank', 'noopener,noreferrer')}
+            style={{ background: '#1890ff', borderColor: '#1890ff' }}
+          >
+            Hướng dẫn sử dụng
+          </Button>
           <div style={{ display: 'flex', gap: 8 }}>
             <Button
               type="primary"
@@ -554,9 +567,9 @@ const DecideBoard = () => {
                         cancelText="Không"
                         disabled={isViewer}
                       >
-                        <Button 
-                          type="primary" 
-                          icon={<UndoOutlined />} 
+                        <Button
+                          type="primary"
+                          icon={<UndoOutlined />}
                           disabled={isViewer}
                           style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
                         >
@@ -806,7 +819,7 @@ const DecideBoard = () => {
                 />
               </Form.Item>
 
-              <Form.Item name="type_board" label="Loại bo" rules={[{ required: true, message: 'Vui lòng nhập loại bo' }]}> 
+              <Form.Item name="type_board" label="Loại bo" rules={[{ required: true, message: 'Vui lòng nhập loại bo' }]}>
                 <AutoComplete
                   options={[
                     { value: 'MLB', label: 'MLB' },
@@ -906,12 +919,10 @@ const DecideBoard = () => {
               </Input.Group>
               {!canUpdateBo && (
                 <div style={{ color: '#faad14', marginTop: 4, fontSize: 13 }}>
-                  Chỉ PC mới có quyền sửa trường này. Bạn chỉ có thể yêu cầu sử dụng bo to.
+                  Chỉ PC mới có quyền sửa trường này.
                 </div>
               )}
             </Form.Item>
-
-            {/* Note field - full width */}
             <Form.Item name="note" label="Note">
               <Input placeholder="Nhập ghi chú (không bắt buộc)" disabled={onlyRequestEdit} />
             </Form.Item>

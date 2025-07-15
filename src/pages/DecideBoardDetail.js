@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Button, Spin, Descriptions, message, Popconfirm } from 'antd';
+import { Button, Spin, Descriptions, message, Popconfirm, Card, Space } from 'antd';
+import { ArrowLeftOutlined, CheckOutlined, CloseOutlined, } from '@ant-design/icons';
 import axios from '../utils/axios';
 import MainLayout from '../components/layout/MainLayout';
 import { toast, Toaster } from 'sonner';
@@ -11,7 +12,7 @@ const DecideBoardDetail = () => {
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [validId, setValidId] = useState(null);
-  const originalId = useRef(id); // Lưu ID ban đầu
+  const originalId = useRef(id);
 
   // Validate ID đơn giản
   const validateId = (idParam) => {
@@ -72,7 +73,6 @@ const DecideBoardDetail = () => {
     fetchDetail();
   }, [id, navigate]);
 
-
   const handleConfirm = async (requestValue = 'TRUE') => {
     // Kiểm tra lại ID trước khi thực hiện action
     if (!detectIdChange() || !validateId(id) || id !== validId) {
@@ -95,7 +95,7 @@ const DecideBoardDetail = () => {
     } catch (err) {
       message.error('Lỗi xác nhận!');
       toast.error('Lỗi xác nhận!');
-    } 
+    }
   };
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
@@ -103,11 +103,28 @@ const DecideBoardDetail = () => {
   if (!record || !validId) {
     return (
       <MainLayout>
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-          <h3>Không tìm thấy mã hàng!</h3>
-          <Button type="primary" onClick={() => navigate('/decide-use')}>
-            Quay lại danh sách
-          </Button>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '60vh',
+          flexDirection: 'column'
+        }}>
+          <Card style={{ textAlign: 'center', padding: '40px', maxWidth: 400 }}>
+            <h3 style={{ color: '#ff4d4f', marginBottom: 24 }}>Không tìm thấy mã hàng!</h3>
+            <Button
+              type="primary"
+              size="large"
+              onClick={() => navigate('/decide-use')}
+              style={{
+                borderRadius: '8px',
+                minWidth: 160,
+                height: 48
+              }}
+            >
+              Quay lại danh sách
+            </Button>
+          </Card>
         </div>
       </MainLayout>
     );
@@ -116,52 +133,222 @@ const DecideBoardDetail = () => {
   return (
     <MainLayout>
       <Toaster position="top-right" richColors />
-      <div style={{ maxWidth: 600, margin: '40px auto' }}>
-        <Button
-          type="link"
-          style={{ marginBottom: 16, paddingLeft: 0, fontSize: 18, display: 'flex', alignItems: 'center' }}
-          onClick={() => navigate('/decide-use')}
-        >
-          <span style={{ display: 'inline-flex', alignItems: 'center' }}>
-            <svg width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" style={{ marginRight: 6 }}>
-              <path fillRule="evenodd" d="M11.354 1.646a.5.5 0 0 1 0 .708L5.707 8l5.647 5.646a.5.5 0 0 1-.708.708l-6-6a.5.5 0 0 1 0-.708l6-6a.5.5 0 0 1 .708 0z"/>
-            </svg>
-            Quay lại danh sách
-          </span>
-        </Button>
-        <h2>Chi tiết yêu cầu sử dụng bo to của mã hàng: </h2>
-        <h3>{record.CUSTOMER_CODE}</h3>
-        <Descriptions bordered column={1}>
-          <Descriptions.Item label="Mã sản phẩm">{record.CUSTOMER_CODE}</Descriptions.Item>
-          <Descriptions.Item label="Loại bo">{record.TYPE_BOARD}</Descriptions.Item>
-          <Descriptions.Item label="Kích thước Tối ưu">{record.SIZE_NORMAL}</Descriptions.Item>
-          <Descriptions.Item label="Tỷ lệ % (Bo thường)">{record.RATE_NORMAL}</Descriptions.Item>
-          <Descriptions.Item label="Kích thước bo to">{record.SIZE_BIG}</Descriptions.Item>
-          <Descriptions.Item label="Tỷ lệ % (Bo to)">{record.RATE_BIG}</Descriptions.Item>
-          <Descriptions.Item label="Yêu cầu sử dụng bo to">{record.REQUEST === 'TRUE' ? 'Có' : 'Không'}</Descriptions.Item>
-          <Descriptions.Item label="Xác nhận">{record.CONFIRM_BY || 'Chưa xác nhận'}</Descriptions.Item>
-          <Descriptions.Item label="Ghi chú">{record.NOTE}</Descriptions.Item>
-        </Descriptions>
-        {!record.CONFIRM_BY && (
-          <div style={{ marginTop: 24, display: 'flex', gap: 16 }}>
-            <Popconfirm
-              title="Bạn chắc chắn sử dụng bo to cho mã này?"
-              onConfirm={() => handleConfirm('TRUE')}
-              okText="Xác nhận"
-              cancelText="Hủy"
+      <div style={{
+        maxWidth: 1400,
+        margin: '0 auto',
+        padding: '16px',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <Button
+              type="text"
+              icon={<ArrowLeftOutlined />}
+              onClick={() => navigate('/decide-use')}
+              style={{
+                fontSize: 14,
+                height: 32,
+                padding: '4px 12px',
+                display: 'flex',
+                alignItems: 'center',
+                color: '#1890ff'
+              }}
             >
-              <Button type="primary" size="large">Có sử dụng bo to</Button>
-            </Popconfirm>
-            <Popconfirm
-              title="Bạn chắc chắn KHÔNG sử dụng bo to cho mã này?"
-              onConfirm={() => handleConfirm('FALSE')}
-              okText="Xác nhận"
-              cancelText="Hủy"
-            >
-              <Button type="default" size="large">Không sử dụng bo to</Button>
-            </Popconfirm>
+              Quay lại danh sách
+            </Button>
+
           </div>
-        )}
+          <div style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            padding: '16px 24px',
+            borderRadius: '8px',
+            color: 'white',
+            textAlign: 'center'
+          }}>
+            <h1 style={{
+              color: 'white',
+              margin: 0,
+              fontSize: 22,
+              fontWeight: 600
+            }}>
+              Chi tiết yêu cầu sử dụng bo to : {record.CUSTOMER_CODE}
+            </h1>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div style={{ display: 'flex', gap: 16, flex: 1 }}>
+          {/* Left Column - Product Info */}
+          <div style={{ flex: 1 }}>
+            <Card
+              title="Thông tin sản phẩm"
+              size="small"
+              style={{
+                borderRadius: '8px',
+                height: 'fit-content'
+              }}
+              headStyle={{
+                backgroundColor: '#fafafa',
+                borderRadius: '8px 8px 0 0',
+                fontSize: 16,
+                fontWeight: 600,
+                padding: '8px 16px'
+              }}
+              bodyStyle={{ padding: '12px' }}
+            >
+              {/* Các trường còn lại */}
+              <div style={{ marginTop: 16 }}>
+                <div style={{ marginBottom: 8 }}>
+                  <b>Mã sản phẩm:</b> <span style={{ fontWeight: 500, color: '#1890ff' }}>{record.CUSTOMER_CODE}</span>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <b>Loại bo:</b> <span style={{ fontWeight: 500 }}>{record.TYPE_BOARD}</span>
+                </div>
+              </div>
+              {/* Nhóm Bo thường */}
+              <div style={{ border: '1px solid #e6f7ff', borderRadius: 8, marginBottom: 16, background: '#f0f5ff', padding: 12 }}>
+                <div style={{ fontWeight: 600, color: '#1890ff', marginBottom: 8, fontSize: 15 }}>Bo thường</div>
+                <div style={{ marginBottom: 8 }}>
+                  <b>Kích thước tối ưu:</b> <span style={{ fontWeight: 500 }}>{record.SIZE_NORMAL}</span>
+                </div>
+                <div>
+                  <b>Tỷ lệ % (Bo thường):</b> <span style={{ fontWeight: 500, color: '#52c41a' }}>{record.RATE_NORMAL}</span>
+                </div>
+              </div>
+              {/* Nhóm Bo to */}
+              <div style={{ border: '1px solid #fff1b8', borderRadius: 8, background: '#fffbe6', padding: 12 }}>
+                <div style={{ fontWeight: 600, color: '#fa8c16', marginBottom: 8, fontSize: 15 }}>Bo to</div>
+                <div style={{ marginBottom: 8 }}>
+                  <b>Kích thước bo to:</b> <span style={{ fontWeight: 500 }}>{record.SIZE_BIG}</span>
+                </div>
+                <div>
+                  <b>Tỷ lệ % (Bo to):</b> <span style={{ fontWeight: 500, color: '#fa8c16' }}>{record.RATE_BIG}</span>
+                </div>
+              </div>
+              <div style={{ border: '1px solid #e6f7ff', borderRadius: 8, background: '#fffbe6', padding: 12 }}>
+                <div style={{ marginBottom: 8 }}>
+                  <b>Ghi chú:</b> <span style={{ fontStyle: record.NOTE ? 'normal' : 'italic', color: record.NOTE ? 'inherit' : '#999' }}>{record.NOTE || 'Không có ghi chú'}</span>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          {/* Right Column - Status Info */}
+          <div style={{ flex: 1 }}>
+            <Card
+              title="Trạng thái xác nhận của PC"
+              size="small"
+              style={{
+                borderRadius: '8px',
+                height: 'fit-content',
+                marginBottom: 16
+              }}
+              headStyle={{
+                backgroundColor: '#fafafa',
+                borderRadius: '8px 8px 0 0',
+                fontSize: 16,
+                fontWeight: 600,
+                padding: '8px 16px'
+              }}
+              bodyStyle={{ padding: '12px' }}
+            >
+              <Descriptions
+                bordered
+                column={1}
+                size="small"
+                labelStyle={{
+                  backgroundColor: '#f8f9fa',
+                  fontWeight: 600,
+                  width: '45%',
+                  padding: '8px 12px'
+                }}
+                contentStyle={{
+                  backgroundColor: 'white',
+                  padding: '8px 12px'
+                }}
+              >
+                <Descriptions.Item label="Yêu cầu bo to">
+                  <span style={{
+                    fontWeight: 600,
+                    color: record.REQUEST === 'TRUE' ? '#52c41a' : '#ff4d4f',
+                    fontSize: 14
+                  }}>
+                    {record.CONFIRM_BY
+                      ? (record.REQUEST === 'TRUE' ? 'Có' : 'Không')
+                      : ''}
+                  </span>
+                </Descriptions.Item>
+                <Descriptions.Item label="Xác nhận">
+                  <span style={{
+                    fontWeight: 500,
+                    color: record.CONFIRM_BY ? '#52c41a' : '#faad14'
+                  }}>
+                    {record.CONFIRM_BY || 'Chưa xác nhận'}
+                  </span>
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            {/* Action Buttons - Inline with Status */}
+            {!record.CONFIRM_BY && (
+              <Space
+                direction="vertical"
+                size="middle"
+                style={{ width: '100%' }}
+              >
+                <Popconfirm
+                  title="Xác nhận sử dụng bo to"
+                  description="Bạn chắc chắn sử dụng bo to cho mã này?"
+                  onConfirm={() => handleConfirm('TRUE')}
+                  okText="Xác nhận"
+                  cancelText="Hủy"
+                >
+                  <Button
+                    type="primary"
+                    icon={<CheckOutlined />}
+                    block
+                    style={{
+                      borderRadius: '6px',
+                      height: 40,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      background: 'linear-gradient(135deg, #52c41a 0%, #73d13d 100%)',
+                      border: 'none'
+                    }}
+                  >
+                    Có sử dụng bo to
+                  </Button>
+                </Popconfirm>
+
+                <Popconfirm
+                  title="Xác nhận không sử dụng bo to"
+                  description="Bạn chắc chắn KHÔNG sử dụng bo to cho mã này?"
+                  onConfirm={() => handleConfirm('FALSE')}
+                  okText="Xác nhận"
+                  cancelText="Hủy"
+                >
+                  <Button
+                    icon={<CloseOutlined />}
+                    block
+                    style={{
+                      borderRadius: '6px',
+                      height: 40,
+                      fontSize: 14,
+                      fontWeight: 600,
+                      background: 'linear-gradient(135deg, #ff4d4f 0%, #ff7875 100%)',
+                      color: 'white',
+                      border: 'none'
+                    }}
+                  >
+                    Không sử dụng bo to
+                  </Button>
+                </Popconfirm>
+              </Space>
+            )}
+          </div>
+        </div>
       </div>
     </MainLayout>
   );
