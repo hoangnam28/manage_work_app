@@ -205,19 +205,37 @@ const DecideBoard = () => {
       ]
     },
     {
-      title: "Bo To",
+      title: (
+        <div style={{ background: '#f6ffed', padding: '8px 0', borderRadius: 4 }}>
+          Bo To
+        </div>
+      ),
       children: [
         {
-          title: "Kích thước bo to",
+          title: (
+            <div style={{ background: '#f6ffed', padding: '8px 0', borderRadius: 4 }}>
+              Kích thước bo to
+            </div>
+          ),
           dataIndex: "SIZE_BIG",
           align: "center",
           ...getColumnSearchProps('SIZE_BIG'),
+          render: (value) => (
+            <div style={{ background: '#f6ffed', minWidth: 80 }}>{value}</div>
+          )
         },
         {
-          title: "Tỷ lệ %",
+          title: (
+            <div style={{ background: '#f6ffed', padding: '8px 0', borderRadius: 4 }}>
+              Tỷ lệ %
+            </div>
+          ),
           dataIndex: "RATE_BIG",
           align: "center",
           ...getColumnSearchProps('RATE_BIG'),
+          render: (value) => (
+            <div style={{ background: '#f6ffed', minWidth: 80 }}>{value}</div>
+          )
         }
       ]
     },

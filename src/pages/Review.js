@@ -1254,14 +1254,20 @@ const Review = () => {
         >
           Xuất Excel
         </Button>
-        <Button
-          type="primary"
-          icon={<EyeOutlined />}
-          onClick={() => window.open('/user_guide.pdf', '_blank', 'noopener,noreferrer')}
-          style={{ background: '#1890ff', borderColor: '#1890ff' }}
-        >
-          Hướng dẫn sử dụng
-        </Button>
+        <div>
+          <select
+            style={{ height: 32, minWidth: 180, marginRight: 8, borderRadius: 4, border: '1px solid #1890ff', color: '#1890ff', fontWeight: 500 }}
+            onChange={e => {
+              const val = e.target.value;
+              if (val) window.open(val, '_blank', 'noopener,noreferrer');
+            }}
+            defaultValue=""
+          >
+            <option value="" disabled>Chọn file hướng dẫn sử dụng</option>
+            <option value="/user_guide.pdf">Hướng dẫn sử dụng tổng quan</option>
+            <option value="/flow_review_tasks.pdf">Lưu trình review tasks</option>
+          </select>
+        </div>
         <Input
           placeholder="Tìm kiếm theo Đầu mã"
           allowClear
