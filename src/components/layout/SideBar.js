@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout, Menu, Button, Avatar } from 'antd';
 import {
   UserOutlined,
@@ -18,7 +18,13 @@ const { Sider } = Layout;
 
 const SideBar = ({ onLogout, userId }) => {
   const [collapsed, setCollapsed] = useState(false);
+  const [openKeys, setOpenKeys] = useState([]);
   const location = useLocation();
+  useEffect(() => {
+    if (location.pathname.startsWith('/material')) {
+      setOpenKeys(['material']);
+    }
+  }, [location.pathname]);
 
   const storedUser = localStorage.getItem("userInfo");
   const user = storedUser ? JSON.parse(storedUser) : null;
@@ -118,6 +124,8 @@ const SideBar = ({ onLogout, userId }) => {
       <Menu
         mode="inline"
         selectedKeys={[location.pathname]}
+        openKeys={openKeys}
+        onOpenChange={setOpenKeys}
         style={{ height: '100%', borderRight: 0 }}
         items={menuItems}
       />

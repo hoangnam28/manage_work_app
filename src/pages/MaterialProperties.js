@@ -1,19 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Popconfirm } from 'antd';
-import { 
-  EditOutlined, 
-  DeleteOutlined, 
-  PlusOutlined 
+import React, { useState, useEffect, useRef } from 'react';
+import { Table, Button, Space, Popconfirm, Input } from 'antd';
+import Highlighter from 'react-highlight-words';
+import {
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  SearchOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
-import { 
-  fetchMaterialPpList, 
+import {
+  fetchMaterialPpList,
   createMaterialPp,
   updateMaterialPp,
-  deleteMaterialPp 
+  deleteMaterialPp,
+  exportMaterialPp,
 } from '../utils/material-pp-api';
 import CreateMaterialPpModal from '../components/modal/CreateMaterialPPModal';
-import { toast, Toaster} from 'sonner';
+import { toast, Toaster } from 'sonner';
 import './MaterialCore.css';
 
 
@@ -22,6 +25,9 @@ const MaterialProperties = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [searchedColumn, setSearchedColumn] = useState('');
+  const searchInput = useRef(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -40,45 +46,45 @@ const MaterialProperties = () => {
     fetchData();
   }, []);
   const handleCreate = async (values) => {
-  try {
-    let requesterName = 'Unknown';
     try {
-      const userStr = localStorage.getItem('userInfo'); 
-      if (userStr) {
-        const userObj = JSON.parse(userStr);
-        requesterName = userObj.username || 'Unknown';
+      let requesterName = 'Unknown';
+      try {
+        const userStr = localStorage.getItem('userInfo');
+        if (userStr) {
+          const userObj = JSON.parse(userStr);
+          requesterName = userObj.username || 'Unknown';
+        }
+      } catch (e) {
+        requesterName = localStorage.getItem('username') || 'Unknown';
       }
-    } catch (e) {
-      requesterName = localStorage.getItem('username') || 'Unknown';
-    }
-    const today = new Date();
-    const resinArr = String(values.resin_percentage)
-      .split(',')
-      .map(v => Number(v.trim()))
-      .filter(v => !isNaN(v));
+      const today = new Date();
+      const resinArr = String(values.resin_percentage)
+        .split(',')
+        .map(v => Number(v.trim()))
+        .filter(v => !isNaN(v));
 
-    // Gửi từng bản ghi lên BE
-    for (const resin of resinArr) {
-      await createMaterialPp({
-        ...values,
-        resin_percentage: resin,
-        name: requesterName,
-        request_date: today,
-        status: 'Pending',
-      });
-    }
+      // Gửi từng bản ghi lên BE
+      for (const resin of resinArr) {
+        await createMaterialPp({
+          ...values,
+          resin_percentage: resin,
+          name: requesterName,
+          request_date: today,
+          status: 'Pending',
+        });
+      }
 
-    setModalVisible(false);
-    fetchData();
-  } catch (error) {
-    console.error('Error creating material core:', error);
-    toast.error('Lỗi khi thêm mới');
-  }
-};
+      setModalVisible(false);
+      fetchData();
+    } catch (error) {
+      console.error('Error creating material core:', error);
+      toast.error('Lỗi khi thêm mới');
+    }
+  };
   const handleUpdate = async (values) => {
     try {
       const recordId = editingRecord.ID || editingRecord.id;
-      
+
       if (!recordId) {
         throw new Error('ID không hợp lệ');
       }
@@ -116,9 +122,107 @@ const MaterialProperties = () => {
       toast.error('Lỗi khi xóa');
     }
   };
+  const handleExport = async () => {
+      try {
+        const response = await exportMaterialPp(data);
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', 'MaterialCoreExport.xlsm');
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } catch (error) {
+        toast.error('Lỗi khi xuất file');
+      }
+    };
+
+    const getColumnSearchProps = dataIndex => ({
+  filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
+    <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+      <Input
+        ref={searchInput}
+        placeholder={`Tìm kiếm ${dataIndex}`}
+        value={selectedKeys[0]}
+        onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+        onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
+        style={{ marginBottom: 8, display: 'block' }}
+      />
+      <Space>
+        <Button
+          type="primary"
+          onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          icon={<SearchOutlined />}
+          size="small"
+          style={{ width: 90 }}
+        >
+          Tìm kiếm
+        </Button>
+        <Button
+          onClick={() => clearFilters && handleReset(clearFilters)}
+          size="small"
+          style={{ width: 90 }}
+        >
+          Reset
+        </Button>
+        <Button
+          type="link"
+          size="small"
+          onClick={() => {
+            close();
+          }}
+        >
+          Đóng
+        </Button>
+      </Space>
+    </div>
+  ),
+  filterIcon: (filtered) => (
+    <SearchOutlined
+      style={{ color: filtered ? '#1890ff' : undefined }}
+    />
+  ),
+  onFilter: (value, record) =>
+    record[dataIndex]
+      .toString()
+      .toLowerCase()
+      .includes(value.toLowerCase()),
+  onFilterDropdownOpenChange: (visible) => {
+    if (visible) {
+      setTimeout(() => searchInput.current?.select(), 100);
+    }
+  },
+  render: (text) =>
+    searchedColumn === dataIndex ? (
+      <Highlighter
+        highlightStyle={{
+          backgroundColor: '#ffc069',
+          padding: 0,
+        }}
+        searchWords={[searchText]}
+        autoEscape
+        textToHighlight={text ? text.toString() : ''}
+      />
+    ) : (
+      text
+    ),
+});
+
+const handleSearch = (selectedKeys, confirm, dataIndex) => {
+  confirm();
+  setSearchText(selectedKeys[0]);
+  setSearchedColumn(dataIndex);
+};
+
+const handleReset = (clearFilters) => {
+  clearFilters();
+  setSearchText('');
+  fetchData();
+};
+
 
   const columns = [
-    
+
     {
       title: 'VENDOR',
       dataIndex: 'VENDOR',
@@ -131,28 +235,24 @@ const MaterialProperties = () => {
       dataIndex: 'FAMILY',
       key: 'family',
       width: 150,
-      align: 'center'
+      align: 'center',
+      ...getColumnSearchProps('FAMILY')
     },
     {
       title: 'GLASS_STYLE',
       dataIndex: 'GLASS_STYLE',
       key: 'glass_style',
       width: 120,
-      align: 'center'
+      align: 'center',
+      ...getColumnSearchProps('GLASS_STYLE')
     },
     {
       title: 'RESIN_PERCENTAGE',
       dataIndex: 'RESIN_PERCENTAGE',
       key: 'resin_percentage',
       width: 150,
-      align: 'center'
-    },
-    {
-      title: 'RAV_THICKNESS',
-      dataIndex: 'RAV_THICKNESS',
-      key: 'rav_thickness',
-      width: 120,
-      align: 'center'
+      align: 'center',
+      ...getColumnSearchProps('RESIN_PERCENTAGE')
     },
     {
       title: 'PREFERENCE_CLASS',
@@ -166,6 +266,13 @@ const MaterialProperties = () => {
       dataIndex: 'USE_TYPE',
       key: 'use_type',
       width: 150,
+      align: 'center'
+    },
+    {
+      title: 'PP_TYPE',
+      dataIndex: 'PP_TYPE',
+      key: 'pp_type',
+      width: 100,
       align: 'center'
     },
     {
@@ -522,16 +629,26 @@ const MaterialProperties = () => {
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <h1>Material Prepreg</h1>
+          <div>
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => {
               setEditingRecord(null);
               setModalVisible(true);
+              
             }}
+            style={{ marginRight: 8 }}
           >
             Thêm mới
           </Button>
+          <Button
+            type="default"
+            onClick={handleExport}
+          >
+            Xuất Excel
+          </Button>
+        </div>
         </div>
 
         <Table
@@ -546,7 +663,7 @@ const MaterialProperties = () => {
             showSizeChanger: true,
             showTotal: (total) => `Tổng số ${total} bản ghi`
           }}
-           rowClassName={(record) => {
+          rowClassName={(record) => {
             if (record.STATUS === 'Pending') return 'row-pending';
             if (record.STATUS === 'Cancel') return 'row-cancel';
             return '';

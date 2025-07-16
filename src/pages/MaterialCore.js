@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Table, Button, Space, Popconfirm } from 'antd';
+import React, { useState, useEffect, useRef  } from 'react';
+import { Table, Button, Space, Popconfirm, Input} from 'antd';
+import Highlighter from 'react-highlight-words';
 import {
   EditOutlined,
   DeleteOutlined,
-  PlusOutlined
+  PlusOutlined,
+  SearchOutlined 
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -22,6 +24,9 @@ const MaterialCore = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
+  const [searchText, setSearchText] = useState('');
+  const [searchedColumn, setSearchedColumn] = useState('');
+  const searchInput = useRef(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -131,6 +136,90 @@ const MaterialCore = () => {
     }
   };
 
+  const getColumnSearchProps = dataIndex => ({
+  filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
+    <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+      <Input
+        ref={searchInput}
+        placeholder={`Tìm kiếm ${dataIndex}`}
+        value={selectedKeys[0]}
+        onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+        onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
+        style={{ marginBottom: 8, display: 'block' }}
+      />
+      <Space>
+        <Button
+          type="primary"
+          onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          icon={<SearchOutlined />}
+          size="small"
+          style={{ width: 90 }}
+        >
+          Tìm kiếm
+        </Button>
+        <Button
+          onClick={() => clearFilters && handleReset(clearFilters)}
+          size="small"
+          style={{ width: 90 }}
+        >
+          Reset
+        </Button>
+        <Button
+          type="link"
+          size="small"
+          onClick={() => {
+            close();
+          }}
+        >
+          Đóng
+        </Button>
+      </Space>
+    </div>
+  ),
+  filterIcon: (filtered) => (
+    <SearchOutlined
+      style={{ color: filtered ? '#1890ff' : undefined }}
+    />
+  ),
+  onFilter: (value, record) =>
+    record[dataIndex]
+      .toString()
+      .toLowerCase()
+      .includes(value.toLowerCase()),
+  onFilterDropdownOpenChange: (visible) => {
+    if (visible) {
+      setTimeout(() => searchInput.current?.select(), 100);
+    }
+  },
+  render: (text) =>
+    searchedColumn === dataIndex ? (
+      <Highlighter
+        highlightStyle={{
+          backgroundColor: '#ffc069',
+          padding: 0,
+        }}
+        searchWords={[searchText]}
+        autoEscape
+        textToHighlight={text ? text.toString() : ''}
+      />
+    ) : (
+      text
+    ),
+});
+
+const handleSearch = (selectedKeys, confirm, dataIndex) => {
+  confirm();
+  setSearchText(selectedKeys[0]);
+  setSearchedColumn(dataIndex);
+};
+
+const handleReset = (clearFilters) => {
+  clearFilters();
+  setSearchText('');
+  fetchData();
+};
+
+
   const columns = [
 
     {
@@ -138,49 +227,52 @@ const MaterialCore = () => {
       dataIndex: 'VENDOR',
       key: 'vendor',
       width: 150,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Family',
       dataIndex: 'FAMILY',
       key: 'family',
       width: 150,
-      align: 'center'
+      align: 'center',
+      ...getColumnSearchProps('FAMILY')
     },
     {
       title: 'PREPREG_Count',
       dataIndex: 'PREPREG_COUNT',
       key: 'prepreg_count',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Nominal_Thickness',
       dataIndex: 'NOMINAL_THICKNESS',
       key: 'nominal_thickness',
       width: 150,
-      align: 'center'
+      align: 'center',
+      ...getColumnSearchProps('NOMINAL_THICKNESS')
     },
     {
       title: 'Spec_Thickness',
       dataIndex: 'SPEC_THICKNESS',
       key: 'spec_thickness',
       width: 120,
-      align: 'center'
+      align: 'center',
+      ...getColumnSearchProps('SPEC_THICKNESS')
     },
     {
       title: 'Preference_Class',
       dataIndex: 'PREFERENCE_CLASS',
       key: 'preference_class',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'USE_TYPE',
       dataIndex: 'USE_TYPE',
       key: 'use_type',
       width: 150,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'RIGID',
@@ -188,378 +280,381 @@ const MaterialCore = () => {
       key: 'rigid',
       width: 120,
       render: (value) => value === 'TRUE' ? 'Có' : 'Không',
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Top_Foil_Cu_Weight',
       dataIndex: 'TOP_FOIL_CU_WEIGHT',
       key: 'top_foil_cu_weight',
       width: 150,
-      align: 'center'
+      align: 'center',
+      ...getColumnSearchProps('TOP_FOIL_CU_WEIGHT')
     },
     {
       title: 'Bottom_Foil_Cu_Weight',
       dataIndex: 'BOT_FOIL_CU_WEIGHT',
       key: 'bot_foil_cu_weight',
       width: 150,
-      align: 'center'
+      align: 'center',
+      ...getColumnSearchProps('BOT_FOIL_CU_WEIGHT')
     },
     {
       title: 'Tg_Min',
       dataIndex: 'TG_MIN',
       key: 'tg_min',
       width: 100,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Tg_Max',
       dataIndex: 'TG_MAX',
       key: 'tg_max',
       width: 100,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Center_Glass',
       dataIndex: 'CENTER_GLASS',
       key: 'center_glass',
       width: 150,
-      align: 'center'
+      align: 'center',
+      ...getColumnSearchProps('CENTER_GLASS')
     },
     {
       title: 'Dk @ 0.1GHz',
       dataIndex: 'DK_01G',
       key: 'dk_01g',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df @ 0.1GHz',
       dataIndex: 'DF_01G',
       key: 'df_01g',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_0_001GHz',
       dataIndex: 'DK_0_001GHZ',
       key: 'dk_0_001ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_0_001GHz',
       dataIndex: 'DF_0_001GHZ',
       key: 'df_0_001ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_0_01GHz',
       dataIndex: 'DK_0_01GHZ',
       key: 'dk_0_01ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_0_01GHz',
       dataIndex: 'DF_0_01GHZ',
       key: 'df_0_01ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_0_02GHz',
       dataIndex: 'DK_0_02GHZ',
       key: 'dk_0_02ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_0_02GHz',
       dataIndex: 'DF_0_02GHZ',
       key: 'df_0_02ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_2GHz',
       dataIndex: 'DK_2GHZ',
       key: 'dk_2ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_2GHz',
       dataIndex: 'DF_2GHZ',
       key: 'df_2ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_2_45GHz',
       dataIndex: 'DK_2_45GHZ',
       key: 'dk_2_45ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_2_45GHz',
       dataIndex: 'DF_2_45GHZ',
       key: 'df_2_45ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_3GHz',
       dataIndex: 'DK_3GHZ',
       key: 'dk_3ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_3GHz',
       dataIndex: 'DF_3GHZ',
       key: 'df_3ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_4GHz',
       dataIndex: 'DK_4GHZ',
       key: 'dk_4ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_4GHz',
       dataIndex: 'DF_4GHZ',
       key: 'df_4ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_5GHz',
       dataIndex: 'DK_5GHZ',
       key: 'dk_5ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_5GHz',
       dataIndex: 'DF_5GHZ',
       key: 'df_5ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_6GHz',
       dataIndex: 'DK_6GHZ',
       key: 'dk_6ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_6GHz',
       dataIndex: 'DF_6GHZ',
       key: 'df_6ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_7GHz',
       dataIndex: 'DK_7GHZ',
       key: 'dk_7ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_7GHz',
       dataIndex: 'DF_7GHZ',
       key: 'df_7ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_8GHz',
       dataIndex: 'DK_8GHZ',
       key: 'dk_8ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_8GHz',
       dataIndex: 'DF_8GHZ',
       key: 'df_8ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_9GHz',
       dataIndex: 'DK_9GHZ',
       key: 'dk_9ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_9GHz',
       dataIndex: 'DF_9GHZ',
       key: 'df_9ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_10GHz',
       dataIndex: 'DK_10GHZ',
       key: 'dk_10ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_10GHz',
       dataIndex: 'DF_10GHZ',
       key: 'df_10ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_15GHz',
       dataIndex: 'DK_15GHZ',
       key: 'dk_15ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_15GHz',
       dataIndex: 'DF_15GHZ',
       key: 'df_15ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_16GHz',
       dataIndex: 'DK_16GHZ',
       key: 'dk_16ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_16GHz',
       dataIndex: 'DF_16GHZ',
       key: 'df_16ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_20GHz',
       dataIndex: 'DK_20GHZ',
       key: 'dk_20ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_20GHz',
       dataIndex: 'DF_20GHZ',
       key: 'df_20ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_25GHz',
       dataIndex: 'DK_25GHZ',
       key: 'dk_25ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_25GHz',
       dataIndex: 'DF_25GHZ',
       key: 'df_25ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_30GHz',
       dataIndex: 'DK_30GHZ',
       key: 'dk_30ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_30GHz',
       dataIndex: 'DF_30GHZ',
       key: 'df_30ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_35GHz',
       dataIndex: 'DK_35GHZ',
       key: 'dk_35ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_35GHz',
       dataIndex: 'DF_35GHZ',
       key: 'df_35ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_40GHz',
       dataIndex: 'DK_40GHZ',
       key: 'dk_40ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_40GHz',
       dataIndex: 'DF_40GHZ',
       key: 'df_40ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_45GHz',
       dataIndex: 'DK_45GHZ',
       key: 'dk_45ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_45GHz',
       dataIndex: 'DF_45GHZ',
       key: 'df_45ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_50GHz',
       dataIndex: 'DK_50GHZ',
       key: 'dk_50ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_50GHz',
       dataIndex: 'DF_50GHZ',
       key: 'df_50ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Dk_55GHz',
       dataIndex: 'DK_55GHZ',
       key: 'dk_55ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Df_55GHz',
       dataIndex: 'DF_55GHZ',
       key: 'df_55ghz',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'IS_HF',
@@ -567,21 +662,21 @@ const MaterialCore = () => {
       key: 'is_hf',
       width: 120,
       render: (value) => value === 'TRUE' ? 'Có' : 'Không',
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'DATA_SOURCE',
       dataIndex: 'DATA_SOURCE',
       key: 'data_source',
       width: 200,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'FILE_NAME',
       dataIndex: 'FILENAME',
       key: 'filename',
       width: 200,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Người yêu cầu',
@@ -589,7 +684,7 @@ const MaterialCore = () => {
       key: 'requester_name',
       width: 150,
       fixed: 'left',
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Ngày yêu cầu',
@@ -597,21 +692,21 @@ const MaterialCore = () => {
       key: 'request_date',
       width: 120,
       render: (date) => date ? new Date(date).toLocaleDateString() : '',
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Người xử lý',
       dataIndex: 'HANDLER',
       key: 'handler',
       width: 150,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Trạng thái',
       dataIndex: 'STATUS',
       key: 'status',
       width: 120,
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Ngày hoàn thành',
@@ -619,7 +714,7 @@ const MaterialCore = () => {
       key: 'complete_date',
       width: 120,
       render: (date) => date ? new Date(date).toLocaleDateString() : '',
-      align: 'center'
+      align: 'center',
     },
     {
       title: 'Thao tác',

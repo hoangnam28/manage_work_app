@@ -173,12 +173,6 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
                 <Input placeholder="Ví dụ: 72,73,74" />
               </Form.Item>
               <Form.Item
-                name="rav_thickness"
-                label="RAV_THICKNESS"
-              >
-                <InputNumber style={{ width: '100%' }} step={0.001} />
-              </Form.Item>
-              <Form.Item
                 name="preference_class"
                 label="PREFERENCE CLASS"
               >
@@ -189,6 +183,12 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
                 label="USE Type"
               >
                 <Input />
+              </Form.Item>
+              <Form.Item
+                name="pp_type"
+                label="PP Type"
+              >
+                <Input style={{ width: '100%' }}/>
               </Form.Item>
               <Form.Item
                 name="tg_min"
