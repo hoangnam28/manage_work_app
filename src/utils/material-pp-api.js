@@ -1,10 +1,8 @@
-import axios from 'axios';
-
-const API_URL = 'http://192.84.105.173:5000/api';
+import axios from './axios';
 
 export const fetchMaterialPpList = async () => {
   const token = localStorage.getItem('accessToken');
-  const response = await axios.get(`${API_URL}/material-pp/list`, {
+  const response = await axios.get(`/material-pp/list`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;
@@ -12,7 +10,7 @@ export const fetchMaterialPpList = async () => {
 
 export const createMaterialPp = async (data) => {
   const token = localStorage.getItem('accessToken');
-  const response = await axios.post(`${API_URL}/material-pp/create`, data, {
+  const response = await axios.post(`/material-pp/create`, data, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;
@@ -20,7 +18,7 @@ export const createMaterialPp = async (data) => {
 
 export const updateMaterialPp = async (id, data) => {
   const token = localStorage.getItem('accessToken');
-  const response = await axios.put(`${API_URL}/material-pp/update/${id}`, data, {
+  const response = await axios.put(`/material-pp/update/${id}`, data, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;
@@ -28,7 +26,7 @@ export const updateMaterialPp = async (id, data) => {
 
 export const deleteMaterialPp = async (id) => {
   const token = localStorage.getItem('accessToken');
-  const response = await axios.delete(`${API_URL}/material-pp/delete/${id}`, {
+  const response = await axios.delete(`/material-pp/delete/${id}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;
@@ -45,7 +43,7 @@ export const exportMaterialPp = async (data) => {
   };
   const normalizedData = Array.isArray(data) ? data.map(normalizeKeys) : data;
   const response = await axios.post(
-    `${API_URL}/material-pp/export-xlsm`,
+    `/material-pp/export-xlsm`,
     { data: normalizedData },
     {
       headers: { Authorization: `Bearer ${token}` },

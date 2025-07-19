@@ -1,10 +1,10 @@
 import axios from 'axios';
 
-const axiosInstance = axios.create({
-  baseURL: 'http://192.84.105.173:5000/api'
+const instance = axios.create({
+  baseURL: process.env.REACT_APP_BASE_URL,
 });
 
-axiosInstance.interceptors.request.use(
+instance.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
     if (token) {
@@ -12,9 +12,7 @@ axiosInstance.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-export default axiosInstance; 
+export default instance;

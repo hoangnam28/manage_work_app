@@ -1,10 +1,12 @@
 import axios from 'axios';
 import { data } from 'react-router-dom';
 
+const BASE_URL = process.env.REACT_APP_BASE_URL;
+
 export const fetchImpedanceData = async () => {
   try {
     const token = localStorage.getItem('accessToken');
-    const response = await axios.get('http://192.84.105.173:5000/api/impedance/list-impedance', {
+    const response = await axios.get(`${BASE_URL}/impedance/list-impedance`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -20,7 +22,7 @@ export const fetchImpedanceData = async () => {
 export const createImpedance = async (data) => {
   try {
     const token = localStorage.getItem('accessToken');
-    const response = await axios.post('http://192.84.105.173:5000/api/impedance/create-impedance', 
+    const response = await axios.post(`${BASE_URL}/impedance/create-impedance`, 
       data,
       {
         headers: {
@@ -43,7 +45,7 @@ export const updateImpedance = async (impId, data) => {
   try {
     const token = localStorage.getItem('accessToken');
     const response = await axios.put(
-      `http://192.84.105.173:5000/api/impedance/update-impedance/${impId}`,
+      `${BASE_URL}/impedance/update-impedance/${impId}`,
       data,
       {
         headers: {
@@ -66,7 +68,7 @@ export const softDeleteImpedance = async (impId) => {
   }
   try {
     const token = localStorage.getItem('accessToken');
-    const response = await axios.put(`http://192.84.105.173:5000/api/impedance/soft-delete-impedance/${idStr}`,
+    const response = await axios.put(`${BASE_URL}/impedance/soft-delete-impedance/${idStr}`,
      data,
       {
         headers: {
@@ -85,7 +87,7 @@ export const importImpedance = async (data) => {
   try {
     const token = localStorage.getItem('accessToken');
     const response = await axios.post(
-      'http://192.84.105.173:5000/api/impedance/import-impedance',
+      `${BASE_URL}/impedance/import-impedance`,
       { data },
       {
         headers: {
@@ -104,7 +106,7 @@ export const bulkDeleteImpedancesByProduct = async (productCode) => {
   try {
     const token = localStorage.getItem('accessToken');
     const response = await axios.put(
-      `http://192.84.105.173:5000/api/impedance/bulk-delete-by-product/${productCode}`,
+      `${BASE_URL}/impedance/bulk-delete-by-product/${productCode}`,
       null,
       {
         headers: {

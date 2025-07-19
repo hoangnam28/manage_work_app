@@ -4,9 +4,11 @@ import { EditOutlined, DeleteOutlined, UserAddOutlined } from '@ant-design/icons
 import axios from 'axios';
 import MainLayout from '../components/layout/MainLayout';
 import { Toaster, toast } from 'sonner';
+const BASE_URL = process.env.REACT_APP_BASE_URL;
 
 const { Title } = Typography;
 const { Option } = Select;
+
 
 const UserManagement = () => {
   const [users, setUsers] = useState([]);
@@ -17,11 +19,12 @@ const UserManagement = () => {
   const [searchText, setSearchText] = useState('');
 
 
+
   const fetchUsers = async () => {
     setLoading(true);
     try {
       const token = localStorage.getItem('accessToken');
-      const response = await axios.get('http://192.84.105.173:5000/api/user/list', {
+      const response = await axios.get(`${BASE_URL}/user/list`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -73,7 +76,7 @@ const UserManagement = () => {
 
       if (editingUser) {
         const response = await axios.put(
-          `http://192.84.105.173:5000/api/user/update/${editingUser.USER_ID}`,
+          `${BASE_URL}/user/update/${editingUser.USER_ID}`,
           userData,
           {
             headers: { Authorization: `Bearer ${token}` }
@@ -95,7 +98,7 @@ const UserManagement = () => {
         }
       } else {
         const response = await axios.post(
-          'http://192.84.105.173:5000/api/user/create',
+          `${BASE_URL}/user/create`,
           userData,
           {
             headers: { Authorization: `Bearer ${token}` }
@@ -135,7 +138,7 @@ const UserManagement = () => {
     try {
       const token = localStorage.getItem('accessToken');
       await axios.delete(
-        `http://192.84.105.173:5000/api/user/delete/${userId}`,
+        `${BASE_URL}/user/delete/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -310,7 +313,7 @@ const UserManagement = () => {
                     try {
                       const token = localStorage.getItem('accessToken');
                       const response = await axios.get(
-                        `http://192.84.105.173:5000/api/user/check-username?username=${value}`,
+                        `${BASE_URL}/user/check-username?username=${value}`,
                         {
                           headers: { Authorization: `Bearer ${token}` }
                         }

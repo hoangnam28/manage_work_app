@@ -1,10 +1,8 @@
-import axios from 'axios';
-
-const API_URL = 'http://192.84.105.173:5000/api';
+import axios from './axios';
 
 export const fetchMaterialCoreList = async () => {
   const token = localStorage.getItem('accessToken');
-  const response = await axios.get(`${API_URL}/material-core/list`, {
+  const response = await axios.get(`/material-core/list`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;
@@ -12,7 +10,7 @@ export const fetchMaterialCoreList = async () => {
 
 export const createMaterialCore = async (data) => {
   const token = localStorage.getItem('accessToken');
-  const response = await axios.post(`${API_URL}/material-core/create`, data, {
+  const response = await axios.post(`/material-core/create`, data, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;
@@ -20,7 +18,7 @@ export const createMaterialCore = async (data) => {
 
 export const updateMaterialCore = async (id, data) => {
   const token = localStorage.getItem('accessToken');
-  const response = await axios.put(`${API_URL}/material-core/update/${id}`, data, {
+  const response = await axios.put(`/material-core/update/${id}`, data, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;
@@ -28,7 +26,7 @@ export const updateMaterialCore = async (id, data) => {
 
 export const deleteMaterialCore = async (id) => {
   const token = localStorage.getItem('accessToken');
-  const response = await axios.delete(`${API_URL}/material-core/delete/${id}`, {
+  const response = await axios.delete(`/material-core/delete/${id}`, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;
@@ -47,7 +45,7 @@ export const exportMaterialCore = async (data) => {
   // Nếu là mảng thì map, nếu không thì giữ nguyên
   const normalizedData = Array.isArray(data) ? data.map(normalizeKeys) : data;
   const response = await axios.post(
-    `${API_URL}/material-core/export-xlsm`,
+      `/material-core/export-xlsm`,
     { data: normalizedData },
     {
       headers: { Authorization: `Bearer ${token}` },

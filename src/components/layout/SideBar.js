@@ -81,7 +81,7 @@ const SideBar = ({ onLogout, userId }) => {
       ),
     },
     {
-      key: 'decide-use',
+      key: '/decide-use',
       icon: <CheckCircleOutlined />,
       label: (
         <Link to="/decide-use" style={location.pathname === '/decide-use' ? { color: '#1890ff', fontWeight: 600 } : {}}>

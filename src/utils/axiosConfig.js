@@ -1,8 +1,10 @@
 import axios from 'axios';
 import { toast } from 'sonner';
 
+const BASE_URL = process.env.REACT_APP_BASE_URL || 'http://192.84.105.173:5000/api';
+
 const axiosInstance = axios.create({
-  baseURL: 'http://192.84.105.173:5000/api',
+  baseURL: BASE_URL,
   timeout: 30000, // 30 seconds timeout
   headers: {
     'Content-Type': 'application/json',
@@ -93,7 +95,7 @@ axiosInstance.interceptors.response.use(
 
       try {
         const refreshResponse = await axios.post(
-          'http://192.84.105.173:5000/api/auth/refresh',
+          `${BASE_URL}/auth/refresh`,
           { refreshToken },
           {
             headers: {

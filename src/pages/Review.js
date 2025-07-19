@@ -12,6 +12,7 @@ import ConfirmReviewResetButton from "../components/button/ConfirmReviewResetBut
 import UpdateDocumentModal from '../components/modal/UpdateDocumentModal';
 
 
+
 const Review = () => {
   const [data, setData] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -34,10 +35,11 @@ const Review = () => {
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState('');
+  const BASE_URL = process.env.REACT_APP_BASE_URL;
 
   const { Text } = Typography;
 
-  const fetchUserInfo = async () => {
+  const fetchUserInfo = useCallback(async () => {
     try {
       const token = localStorage.getItem('accessToken');
       const userInfo = JSON.parse(localStorage.getItem('userInfo'));
@@ -45,7 +47,7 @@ const Review = () => {
         toast.error('Vui lòng đăng nhập lại');
         return;
       }
-      const response = await axios.get('http://192.84.105.173:5000/api/auth/profile', {
+      const response = await axios.get(`${BASE_URL}/auth/profile`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -64,11 +66,12 @@ const Review = () => {
         toast.error('Phiên đăng nhập hết hạn');
       }
     }
-  };
+  }, [BASE_URL]); // Add BASE_URL as dependency
 
+  // Fix 2: Add missing dependency for fetchUserInfo useEffect
   useEffect(() => {
     fetchUserInfo();
-  }, []);
+  }, [fetchUserInfo]);
 
   const handleSearch = (value) => {
     setSearchKeyword(value); 
@@ -93,20 +96,40 @@ const Review = () => {
     }
   }, [data, searchKeyword]);
 
-  const fetchReviewStatus = async (columnId) => {
+  const fetchReviewStatus = useCallback(async (columnId) => {
     try {
-      const response = await axios.get(`http://192.84.105.173:5000/api/document/review-status/${columnId}`);
+      const response = await axios.get(`${BASE_URL}/document/review-status/${columnId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching review status:', error);
       return null;
     }
-  };
+  }, [BASE_URL]);
 
-  const fetchData = useCallback(async () => {
+   const fetchImages = useCallback(async (columnId, field) => {
+    try {
+      if (!columnId) {
+        return [];
+      }
+
+      const response = await axios.get(
+        `${BASE_URL}/document/get-images/${columnId}/${field}`
+      );
+
+      if (response.data && Array.isArray(response.data.images)) {
+        return response.data.images;
+      } else {
+        return [];
+      }
+    } catch (error) {
+      return [];
+    }
+  }, [BASE_URL]);
+
+   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://192.84.105.173:5000/api/document/list');
+      const response = await axios.get(`${BASE_URL}/document/list`);
       const processedData = response.data.map(item => {
         const processedItem = { ...item };
         if (processedItem.GHI_CHU) {
@@ -159,30 +182,13 @@ const Review = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [BASE_URL, fetchImages, fetchReviewStatus]); // Add all dependencies
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
 
-  const fetchImages = async (columnId, field) => {
-    try {
-      if (!columnId) {
-        return [];
-      }
 
-      const response = await axios.get(
-        `http://192.84.105.173:5000/api/document/get-images/${columnId}/${field}`
-      );
-
-      if (response.data && Array.isArray(response.data.images)) {
-        return response.data.images;
-      } else {
-        return [];
-      }
-    } catch (error) {
-      return [];
-    }
-  };
 
   const handleUpload = async (info, record, field) => {
     if (!hasEditPermission) {
@@ -206,7 +212,7 @@ const Review = () => {
 
     try {
       const response = await axios.post(
-        `http://192.84.105.173:5000/api/document/upload-images/${record.COLUMN_ID}/${field}`,
+        `${BASE_URL}/document/upload-images/${record.COLUMN_ID}/${field}`,
         formData,
         {
           headers: {
@@ -275,7 +281,7 @@ const Review = () => {
       };
 
       await axios.put(
-        `http://192.84.105.173:5000/api/document/update/${selectedRecord.COLUMN_ID}`,
+        `${BASE_URL}/document/update/${selectedRecord.COLUMN_ID}`,
         dataToUpdate,
         {
           headers: {
@@ -321,7 +327,7 @@ const Review = () => {
             created_at: new Date().toISOString(),
           };
 
-          await axios.post('http://192.84.105.173:5000/api/document/add', dataToAdd);
+          await axios.post(`${BASE_URL}/document/add`, dataToAdd);
           toast.success('Thêm dữ liệu thành công');
           fetchData();
           setIsModalVisible(false);
@@ -342,7 +348,7 @@ const Review = () => {
       return;
     }
     try {
-      await axios.put(`http://192.84.105.173:5000/api/document/soft-delete/${column_id}`, {
+      await axios.put(`${BASE_URL}/document/soft-delete/${column_id}`, {
         username: currentUser.username,
         company_id: currentUser.company_id
       });
@@ -415,7 +421,7 @@ const Review = () => {
 
     try {
       await axios.delete(
-        `http://192.84.105.173:5000/api/document/delete-image/${columnId}/${field}/${imageName}`,
+        `${BASE_URL}/document/delete-image/${columnId}/${field}/${imageName}`,
         {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -440,7 +446,7 @@ const Review = () => {
   const fetchEditHistory = async (columnId, field) => {
     setHistoryLoading(true);
     try {
-      const response = await axios.get(`http://192.84.105.173:5000/api/document/edit-history/${columnId}/${field}`);
+      const response = await axios.get(`${BASE_URL}/document/edit-history/${columnId}/${field}`);
       const { creator, history } = response.data;
 
       setEditHistory({
@@ -462,7 +468,7 @@ const Review = () => {
       return;
     }
     try {
-      await axios.put(`http://192.84.105.173:5000/api/document/restore/${column_id}`, {
+      await axios.put(`${BASE_URL}/document/restore/${column_id}`, {
         username: currentUser.username
       });
       toast.success("Khôi phục dữ liệu thành công");
@@ -513,7 +519,7 @@ const Review = () => {
 
   const handleReviewConfirm = async (columnId, type) => {
     try {
-      const response = await axios.post('http://192.84.105.173:5000/api/document/confirm-review', {
+      const response = await axios.post(`${BASE_URL}/document/confirm-review`, {
         column_id: columnId,
         review_type: type,
         reviewed_by: currentUser.username
@@ -792,7 +798,7 @@ const Review = () => {
                     marginBottom: '8px'
                   }}>
                     <Image
-                      src={`http://192.84.105.173:5000/uploads/${img}`}
+                      src={`http://192.84.105.173:5000/uploads/${img}`} 
                       alt={`Hình ảnh ${index + 1}`}
                       style={{ width: '100%', maxHeight: '120px', objectFit: 'contain' }}
                       preview={{
