@@ -6,6 +6,8 @@ import axios from '../utils/axios';
 import MainLayout from '../components/layout/MainLayout';
 import { toast, Toaster } from 'sonner';
 
+const allowedCompanyIds = ['000107', '003512', '024287', '026965', '014077', '001748'];
+
 const DecideBoardDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -97,6 +99,11 @@ const DecideBoardDetail = () => {
       toast.error('Lỗi xác nhận!');
     }
   };
+
+  // Lấy company_id của user
+  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+  const companyId = userInfo.company_id ? userInfo.company_id.toString().padStart(6, '0') : '';
+  const canConfirm = allowedCompanyIds.includes(companyId);
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
 
@@ -292,7 +299,7 @@ const DecideBoardDetail = () => {
             </Card>
 
             {/* Action Buttons - Inline with Status */}
-            {!record.CONFIRM_BY && (
+            {!record.CONFIRM_BY && canConfirm && (
               <Space
                 direction="vertical"
                 size="middle"

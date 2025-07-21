@@ -9,6 +9,7 @@ import MaterialCore from './pages/MaterialCore';
 import MaterialProperties from './pages/MaterialProperties';
 import DecideBoard from './pages/DecideBoard';
 import DecideBoardDetail from './pages/DecideBoardDetail';
+import MaterialNew from './pages/MaterialNew';
 
 function App() {
   return (
@@ -47,6 +48,14 @@ function App() {
               <MaterialProperties />
             </PrivateRoute>
           } 
+        />
+        <Route 
+          path="/material-new" 
+          element={
+            <PrivateRoute>
+              <MaterialNew />
+            </PrivateRoute>
+          }
         />
         <Route 
           path="/decide-use" 

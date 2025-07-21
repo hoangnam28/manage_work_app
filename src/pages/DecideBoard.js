@@ -330,6 +330,7 @@ const DecideBoard = () => {
           <Button
             type="primary"
             icon={<EditOutlined />}
+            disabled={isViewer}
             onClick={() => {
               handleEdit(record);
             }}
@@ -339,8 +340,9 @@ const DecideBoard = () => {
             onConfirm={() => handleDelete(record)}
             okText="Có"
             cancelText="Không"
+            disabled={isViewer || !!record.CONFIRM_BY}
           >
-            <Button type="primary" danger icon={<DeleteOutlined />} />
+            <Button type="primary" danger icon={<DeleteOutlined />} disabled={isViewer || !!record.CONFIRM_BY} />
           </Popconfirm>
         </Space>
       )
@@ -401,45 +403,33 @@ const DecideBoard = () => {
     setEditModalVisible(true);
   };
 
-  const handleEditOk = async () => {
-    try {
-      const values = await editForm.validateFields();
-      const rowId = editingRecord.id !== undefined ? editingRecord.id : editingRecord.ID;
-      // Ghép lại chuỗi x × y cho size_normal và size_big
-      const size_normal = (editSizeNormalX && editSizeNormalY) ? `${editSizeNormalX} × ${editSizeNormalY}` : (editSizeNormalX || editSizeNormalY);
-      const size_big = (editSizeBigX && editSizeBigY) ? `${editSizeBigX} × ${editSizeBigY}` : (editSizeBigX || editSizeBigY);
+ const handleEditOk = async () => {
+  try {
+    const values = await editForm.validateFields();
+    const rowId = editingRecord.id !== undefined ? editingRecord.id : editingRecord.ID;
+    const size_normal = (editSizeNormalX && editSizeNormalY) ? `${editSizeNormalX} × ${editSizeNormalY}` : (editSizeNormalX || editSizeNormalY);
+    const size_big = (editSizeBigX && editSizeBigY) ? `${editSizeBigX} × ${editSizeBigY}` : (editSizeBigX || editSizeBigY);
 
-      // Kiểm tra các trường chính có thay đổi không (bao gồm request)
-      const isTypeBoardChanged = (values.type_board || '').trim() !== (editingRecord.TYPE_BOARD || '').trim();
-      const isSizeNormalChanged = size_normal.trim() !== (editingRecord.SIZE_NORMAL || '').trim();
-      const isRateNormalChanged = (values.rate_normal || '').trim() !== (editingRecord.RATE_NORMAL || '').trim();
-      const isSizeBigChanged = size_big.trim() !== (editingRecord.SIZE_BIG || '').trim();
-      const isRateBigChanged = (values.rate_big || '').trim() !== (editingRecord.RATE_BIG || '').trim();
-      const isRequestChanged = values.request !== (editingRecord.REQUEST === 'TRUE' ? 'TRUE' : 'FALSE');
+    // Chỉ gửi các trường cần thiết, KHÔNG gửi confirm_by
+    let updatePayload = {
+      type_board: (values.type_board || '').trim(),
+      size_normal: size_normal.trim(),
+      rate_normal: (values.rate_normal || '').trim(),
+      size_big: size_big.trim(),
+      rate_big: (values.rate_big || '').trim(),
+      note: (values.note || '').trim(),
+      request: values.request
+    };
 
-      // Nếu có thay đổi các trường chính thì reset CONFIRM_BY (trạng thái về "Chưa xác nhận")
-      let updatePayload = {
-        type_board: (values.type_board || '').trim(),
-        size_normal: size_normal.trim(),
-        rate_normal: (values.rate_normal || '').trim(),
-        size_big: size_big.trim(),
-        rate_big: (values.rate_big || '').trim(),
-        note: (values.note || '').trim(),
-        request: values.request
-      };
-      if (isTypeBoardChanged || isSizeNormalChanged || isRateNormalChanged || isSizeBigChanged || isRateBigChanged || isRequestChanged) {
-        updatePayload.confirm_by = '';
-      }
-
-      await updateMaterialDecide(rowId, updatePayload);
-      toast.success('Cập nhật thành công!');
-      setEditModalVisible(false);
-      setEditingRecord(null);
-      fetchData();
-    } catch (err) {
-      toast.error('Lỗi cập nhật!');
-    }
-  };
+    await updateMaterialDecide(rowId, updatePayload);
+    toast.success('Cập nhật thành công!');
+    setEditModalVisible(false);
+    setEditingRecord(null);
+    fetchData();
+  } catch (err) {
+    toast.error('Lỗi cập nhật!');
+  }
+};
 
   const handleEditCancel = () => {
     setEditModalVisible(false);
@@ -610,9 +600,9 @@ const DecideBoard = () => {
                           onConfirm={() => handleDelete(record)}
                           okText="Có"
                           cancelText="Không"
-                          disabled={isViewer}
+                          disabled={isViewer || !!record.CONFIRM_BY}
                         >
-                          <Button type="primary" danger icon={<DeleteOutlined />} disabled={isViewer} />
+                          <Button type="primary" danger icon={<DeleteOutlined />} disabled={isViewer || !!record.CONFIRM_BY} />
                         </Popconfirm>
                       </>
                     )}

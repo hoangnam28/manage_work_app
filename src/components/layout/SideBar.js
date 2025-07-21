@@ -68,7 +68,15 @@ const SideBar = ({ onLogout, userId }) => {
               Materials Prepreg
             </Link>
           ),
-        }
+        },
+        {
+          key: '/material-new',
+          label: (
+            <Link to="/material-new" style={location.pathname === '/material-new' ? { color: '#1890ff', fontWeight: 600 } : {}}>
+              Materials New
+            </Link>
+          ),
+        },
       ]
     },
     {
