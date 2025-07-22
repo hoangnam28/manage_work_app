@@ -5,7 +5,8 @@ import {
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
-  SearchOutlined 
+  SearchOutlined,
+  HistoryOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -13,9 +14,11 @@ import {
   createMaterialCore,
   updateMaterialCore,
   deleteMaterialCore,
-  exportMaterialCore
+  exportMaterialCore,
+  fetchMaterialCoreHistory
 } from '../utils/material-core-api';
 import CreateMaterialCoreModal from '../components/modal/CreateMaterialCoreModal';
+import MaterialCoreHistoryModal from '../components/modal/MaterialCoreHistoryModal';
 import { toast, Toaster } from 'sonner';
 import './MaterialCore.css';
 
@@ -27,6 +30,8 @@ const MaterialCore = () => {
   const [searchText, setSearchText] = useState('');
   const [searchedColumn, setSearchedColumn] = useState('');
   const searchInput = useRef(null);
+  const [historyData, setHistoryData] = useState([]);
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -720,7 +725,7 @@ const handleReset = (clearFilters) => {
       title: 'Thao tác',
       key: 'action',
       fixed: 'right',
-      width: 120,
+      width: 180,
       align: 'center',
       render: (_, record) => (
         <Space size="middle">
@@ -730,6 +735,19 @@ const handleReset = (clearFilters) => {
             onClick={() => {
               setEditingRecord(record);
               setModalVisible(true);
+            }}
+          />
+          <Button
+            type="primary"
+            icon={<HistoryOutlined />}
+            onClick={async () => {
+              try {
+                const response = await fetchMaterialCoreHistory(record.ID);
+                setHistoryData(response.data);
+                setHistoryModalVisible(true);
+              } catch (error) {
+                toast.error('Lỗi khi lấy lịch sử');
+              }
             }}
           />
           <Popconfirm
@@ -797,6 +815,12 @@ const handleReset = (clearFilters) => {
           }}
           onSubmit={editingRecord ? handleUpdate : handleCreate}
           editingRecord={editingRecord}
+        />
+        
+        <MaterialCoreHistoryModal
+          open={historyModalVisible}
+          onCancel={() => setHistoryModalVisible(false)}
+          data={historyData}
         />
       </div>
     </MainLayout>
