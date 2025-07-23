@@ -5,7 +5,8 @@ import {
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
-  SearchOutlined
+  SearchOutlined,
+  HistoryOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -14,8 +15,10 @@ import {
   updateMaterialPp,
   deleteMaterialPp,
   exportMaterialPp,
+  fetchMaterialPpHistory
 } from '../utils/material-pp-api';
 import CreateMaterialPpModal from '../components/modal/CreateMaterialPPModal';
+import MaterialPpHistoryModal from '../components/modal/MaterialPpHistoryModal';
 import { toast, Toaster } from 'sonner';
 import './MaterialCore.css';
 
@@ -28,6 +31,8 @@ const MaterialProperties = () => {
   const [searchText, setSearchText] = useState('');
   const [searchedColumn, setSearchedColumn] = useState('');
   const searchInput = useRef(null);
+    const [historyData, setHistoryData] = useState([]);
+    const [historyModalVisible, setHistoryModalVisible] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -610,6 +615,19 @@ const handleReset = (clearFilters) => {
               setModalVisible(true);
             }}
           />
+           <Button
+            type="primary"
+            icon={<HistoryOutlined />}
+            onClick={async () => {
+              try {
+                const response = await fetchMaterialPpHistory(record.ID);
+                setHistoryData(response.data);
+                setHistoryModalVisible(true);
+              } catch (error) {
+                toast.error('Lỗi khi lấy lịch sử');
+              }
+            }}
+          />
           <Popconfirm
             title="Xác nhận xóa?"
             onConfirm={() => handleDelete(record)}
@@ -678,6 +696,12 @@ const handleReset = (clearFilters) => {
           }}
           onSubmit={editingRecord ? handleUpdate : handleCreate}
           editingRecord={editingRecord}
+        />
+        
+          <MaterialPpHistoryModal
+          open={historyModalVisible}
+          onCancel={() => setHistoryModalVisible(false)}
+          data={historyData}
         />
       </div>
     </MainLayout>

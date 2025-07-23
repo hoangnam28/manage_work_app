@@ -52,3 +52,17 @@ export const exportMaterialPp = async (data) => {
   );
   return response;
 };
+
+export const fetchMaterialPpHistory = async (id) => {
+  const token = localStorage.getItem('accessToken');
+  try {
+    const response = await axios.get(`/material-pp-history/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching history:', error);
+    throw error;
+  }
+};
+
