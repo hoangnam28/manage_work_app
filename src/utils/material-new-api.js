@@ -32,6 +32,20 @@ export const deleteMaterialNew = async (id) => {
   return response.data;
 };
 
+export const fetchMaterialNewHistory = async (id) => {
+  const token = localStorage.getItem('accessToken');
+  try {
+    const response = await axios.get(`/material-new-history/${id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching history:', error);
+    throw error;
+  }
+};
+
+
 export const exportMaterialNew = async (data) => {
   const token = localStorage.getItem('accessToken');
   const normalizeKeys = (obj) => {

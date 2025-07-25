@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Modal, Form, Input, DatePicker, Select, Row, Col } from 'antd';
+import { Modal, Form, Input, DatePicker, Select, Row, Col, InputNumber } from 'antd';
 import moment from 'moment';
 import { toast } from 'sonner';
 
@@ -136,7 +136,12 @@ const CreateMaterialNewModal = ({ open, onCancel, onSubmit, editingRecord }) => 
           </Col>
           <Col span={8}>
             <Form.Item name="ERP" label="ERP">
-              <Input />
+              <InputNumber 
+                style={{ width: '100%' }} 
+                placeholder="Nhập giá trị ERP" 
+                min={0} 
+                step={1}
+              />
             </Form.Item>
           </Col>
         </Row>
