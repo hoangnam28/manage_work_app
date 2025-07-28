@@ -305,6 +305,7 @@ const DecideBoard = () => {
       key: "history",
       align: "center",
       width: 100,
+      fixed: 'right',
       render: (_, record) => (
         <Button
           type="default"

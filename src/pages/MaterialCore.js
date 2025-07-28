@@ -1,12 +1,16 @@
-import React, { useState, useEffect, useRef  } from 'react';
-import { Table, Button, Space, Popconfirm, Input} from 'antd';
+import React, { useState, useEffect, useRef } from 'react';
+import { Table, Button, Space, Popconfirm, Input, Dropdown, Menu } from 'antd';
 import Highlighter from 'react-highlight-words';
 import {
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
   SearchOutlined,
-  HistoryOutlined
+  HistoryOutlined,
+  ImportOutlined,
+  DownOutlined,
+  FileExcelOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -15,12 +19,13 @@ import {
   updateMaterialCore,
   deleteMaterialCore,
   exportMaterialCore,
-  fetchMaterialCoreHistory
+  fetchMaterialCoreHistory,
 } from '../utils/material-core-api';
 import CreateMaterialCoreModal from '../components/modal/CreateMaterialCoreModal';
 import MaterialCoreHistoryModal from '../components/modal/MaterialCoreHistoryModal';
 import { toast, Toaster } from 'sonner';
 import './MaterialCore.css';
+import ImportMaterialCoreReviewModal from '../components/modal/ImportMaterialCoreReviewModal';
 
 const MaterialCore = () => {
   const [data, setData] = useState([]);
@@ -32,12 +37,51 @@ const MaterialCore = () => {
   const searchInput = useRef(null);
   const [historyData, setHistoryData] = useState([]);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
+  const [importModalVisible, setImportModalVisible] = useState(false);
 
-  const fetchData = async () => {
+  // State cho pagination
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 100,
+    total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
+    pageSizeOptions: ['50', '100', '200', '500'],
+  });
+
+  // State cho global search
+  const [globalSearch, setGlobalSearch] = useState('');
+
+  const fetchData = async (page = 1, pageSize = 100, search = '') => {
     setLoading(true);
     try {
-      const response = await fetchMaterialCoreList();
-      setData(response.data || []);
+      // Cập nhật API call để truyền các tham số pagination
+      const response = await fetchMaterialCoreList({
+        page,
+        pageSize,
+        search: search || globalSearch // Sử dụng global search nếu không có search parameter
+      });
+
+      console.log('API Response:', response);
+
+      // Kiểm tra cấu trúc response
+      if (response.data && response.pagination) {
+        setData(response.data || []);
+        setPagination(prev => ({
+          ...prev,
+          current: response.pagination.currentPage,
+          pageSize: response.pagination.pageSize,
+          total: response.pagination.totalRecords,
+        }));
+      } else {
+        // Fallback cho API cũ (nếu chưa update)
+        setData(response.data || []);
+        setPagination(prev => ({
+          ...prev,
+          total: response.data?.length || 0,
+        }));
+      }
     } catch (error) {
       console.error('Error fetching material core data:', error);
       toast.error('Lỗi khi tải dữ liệu');
@@ -47,8 +91,29 @@ const MaterialCore = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    fetchData(pagination.current, pagination.pageSize);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Handle global search
+  const handleGlobalSearch = (value) => {
+    setGlobalSearch(value);
+    setPagination(prev => ({ ...prev, current: 1 })); // Reset về trang 1
+    fetchData(1, pagination.pageSize, value);
+  };
+
+  // Handle table change (pagination, sorter, filter)
+  const handleTableChange = (paginationConfig, filters, sorter) => {
+    console.log('Table change:', { paginationConfig, filters, sorter });
+
+    const { current, pageSize } = paginationConfig;
+
+    // Reset về trang 1 nếu thay đổi pageSize
+    const targetPage = pageSize !== pagination.pageSize ? 1 : current;
+
+    fetchData(targetPage, pageSize, globalSearch);
+  };
+
   const handleCreate = async (values) => {
     try {
       let requesterName = 'Unknown';
@@ -77,7 +142,8 @@ const MaterialCore = () => {
 
       toast.success(`Đã thêm thành công ${topArr.length} bản ghi`);
       setModalVisible(false);
-      fetchData();
+      // Refresh current page
+      fetchData(pagination.current, pagination.pageSize);
     } catch (error) {
       console.error('Error creating material core:', error);
       toast.error('Lỗi khi thêm mới');
@@ -102,7 +168,8 @@ const MaterialCore = () => {
       toast.success('Cập nhật thành công');
       setModalVisible(false);
       setEditingRecord(null);
-      fetchData();
+      // Refresh current page
+      fetchData(pagination.current, pagination.pageSize);
     } catch (error) {
       console.error('Error updating material core:', error);
       toast.error('Lỗi khi cập nhật: ' + (error.message || 'Đã có lỗi xảy ra'));
@@ -119,7 +186,8 @@ const MaterialCore = () => {
       }
       await deleteMaterialCore(id);
       toast.success('Xóa thành công');
-      fetchData();
+      // Refresh current page
+      fetchData(pagination.current, pagination.pageSize);
     } catch (error) {
       console.error('Error deleting material core:', error);
       toast.error('Lỗi khi xóa');
@@ -128,105 +196,142 @@ const MaterialCore = () => {
 
   const handleExport = async () => {
     try {
-      const response = await exportMaterialCore(data);
+      // Show loading toast
+      const loadingToast = toast.loading('Đang xuất dữ liệu...');
+
+      // Export all data (function will fetch all data internally)
+      const response = await exportMaterialCore();
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'MaterialCoreExport.xlsm');
+      link.setAttribute('download', `MaterialCoreExport_${new Date().toISOString().split('T')[0]}.xlsm`);
       document.body.appendChild(link);
       link.click();
       link.remove();
+
+      // Clean up
+      window.URL.revokeObjectURL(url);
+
+      toast.dismiss(loadingToast);
+      toast.success('Xuất file thành công!');
     } catch (error) {
-      toast.error('Lỗi khi xuất file');
+      console.error('Export error:', error);
+      toast.error('Lỗi khi xuất file: ' + (error.message || 'Đã có lỗi xảy ra'));
     }
   };
 
-  const getColumnSearchProps = dataIndex => ({
-  filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
-    <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
-      <Input
-        ref={searchInput}
-        placeholder={`Tìm kiếm ${dataIndex}`}
-        value={selectedKeys[0]}
-        onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-        onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
-        style={{ marginBottom: 8, display: 'block' }}
-      />
-      <Space>
-        <Button
-          type="primary"
-          onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
-          icon={<SearchOutlined />}
-          size="small"
-          style={{ width: 90 }}
-        >
-          Tìm kiếm
-        </Button>
-        <Button
-          onClick={() => clearFilters && handleReset(clearFilters)}
-          size="small"
-          style={{ width: 90 }}
-        >
-          Reset
-        </Button>
-        <Button
-          type="link"
-          size="small"
-          onClick={() => {
-            close();
-          }}
-        >
-          Đóng
-        </Button>
-      </Space>
-    </div>
-  ),
-  filterIcon: (filtered) => (
-    <SearchOutlined
-      style={{ color: filtered ? '#1890ff' : undefined }}
-    />
-  ),
-  onFilter: (value, record) =>
-    record[dataIndex]
-      .toString()
-      .toLowerCase()
-      .includes(value.toLowerCase()),
-  onFilterDropdownOpenChange: (visible) => {
-    if (visible) {
-      setTimeout(() => searchInput.current?.select(), 100);
-    }
-  },
-  render: (text) =>
-    searchedColumn === dataIndex ? (
-      <Highlighter
-        highlightStyle={{
-          backgroundColor: '#ffc069',
-          padding: 0,
-        }}
-        searchWords={[searchText]}
-        autoEscape
-        textToHighlight={text ? text.toString() : ''}
-      />
-    ) : (
-      text
+  // Handle import success
+  const handleImportSuccess = () => {
+    toast.success('Import thành công!');
+    fetchData(pagination.current, pagination.pageSize); // Refresh data
+  };
+  const refreshCurrentData = () => {
+    fetchData(pagination.current, pagination.pageSize, globalSearch);
+  };
+
+  const getColumnSearchProps = (dataIndex) => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
+      <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+        <Input
+          ref={searchInput}
+          placeholder={`Tìm kiếm ${dataIndex}`}
+          value={selectedKeys[0]}
+          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          style={{ marginBottom: 8, display: 'block' }}
+        />
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Tìm kiếm
+          </Button>
+          <Button
+            onClick={() => clearFilters && handleReset(clearFilters)}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Reset
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => {
+              close();
+            }}
+          >
+            Đóng
+          </Button>
+        </Space>
+      </div>
     ),
-});
+    filterIcon: (filtered) => (
+      <SearchOutlined
+        style={{ color: filtered ? '#1890ff' : undefined }}
+      />
+    ),
+    onFilter: (value, record) => {
+      // Handle null/undefined values
+      const recordValue = record[dataIndex];
+      if (recordValue == null) return false;
 
-const handleSearch = (selectedKeys, confirm, dataIndex) => {
-  confirm();
-  setSearchText(selectedKeys[0]);
-  setSearchedColumn(dataIndex);
-};
+      return recordValue
+        .toString()
+        .toLowerCase()
+        .includes(value.toLowerCase());
+    },
+    onFilterDropdownOpenChange: (visible) => {
+      if (visible) {
+        setTimeout(() => searchInput.current?.select(), 100);
+      }
+    },
+    render: (text) =>
+      searchedColumn === dataIndex ? (
+        <Highlighter
+          highlightStyle={{
+            backgroundColor: '#ffc069',
+            padding: 0,
+          }}
+          searchWords={[searchText]}
+          autoEscape
+          textToHighlight={text ? text.toString() : ''}
+        />
+      ) : (
+        text
+      ),
+  });
 
-const handleReset = (clearFilters) => {
-  clearFilters();
-  setSearchText('');
-  fetchData();
-};
+  const handleSearch = (selectedKeys, confirm, dataIndex) => {
+    confirm();
+    setSearchText(selectedKeys[0]);
+    setSearchedColumn(dataIndex);
+  };
 
+  const handleReset = (clearFilters) => {
+    clearFilters();
+    setSearchText('');
+    setSearchedColumn('');
+  };
+
+  // Import dropdown menu
+  const importMenu = (
+    <Menu>
+      <Menu.Item
+        key="import"
+        icon={<ImportOutlined />}
+        onClick={() => setImportModalVisible(true)}
+      >
+        Import từ Excel
+      </Menu.Item>
+    </Menu>
+  );
 
   const columns = [
-
     {
       title: 'Vendor',
       dataIndex: 'VENDOR',
@@ -326,14 +431,14 @@ const handleReset = (clearFilters) => {
       ...getColumnSearchProps('CENTER_GLASS')
     },
     {
-      title: 'Dk @ 0.1GHz',
+      title: 'Dk_0_1G',
       dataIndex: 'DK_01G',
       key: 'dk_01g',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df @ 0.1GHz',
+      title: 'Df_0_1G',
       dataIndex: 'DF_01G',
       key: 'df_01g',
       width: 120,
@@ -781,6 +886,13 @@ const handleReset = (clearFilters) => {
             >
               Thêm mới
             </Button>
+
+            <Dropdown overlay={importMenu} trigger={['click']}>
+              <Button style={{ marginRight: 8 }}>
+                <FileExcelOutlined /> Import/Export <DownOutlined />
+              </Button>
+            </Dropdown>
+
             <Button
               type="default"
               onClick={handleExport}
@@ -789,24 +901,43 @@ const handleReset = (clearFilters) => {
             </Button>
           </div>
         </div>
+
+        <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
+          <Input.Search
+            placeholder="Tìm kiếm theo Vendor, Family, Handler, Requester..."
+            allowClear
+            enterButton="Tìm kiếm"
+            size="large"
+            value={globalSearch}
+            onChange={(e) => setGlobalSearch(e.target.value)}
+            onSearch={handleGlobalSearch}
+            style={{ width: 400 }}
+          />
+
+          {/* Thêm button refresh */}
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={refreshCurrentData}
+            title="Làm mới dữ liệu"
+          />
+        </div>
         <Table
           columns={columns}
           dataSource={data}
           loading={loading}
-          rowKey="id"
+          rowKey={(record) => record.ID || record.id}
           scroll={{ x: 'max-content' }}
           size="middle"
-          pagination={{
-            defaultPageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng số ${total} bản ghi`
-          }}
+          pagination={pagination}
+          onChange={handleTableChange}
           rowClassName={(record) => {
             if (record.STATUS === 'Pending') return 'row-pending';
             if (record.STATUS === 'Cancel') return 'row-cancel';
             return '';
           }}
         />
+
+        {/* Create/Edit Modal */}
         <CreateMaterialCoreModal
           open={modalVisible}
           onCancel={() => {
@@ -816,11 +947,19 @@ const handleReset = (clearFilters) => {
           onSubmit={editingRecord ? handleUpdate : handleCreate}
           editingRecord={editingRecord}
         />
-        
+
+        {/* History Modal */}
         <MaterialCoreHistoryModal
           open={historyModalVisible}
           onCancel={() => setHistoryModalVisible(false)}
           data={historyData}
+        />
+
+        {/* Import Modal */}
+        <ImportMaterialCoreReviewModal
+          open={importModalVisible}
+          onCancel={() => setImportModalVisible(false)}
+          onSuccess={handleImportSuccess}
         />
       </div>
     </MainLayout>
