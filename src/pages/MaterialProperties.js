@@ -21,6 +21,7 @@ import CreateMaterialPpModal from '../components/modal/CreateMaterialPPModal';
 import MaterialPpHistoryModal from '../components/modal/MaterialPpHistoryModal';
 import { toast, Toaster } from 'sonner';
 import './MaterialCore.css';
+import ImportMaterialPpReviewModal from '../components/modal/ImportMaterialPpReviewModal';
 
 
 const MaterialProperties = () => {
@@ -33,6 +34,7 @@ const MaterialProperties = () => {
   const searchInput = useRef(null);
     const [historyData, setHistoryData] = useState([]);
     const [historyModalVisible, setHistoryModalVisible] = useState(false);
+    const [importReviewModalVisible, setImportReviewModalVisible] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -142,7 +144,7 @@ const MaterialProperties = () => {
       }
     };
 
-    const getColumnSearchProps = dataIndex => ({
+const getColumnSearchProps = dataIndex => ({
   filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
     <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
       <Input
@@ -187,11 +189,17 @@ const MaterialProperties = () => {
       style={{ color: filtered ? '#1890ff' : undefined }}
     />
   ),
-  onFilter: (value, record) =>
-    record[dataIndex]
+  onFilter: (value, record) => {
+    // Fix: Handle null/undefined values safely
+    const fieldValue = record[dataIndex];
+    if (fieldValue === null || fieldValue === undefined) {
+      return false; // or return true if you want to include null values in search
+    }
+    return fieldValue
       .toString()
       .toLowerCase()
-      .includes(value.toLowerCase()),
+      .includes(value.toLowerCase());
+  },
   onFilterDropdownOpenChange: (visible) => {
     if (visible) {
       setTimeout(() => searchInput.current?.select(), 100);
@@ -663,8 +671,15 @@ const handleReset = (clearFilters) => {
           <Button
             type="default"
             onClick={handleExport}
+            style={{ marginRight: 8 }}
           >
             Xuất Excel
+          </Button>
+          <Button
+            type="default"
+            onClick={() => setImportReviewModalVisible(true)}
+          >
+            Import Excel
           </Button>
         </div>
         </div>
@@ -702,6 +717,12 @@ const handleReset = (clearFilters) => {
           open={historyModalVisible}
           onCancel={() => setHistoryModalVisible(false)}
           data={historyData}
+        />
+        <ImportMaterialPpReviewModal
+          open={importReviewModalVisible}
+          onCancel={() => setImportReviewModalVisible(false)}
+          onSuccess={fetchData}
+          loadData={fetchData}
         />
       </div>
     </MainLayout>
