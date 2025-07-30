@@ -29,8 +29,18 @@ const onRefreshError = (error) => {
   localStorage.removeItem('refreshToken');
   localStorage.removeItem('userInfo');
   
+  // Nếu lỗi là hết hạn refresh token, chuyển hướng về trang login ngoài
+  if (
+    error?.response?.data?.code === 'REFRESH_TOKEN_EXPIRED' ||
+    error?.response?.data?.message?.toLowerCase().includes('refresh token')
+  ) {
+    toast.error('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
+    setTimeout(() => {
+      window.location.href = 'http://192.84.105.173:4000/';
+    }, 1500);
+    return;
+  }
   toast.error('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
-  
   setTimeout(() => {
     window.location.href = '/';
   }, 1500);

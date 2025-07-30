@@ -32,9 +32,9 @@ const MaterialProperties = () => {
   const [searchText, setSearchText] = useState('');
   const [searchedColumn, setSearchedColumn] = useState('');
   const searchInput = useRef(null);
-    const [historyData, setHistoryData] = useState([]);
-    const [historyModalVisible, setHistoryModalVisible] = useState(false);
-    const [importReviewModalVisible, setImportReviewModalVisible] = useState(false);
+  const [historyData, setHistoryData] = useState([]);
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
+  const [importReviewModalVisible, setImportReviewModalVisible] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);

@@ -57,7 +57,7 @@ const SideBar = ({ onLogout, userId }) => {
           key: '/material-core',
           label: (
             <Link to="/material-core" style={location.pathname === '/material-core' ? { color: '#1890ff', fontWeight: 600 } : {}}>
-              Materials Core
+              Core
             </Link>
           ),
         },
@@ -65,7 +65,7 @@ const SideBar = ({ onLogout, userId }) => {
           key: '/material-properties',
           label: (
             <Link to="/material-properties" style={location.pathname === '/material-properties' ? { color: '#1890ff', fontWeight: 600 } : {}}>
-              Materials Prepreg
+              Prepreg
             </Link>
           ),
         },
@@ -73,7 +73,7 @@ const SideBar = ({ onLogout, userId }) => {
           key: '/material-new',
           label: (
             <Link to="/material-new" style={location.pathname === '/material-new' ? { color: '#1890ff', fontWeight: 600 } : {}}>
-              Materials New
+              New
             </Link>
           ),
         },

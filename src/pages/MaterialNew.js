@@ -21,6 +21,7 @@ import CreateMaterialNewModal from '../components/modal/CreateMaterialNewModal';
 import HistoryNewModal from '../components/modal/MaterialNewHistoryModal';
 import { toast, Toaster } from 'sonner';
 import './MaterialCore.css';
+import ImportMaterialNewModal from '../components/modal/ImportMaterialNewModal';
 
 
 const MaterialProperties = () => {
@@ -33,7 +34,9 @@ const MaterialProperties = () => {
   const searchInput = useRef(null);
   const [historyData, setHistoryData] = useState([]);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
-  
+  const [importReviewModalVisible, setImportReviewModalVisible] = useState(false);
+
+
   const fetchData = async () => {
     setLoading(true);
     try {
@@ -111,102 +114,102 @@ const MaterialProperties = () => {
     }
   };
   const handleExport = async () => {
-      try {
-        const response = await exportMaterialNew(data);
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'MaterialCoreExport.xlsm');
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      } catch (error) {
-        toast.error('Lỗi khi xuất file');
-      }
-    };
-
-    const getColumnSearchProps = dataIndex => ({
-  filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
-    <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
-      <Input
-        ref={searchInput}
-        placeholder={`Tìm kiếm ${dataIndex}`}
-        value={selectedKeys[0]}
-        onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-        onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
-        style={{ marginBottom: 8, display: 'block' }}
-      />
-      <Space>
-        <Button
-          type="primary"
-          onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
-          icon={<SearchOutlined />}
-          size="small"
-          style={{ width: 90 }}
-        >
-          Tìm kiếm
-        </Button>
-        <Button
-          onClick={() => clearFilters && handleReset(clearFilters)}
-          size="small"
-          style={{ width: 90 }}
-        >
-          Reset
-        </Button>
-        <Button
-          type="link"
-          size="small"
-          onClick={() => {
-            close();
-          }}
-        >
-          Đóng
-        </Button>
-      </Space>
-    </div>
-  ),
-  filterIcon: (filtered) => (
-    <SearchOutlined
-      style={{ color: filtered ? '#1890ff' : undefined }}
-    />
-  ),
-  onFilter: (value, record) =>
-    record[dataIndex]
-      .toString()
-      .toLowerCase()
-      .includes(value.toLowerCase()),
-  onFilterDropdownOpenChange: (visible) => {
-    if (visible) {
-      setTimeout(() => searchInput.current?.select(), 100);
+    try {
+      const response = await exportMaterialNew(data);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'MaterialCoreExport.xlsm');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      toast.error('Lỗi khi xuất file');
     }
-  },
-  render: (text) =>
-    searchedColumn === dataIndex ? (
-      <Highlighter
-        highlightStyle={{
-          backgroundColor: '#ffc069',
-          padding: 0,
-        }}
-        searchWords={[searchText]}
-        autoEscape
-        textToHighlight={text ? text.toString() : ''}
-      />
-    ) : (
-      text
+  };
+
+  const getColumnSearchProps = dataIndex => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
+      <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+        <Input
+          ref={searchInput}
+          placeholder={`Tìm kiếm ${dataIndex}`}
+          value={selectedKeys[0]}
+          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          style={{ marginBottom: 8, display: 'block' }}
+        />
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Tìm kiếm
+          </Button>
+          <Button
+            onClick={() => clearFilters && handleReset(clearFilters)}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Reset
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => {
+              close();
+            }}
+          >
+            Đóng
+          </Button>
+        </Space>
+      </div>
     ),
-});
+    filterIcon: (filtered) => (
+      <SearchOutlined
+        style={{ color: filtered ? '#1890ff' : undefined }}
+      />
+    ),
+    onFilter: (value, record) =>
+      record[dataIndex]
+        .toString()
+        .toLowerCase()
+        .includes(value.toLowerCase()),
+    onFilterDropdownOpenChange: (visible) => {
+      if (visible) {
+        setTimeout(() => searchInput.current?.select(), 100);
+      }
+    },
+    render: (text) =>
+      searchedColumn === dataIndex ? (
+        <Highlighter
+          highlightStyle={{
+            backgroundColor: '#ffc069',
+            padding: 0,
+          }}
+          searchWords={[searchText]}
+          autoEscape
+          textToHighlight={text ? text.toString() : ''}
+        />
+      ) : (
+        text
+      ),
+  });
 
-const handleSearch = (selectedKeys, confirm, dataIndex) => {
-  confirm();
-  setSearchText(selectedKeys[0]);
-  setSearchedColumn(dataIndex);
-};
+  const handleSearch = (selectedKeys, confirm, dataIndex) => {
+    confirm();
+    setSearchText(selectedKeys[0]);
+    setSearchedColumn(dataIndex);
+  };
 
-const handleReset = (clearFilters) => {
-  clearFilters();
-  setSearchText('');
-  fetchData();
-};
+  const handleReset = (clearFilters) => {
+    clearFilters();
+    setSearchText('');
+    fetchData();
+  };
 
 
   const columns = [
@@ -254,6 +257,13 @@ const handleReset = (clearFilters) => {
       title: 'ERP',
       dataIndex: 'ERP',
       key: 'ERP',
+      width: 150,
+      align: 'center'
+    },
+    {
+      title: 'ERP_PP',
+      dataIndex: 'ERP_PP',
+      key: 'ERP_PP',
       width: 150,
       align: 'center'
     },
@@ -327,7 +337,8 @@ const handleReset = (clearFilters) => {
       dataIndex: 'STATUS',
       key: 'STATUS',
       width: 120,
-      align: 'center'
+      align: 'center',
+      fixed: 'right'
     },
     {
       title: 'Thao tác',
@@ -378,25 +389,31 @@ const handleReset = (clearFilters) => {
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <h1>Material New</h1>
           <div>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditingRecord(null);
-              setModalVisible(true);
-              
-            }}
-            style={{ marginRight: 8 }}
-          >
-            Thêm mới
-          </Button>
-          <Button
-            type="default"
-            onClick={handleExport}
-          >
-            Xuất Excel
-          </Button>
-        </div>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setEditingRecord(null);
+                setModalVisible(true);
+
+              }}
+              style={{ marginRight: 8 }}
+            >
+              Thêm mới
+            </Button>
+            <Button
+              type="default"
+              onClick={handleExport}
+            >
+              Xuất Excel
+            </Button>
+            <Button
+              type="default"
+              onClick={() => setImportReviewModalVisible(true)}
+            >
+              Import Excel
+            </Button>
+          </div>
         </div>
 
         <Table
@@ -431,6 +448,12 @@ const handleReset = (clearFilters) => {
           open={historyModalVisible}
           onCancel={() => setHistoryModalVisible(false)}
           data={historyData}
+        />
+        <ImportMaterialNewModal
+          open={importReviewModalVisible}
+          onCancel={() => setImportReviewModalVisible(false)}
+          onSuccess={fetchData}
+          loadData={fetchData}
         />
       </div>
     </MainLayout>

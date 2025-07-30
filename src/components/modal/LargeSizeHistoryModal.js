@@ -128,7 +128,12 @@ const LargeSizeHistoryModal = ({ visible, onCancel, recordId, recordData }) => {
       dataIndex: 'REQUEST',
       key: 'request',
       width: 150,
-      render: (text) => {
+      render: (text, record) => {
+        // Kiểm tra nếu chưa có người xác nhận thì hiển thị trống
+        if (!record.CONFIRM_BY || record.CONFIRM_BY === '' || record.CONFIRM_BY === null) {
+          return '-';
+        }
+        // Nếu đã có người xác nhận thì hiển thị giá trị REQUEST
         if (text === 'TRUE') return <Tag color="green">Có</Tag>;
         if (text === 'FALSE') return <Tag color="red">Không</Tag>;
         return text || '-';
