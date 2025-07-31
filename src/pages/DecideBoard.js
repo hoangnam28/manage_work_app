@@ -486,6 +486,11 @@ const DecideBoard = () => {
     }
   };
 
+  // Kiểm tra xem PC có thể sửa REQUEST hay không (chỉ khi đã được xác nhận)
+  const canEditRequest = (record) => {
+    return canUpdateBo && record && record.CONFIRM_BY && record.CONFIRM_BY.trim() !== '';
+  };
+
   return (
     <MainLayout>
       <Toaster position="top-right" richColors />
@@ -915,23 +920,31 @@ const DecideBoard = () => {
                 </Form.Item>
               </div>
             </div>
+            
             {/* Yêu cầu sử dụng bo to - full width */}
             <Form.Item name="request" label="Yêu cầu sử dụng bo to" rules={[{ required: true, message: 'Vui lòng chọn yêu cầu sử dụng bo to' }]}
               style={{ maxWidth: 300 }}>
               <Input.Group compact>
                 <Form.Item name="request" noStyle>
-                  <select style={{ width: '100%', height: 32 }} disabled={!canUpdateBo}>
+                  <select 
+                    style={{ width: '100%', height: 32 }} 
+                    disabled={!canEditRequest(editingRecord)}
+                  >
                     <option value="TRUE">Có</option>
                     <option value="FALSE">Không</option>
                   </select>
                 </Form.Item>
               </Input.Group>
-              {!canUpdateBo && (
+              {!canEditRequest(editingRecord) && (
                 <div style={{ color: '#faad14', marginTop: 4, fontSize: 13 }}>
-                  Chỉ PC mới có quyền sửa trường này.
+                  {!canUpdateBo 
+                    ? 'Chỉ PC mới có quyền sửa trường này.' 
+                    : 'Chỉ có thể sửa khi bản ghi đã được xác nhận bước đầu.'
+                  }
                 </div>
               )}
             </Form.Item>
+            
             <Form.Item name="note" label="Note">
               <Input placeholder="Nhập ghi chú (không bắt buộc)" disabled={onlyRequestEdit} />
             </Form.Item>

@@ -8,7 +8,8 @@ const { TabPane } = Tabs;
 
 const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
   const [form] = Form.useForm();
-  useEffect(() => {    if (open) {
+  useEffect(() => {    
+    if (open) {
       if (editingRecord) {
         const formattedRecord = Object.keys(editingRecord).reduce((acc, key) => {
           if (key.toUpperCase() === 'ID') {
@@ -56,6 +57,7 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
         toast.success('Thêm mới thành công!');
         form.resetFields(); 
       }
+      onCancel();
 
     } catch (error) {
       console.error('Validation failed:', error);
