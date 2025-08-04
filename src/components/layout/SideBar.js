@@ -123,7 +123,7 @@ const SideBar = ({ onLogout, userId }) => {
             <Avatar
               size={32}
               icon={<UserOutlined />}
-              src={userId ? `http://192.84.105.173:5000/api/auth/avatar/${userId}` : null}
+              src={userId ? `http://192.84.105.173:8888/api/auth/avatar/${userId}` : null}
             />
             <span style={{ marginLeft: '8px' }}>{user?.username}</span>
           </>

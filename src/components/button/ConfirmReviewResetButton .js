@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 const ConfirmReviewResetButton = ({ columnId, field, onResetSuccess }) => {
   const handleConfirmReviewReset = async () => {
     try {
-      await axios.post('http://192.84.105.173:5000/api/document/reset-review-field', {
+      await axios.post('http://192.84.105.173:8888/api/document/reset-review-field', {
         column_id: columnId,
         field
       });

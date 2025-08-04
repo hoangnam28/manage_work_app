@@ -36,7 +36,7 @@ const onRefreshError = (error) => {
   ) {
     toast.error('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
     setTimeout(() => {
-      window.location.href = 'http://192.84.105.173:4000/';
+      window.location.href = 'http://192.84.105.173:8888/';
     }, 1500);
     return;
   }
