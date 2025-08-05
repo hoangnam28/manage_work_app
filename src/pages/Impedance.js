@@ -17,7 +17,8 @@ const Impedance = () => {
   const [impedanceData, setImpedanceData] = useState([]);
   const [filteredData, setFilteredData] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [exportLoading, setExportLoading] = useState(false); const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isUpdateModalVisible, setIsUpdateModalVisible] = useState(false);
   const [isImportModalVisible, setIsImportModalVisible] = useState(false);
   const [currentRecord, setCurrentRecord] = useState(null);
@@ -27,14 +28,44 @@ const Impedance = () => {
   const [searchValue, setSearchValue] = useState('');
   const [shouldRefresh, setShouldRefresh] = useState(false);
 
+  // Hàm xử lý khi token hết hạn
+  const handleTokenExpiration = () => {
+    // Xóa token khỏi localStorage
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken'); // Nếu có refresh token
+    
+    // Hiển thị thông báo
+    toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
+    
+    // Chuyển hướng về trang login sau 2 giây
+    setTimeout(() => {
+      window.location.href = 'http://192.84.105.173:8888/';
+    }, 2000);
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (token) {
-      const decodedToken = JSON.parse(atob(token.split('.')[1]));
-      setHasEditPermission(['001507', '021253', '000001', '008048', '030783'].includes(decodedToken.company_id));
+      try {
+        const decodedToken = JSON.parse(atob(token.split('.')[1]));
+        
+        // Kiểm tra thời gian hết hạn của token
+        const currentTime = Date.now() / 1000;
+        if (decodedToken.exp && decodedToken.exp < currentTime) {
+          handleTokenExpiration();
+          return;
+        }
+        
+        setHasEditPermission(['001507', '021253', '000001', '008048', '030783'].includes(decodedToken.company_id));
+      } catch (error) {
+        console.error('Error parsing token:', error);
+        handleTokenExpiration();
+        return;
+      }
     }
     loadData();
   }, [shouldRefresh]);
+
   const loadData = async () => {
     setLoading(true);
     try {
@@ -46,13 +77,13 @@ const Impedance = () => {
       setFilteredData(data);
     } catch (error) {
       console.error('Error fetching impedance data:', error);
-      if (error.response?.status === 403) {
-        toast.error('Bạn không có quyền truy cập vào trang này');
+      if (error.response?.status === 403 || error.response?.status === 401) {
+        handleTokenExpiration();
       } else {
         toast.error('Lỗi khi tải dữ liệu');
+        setImpedanceData([]);
+        setFilteredData([]);
       }
-      setImpedanceData([]);
-      setFilteredData([]);
     } finally {
       setLoading(false);
     }

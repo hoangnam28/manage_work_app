@@ -6,7 +6,7 @@ import axios from '../utils/axios';
 import MainLayout from '../components/layout/MainLayout';
 import { toast, Toaster } from 'sonner';
 
-const allowedCompanyIds = ['000107', '003512', '024287', '026965', '014077', '001748'];
+const allowedCompanyIds = ['000107', '003512', '024287', '026965', '014077', '001748', '030516'];
 
 const DecideBoardDetail = () => {
   const { id } = useParams();

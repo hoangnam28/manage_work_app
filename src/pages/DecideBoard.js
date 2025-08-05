@@ -62,14 +62,14 @@ const DecideBoard = () => {
         setIsViewer(onlyViewer);
 
         // Check company_id permission
-        const allowedCompanyIds = ['000107', '003512', '024287', '026965', '014077', '001748'];
+        const allowedCompanyIds = ['000107', '003512', '024287', '026965', '014077', '001748', '030516'];
         // Ưu tiên lấy từ userInfo nếu có, nếu không lấy từ response.data
         let companyId = userInfo?.company_id || response.data?.company_id;
         if (typeof companyId === 'number') companyId = companyId.toString().padStart(6, '0');
         if (typeof companyId === 'string') companyId = companyId.padStart(6, '0');
         setCanUpdateBo(allowedCompanyIds.includes(companyId));
         // Các user chỉ được sửa trường request (không được sửa trường khác)
-        const onlyRequestIds = ['000107', '003512', '024287', '026965', '014077', '001748'];
+        const onlyRequestIds = ['000107', '003512', '024287', '026965', '014077', '001748', '030516'];
         setOnlyRequestEdit(onlyRequestIds.includes(companyId));
       } catch (error) {
         setIsViewer(true);
@@ -284,13 +284,13 @@ const DecideBoard = () => {
       width: 120,
       render: (value) => {
         if (value === 1) {
-          return <Tag color="red">Đã xóa</Tag>;
+          return <Tag color="red">Đã hủy yêu cầu</Tag>;
         }
         return <Tag color="green">Hoạt động</Tag>;
       },
       filters: [
         { text: 'Hoạt động', value: 0 },
-        { text: 'Đã xóa', value: 1 }
+        { text: 'Đã hủy yêu cầu', value: 1 }
       ],
       onFilter: (value, record) => record.IS_DELETED === value
     },
@@ -341,9 +341,9 @@ const DecideBoard = () => {
             onConfirm={() => handleDelete(record)}
             okText="Có"
             cancelText="Không"
-            disabled={isViewer || !!record.CONFIRM_BY}
+            disabled={isViewer}
           >
-            <Button type="primary" danger icon={<DeleteOutlined />} disabled={isViewer || !!record.CONFIRM_BY} />
+            <Button type="primary" danger icon={<DeleteOutlined />} disabled={isViewer} />
           </Popconfirm>
         </Space>
       )
@@ -404,33 +404,33 @@ const DecideBoard = () => {
     setEditModalVisible(true);
   };
 
- const handleEditOk = async () => {
-  try {
-    const values = await editForm.validateFields();
-    const rowId = editingRecord.id !== undefined ? editingRecord.id : editingRecord.ID;
-    const size_normal = (editSizeNormalX && editSizeNormalY) ? `${editSizeNormalX} × ${editSizeNormalY}` : (editSizeNormalX || editSizeNormalY);
-    const size_big = (editSizeBigX && editSizeBigY) ? `${editSizeBigX} × ${editSizeBigY}` : (editSizeBigX || editSizeBigY);
+  const handleEditOk = async () => {
+    try {
+      const values = await editForm.validateFields();
+      const rowId = editingRecord.id !== undefined ? editingRecord.id : editingRecord.ID;
+      const size_normal = (editSizeNormalX && editSizeNormalY) ? `${editSizeNormalX} × ${editSizeNormalY}` : (editSizeNormalX || editSizeNormalY);
+      const size_big = (editSizeBigX && editSizeBigY) ? `${editSizeBigX} × ${editSizeBigY}` : (editSizeBigX || editSizeBigY);
 
-    // Chỉ gửi các trường cần thiết, KHÔNG gửi confirm_by
-    let updatePayload = {
-      type_board: (values.type_board || '').trim(),
-      size_normal: size_normal.trim(),
-      rate_normal: (values.rate_normal || '').trim(),
-      size_big: size_big.trim(),
-      rate_big: (values.rate_big || '').trim(),
-      note: (values.note || '').trim(),
-      request: values.request
-    };
+      // Chỉ gửi các trường cần thiết, KHÔNG gửi confirm_by
+      let updatePayload = {
+        type_board: (values.type_board || '').trim(),
+        size_normal: size_normal.trim(),
+        rate_normal: (values.rate_normal || '').trim(),
+        size_big: size_big.trim(),
+        rate_big: (values.rate_big || '').trim(),
+        note: (values.note || '').trim(),
+        request: values.request
+      };
 
-    await updateMaterialDecide(rowId, updatePayload);
-    toast.success('Cập nhật thành công!');
-    setEditModalVisible(false);
-    setEditingRecord(null);
-    fetchData();
-  } catch (err) {
-    toast.error('Lỗi cập nhật!');
-  }
-};
+      await updateMaterialDecide(rowId, updatePayload);
+      toast.success('Cập nhật thành công!');
+      setEditModalVisible(false);
+      setEditingRecord(null);
+      fetchData();
+    } catch (err) {
+      toast.error('Lỗi cập nhật!');
+    }
+  };
 
   const handleEditCancel = () => {
     setEditModalVisible(false);
@@ -440,11 +440,30 @@ const DecideBoard = () => {
   const handleDelete = async (record) => {
     const rowId = record.id !== undefined ? record.id : record.ID;
     try {
-      await deleteMaterialDecide(rowId);
-      toast.success('Xóa thành công!');
-      fetchData();
+      setData(prevData =>
+        prevData.map(item => {
+          if ((item.id !== undefined ? item.id : item.ID) === rowId) {
+            return { ...item, IS_DELETED: 1 };
+          }
+          return item;
+        })
+      );
+      const response = await deleteMaterialDecide(rowId);
+      toast.success(response?.message || 'Xóa thành công!');
+
     } catch (err) {
-      toast.error('Lỗi xóa!');
+      // Nếu lỗi, rollback UI
+      setData(prevData =>
+        prevData.map(item => {
+          if ((item.id !== undefined ? item.id : item.ID) === rowId) {
+            return { ...item, IS_DELETED: 0 };
+          }
+          return item;
+        })
+      );
+      console.error('Delete error:', err);
+      const errorMsg = err?.response?.data?.message || err?.message || 'Lỗi xóa!';
+      toast.error(errorMsg);
     }
   };
 
@@ -497,7 +516,7 @@ const DecideBoard = () => {
       <style>
         {`
           .row-deleted {
-            background-color: #f5f5f5 !important;
+            background-color: #c2c2c2ff !important;
             color: #999 !important;
           }
           .row-deleted td {
@@ -510,10 +529,10 @@ const DecideBoard = () => {
             opacity: 0.8;
           }
           .row-deleted .ant-table-cell {
-            background-color: #f5f5f5 !important;
+            background-color: #a3a2a2ff !important;
           }
           .row-deleted:hover .ant-table-cell {
-            background-color: #e8e8e8 !important;
+            background-color: #a3a2a2ff !important;
           }
         `}
       </style>
@@ -606,9 +625,9 @@ const DecideBoard = () => {
                           onConfirm={() => handleDelete(record)}
                           okText="Có"
                           cancelText="Không"
-                          disabled={isViewer || !!record.CONFIRM_BY}
+                          disabled={isViewer}
                         >
-                          <Button type="primary" danger icon={<DeleteOutlined />} disabled={isViewer || !!record.CONFIRM_BY} />
+                          <Button type="primary" danger icon={<DeleteOutlined />} disabled={isViewer} />
                         </Popconfirm>
                       </>
                     )}
@@ -920,14 +939,14 @@ const DecideBoard = () => {
                 </Form.Item>
               </div>
             </div>
-            
+
             {/* Yêu cầu sử dụng bo to - full width */}
             <Form.Item name="request" label="Yêu cầu sử dụng bo to" rules={[{ required: true, message: 'Vui lòng chọn yêu cầu sử dụng bo to' }]}
               style={{ maxWidth: 300 }}>
               <Input.Group compact>
                 <Form.Item name="request" noStyle>
-                  <select 
-                    style={{ width: '100%', height: 32 }} 
+                  <select
+                    style={{ width: '100%', height: 32 }}
                     disabled={!canEditRequest(editingRecord)}
                   >
                     <option value="TRUE">Có</option>
@@ -937,14 +956,14 @@ const DecideBoard = () => {
               </Input.Group>
               {!canEditRequest(editingRecord) && (
                 <div style={{ color: '#faad14', marginTop: 4, fontSize: 13 }}>
-                  {!canUpdateBo 
-                    ? 'Chỉ PC mới có quyền sửa trường này.' 
+                  {!canUpdateBo
+                    ? 'Chỉ PC mới có quyền sửa trường này.'
                     : 'Chỉ có thể sửa khi bản ghi đã được xác nhận bước đầu.'
                   }
                 </div>
               )}
             </Form.Item>
-            
+
             <Form.Item name="note" label="Note">
               <Input placeholder="Nhập ghi chú (không bắt buộc)" disabled={onlyRequestEdit} />
             </Form.Item>

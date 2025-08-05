@@ -139,6 +139,14 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       render: renderCell,
     },
     {
+      title: renderColumnTitle('Tổng hợp dữ liệu đo thực tế'),
+      dataIndex: 'IMP_137',
+      key: 'imp_137',
+      align: 'center',
+      fixed: 'left',
+      render: renderCell,
+    },
+    {
       title: renderColumnTitle('Mã hàng tham khảo'),
       dataIndex: 'IMP_3',
       key: 'imp_3',
