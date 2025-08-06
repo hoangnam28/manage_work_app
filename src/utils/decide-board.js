@@ -46,3 +46,11 @@ export const restoreMaterialDecide = async (id) => {
   });
   return response.data;
 };
+
+export const cancelRequestMaterialDecide = async (id) => {
+  const token = localStorage.getItem('accessToken');
+  const response = await axios.put(`/large-size/cancel-request/${id}`, {}, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};

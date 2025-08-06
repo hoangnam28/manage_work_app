@@ -9,9 +9,10 @@ import {
   ReloadOutlined,
   HistoryOutlined,
   UndoOutlined,
-  EyeOutlined
+  EyeOutlined,
+  CloseOutlined
 } from '@ant-design/icons';
-import { fetchMaterialDecideList, fetchMaterialDecideCustomerList, createMaterialDecide, updateMaterialDecide, deleteMaterialDecide, restoreMaterialDecide } from '../utils/decide-board';
+import { fetchMaterialDecideList, fetchMaterialDecideCustomerList, createMaterialDecide, updateMaterialDecide, deleteMaterialDecide, restoreMaterialDecide, cancelRequestMaterialDecide } from '../utils/decide-board';
 import { useNavigate } from 'react-router-dom';
 import LargeSizeHistoryModal from '../components/modal/LargeSizeHistoryModal';
 
@@ -279,7 +280,7 @@ const DecideBoard = () => {
     },
     {
       title: "Trạng thái bản ghi",
-      dataIndex: "IS_DELETED",
+      dataIndex: "IS_CANCELED",
       align: "center",
       width: 120,
       render: (value) => {
@@ -292,7 +293,7 @@ const DecideBoard = () => {
         { text: 'Hoạt động', value: 0 },
         { text: 'Đã hủy yêu cầu', value: 1 }
       ],
-      onFilter: (value, record) => record.IS_DELETED === value
+      onFilter: (value, record) => record.IS_CANCELED === value
     },
 
     {
@@ -310,7 +311,7 @@ const DecideBoard = () => {
         <Button
           type="default"
           icon={<HistoryOutlined />}
-          disabled={record.IS_DELETED === 1}
+          disabled={record.IS_CANCELED === 1}
           onClick={() => {
             setSelectedRecordForHistory(record);
             setHistoryModalVisible(true);
@@ -326,27 +327,69 @@ const DecideBoard = () => {
       key: "edit_action",
       align: "center",
       fixed: 'right',
-      render: (_, record) => (
-        <Space size="middle">
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            disabled={isViewer}
-            onClick={() => {
-              handleEdit(record);
-            }}
-          />
-          <Popconfirm
-            title="Bạn có chắc chắn muốn xóa mã hàng này?"
-            onConfirm={() => handleDelete(record)}
-            okText="Có"
-            cancelText="Không"
-            disabled={isViewer}
-          >
-            <Button type="primary" danger icon={<DeleteOutlined />} disabled={isViewer} />
-          </Popconfirm>
-        </Space>
-      )
+      render: (_, record) => {
+      const isDisabled = record.IS_DELETED === 1 || isViewer;
+        if (record.IS_CANCELED === 1) {
+          return (
+            <Space size="middle">
+              <Popconfirm
+                title="Bạn có chắc chắn muốn khôi phục mã hàng này?"
+                onConfirm={() => handleRestore(record)}
+                okText="Có"
+                cancelText="Không"
+                disabled={isViewer}
+              >
+                <Button
+                  type="primary"
+                  icon={<UndoOutlined />}
+                  disabled={isViewer}
+                  style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                >
+                  Khôi phục
+                </Button>
+              </Popconfirm>
+            </Space>
+          );
+        }
+
+        return (
+          <Space size="middle">
+            <Button
+              type="primary"
+              icon={<EditOutlined />}
+              disabled={isDisabled}
+              onClick={() => {
+                handleEdit(record);
+              }}
+            />
+            <Popconfirm
+              title="Bạn có chắc chắn muốn hủy yêu cầu này?"
+              onConfirm={() => handleCancelRequest(record)}
+              okText="Có"
+              cancelText="Không"
+            >
+              <Button type='primary' danger icon={<CloseOutlined />} />
+            </Popconfirm>
+            <Popconfirm
+              title={record.CONFIRM_BY ? "Không thể xóa bản ghi đã xác nhận" : "Bạn có chắc chắn muốn xóa mã hàng này?"}
+              onConfirm={() => handleDelete(record)}
+              okText="Có"
+              cancelText="Không"
+              disabled={isDisabled || record.CONFIRM_BY}
+            >
+              <Button 
+                type="primary" 
+                danger 
+                icon={<DeleteOutlined />} 
+                disabled={isDisabled || record.CONFIRM_BY}
+                title={record.CONFIRM_BY ? "Không thể xóa bản ghi đã xác nhận" : ""}
+              />
+            </Popconfirm>
+
+          </Space>
+
+        );
+      }
     }
   ];
 
@@ -362,6 +405,7 @@ const DecideBoard = () => {
       'Yêu cầu sử dụng bo to': row.REQUEST === 'TRUE' ? 'Có' : row.REQUEST === 'FALSE' ? 'Không' : '',
       'Trạng thái': row.CONFIRM_BY ? 'Đã xác nhận' : 'Chưa xác nhận',
       'Người xác nhận': row.CONFIRM_BY,
+      'Trạng thái bản ghi': row.IS_DELETED === 1 ? 'Đã hủy yêu cầu' : 'Hoạt động',
       'Note': row.NOTE
     }));
     import('xlsx').then(XLSX => {
@@ -437,26 +481,53 @@ const DecideBoard = () => {
     setEditingRecord(null);
   };
 
-  const handleDelete = async (record) => {
+ const handleDelete = async (record) => {
+  const rowId = record.id !== undefined ? record.id : record.ID;
+  
+  const originalRecord = { ...record };
+  
+  try {
+    // ✅ Loại bỏ record khỏi danh sách ngay lập tức (Optimistic update)
+    setData(prevData => 
+      prevData.filter(item => 
+        (item.id !== undefined ? item.id : item.ID) !== rowId
+      )
+    );
+    const response = await deleteMaterialDecide(rowId);
+    toast.success(response?.message || 'Xóa thành công!');
+  } catch (err) {
+    setData(prevData => {
+      const newData = [...prevData];
+      newData.unshift(originalRecord); 
+      
+      return newData;
+    });
+    
+    console.error('Delete error:', err);
+    const errorMsg = err?.response?.data?.message || err?.message || 'Lỗi xóa!';
+    toast.error(errorMsg);
+  }
+};
+  const handleCancelRequest = async (record) => {
     const rowId = record.id !== undefined ? record.id : record.ID;
     try {
       setData(prevData =>
         prevData.map(item => {
           if ((item.id !== undefined ? item.id : item.ID) === rowId) {
-            return { ...item, IS_DELETED: 1 };
+            return { ...item, IS_CANCELED: 1 };
           }
           return item;
         })
       );
-      const response = await deleteMaterialDecide(rowId);
-      toast.success(response?.message || 'Xóa thành công!');
+      const response = await cancelRequestMaterialDecide(rowId);
+      toast.success(response?.message || 'Hủy yêu cầu thành công!');
 
     } catch (err) {
       // Nếu lỗi, rollback UI
       setData(prevData =>
         prevData.map(item => {
           if ((item.id !== undefined ? item.id : item.ID) === rowId) {
-            return { ...item, IS_DELETED: 0 };
+            return { ...item, IS_CANCELED: 0 };
           }
           return item;
         })
@@ -514,28 +585,28 @@ const DecideBoard = () => {
     <MainLayout>
       <Toaster position="top-right" richColors />
       <style>
-        {`
-          .row-deleted {
+       {`
+          .row-canceled {
             background-color: #c2c2c2ff !important;
             color: #999 !important;
           }
-          .row-deleted td {
+          .row-canceled td {
             color: #999 !important;
           }
-          .row-deleted .ant-btn {
+          .row-canceled .ant-btn {
             opacity: 0.6;
           }
-          .row-deleted .ant-tag {
+          .row-canceled .ant-tag {
             opacity: 0.8;
           }
-          .row-deleted .ant-table-cell {
-            background-color: #a3a2a2ff !important;
+          .row-canceled .ant-table-cell {
+            background-color: #e9e8e8ff !important;
           }
-          .row-deleted:hover .ant-table-cell {
-            background-color: #a3a2a2ff !important;
+          .row-canceled:hover .ant-table-cell {
+            background-color: #e9e8e8ff!important;
           }
         `}
-      </style>
+        </style>
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <h1>Large Size Board</h1>
@@ -584,59 +655,7 @@ const DecideBoard = () => {
         )}
         <Table
           ref={tableRef}
-          columns={columns.map(col => {
-            // Disable action buttons nếu là viewer (KHÔNG disable khi đã xác nhận)
-            if (col.key === 'edit_action') {
-              return {
-                ...col,
-                render: (text, record) => (
-                  <Space size="middle">
-                    {record.IS_DELETED === 1 ? (
-                      // Hiển thị nút khôi phục cho bản ghi đã xóa
-                      <Popconfirm
-                        title="Bạn có chắc chắn muốn khôi phục mã hàng này?"
-                        onConfirm={() => handleRestore(record)}
-                        okText="Có"
-                        cancelText="Không"
-                        disabled={isViewer}
-                      >
-                        <Button
-                          type="primary"
-                          icon={<UndoOutlined />}
-                          disabled={isViewer}
-                          style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-                        >
-                          Khôi phục
-                        </Button>
-                      </Popconfirm>
-                    ) : (
-                      // Hiển thị nút chỉnh sửa và xóa cho bản ghi hoạt động
-                      <>
-                        <Button
-                          type="primary"
-                          icon={<EditOutlined />}
-                          disabled={isViewer}
-                          onClick={() => {
-                            handleEdit(record);
-                          }}
-                        />
-                        <Popconfirm
-                          title="Bạn có chắc chắn muốn xóa mã hàng này?"
-                          onConfirm={() => handleDelete(record)}
-                          okText="Có"
-                          cancelText="Không"
-                          disabled={isViewer}
-                        >
-                          <Button type="primary" danger icon={<DeleteOutlined />} disabled={isViewer} />
-                        </Popconfirm>
-                      </>
-                    )}
-                  </Space>
-                )
-              };
-            }
-            return col;
-          })}
+          columns={columns.map(col => col)}
           dataSource={data}
           loading={loading}
           rowKey="id"
@@ -648,9 +667,26 @@ const DecideBoard = () => {
             showTotal: (total) => `Tổng số ${total} bản ghi`
           }}
           rowClassName={(record) => {
-            if (record.IS_DELETED === 1) return 'row-deleted';
-            if (record.STATUS === 'Pending') return 'row-pending';
-            if (record.STATUS === 'Cancel') return 'row-cancel';
+            // Debug log để kiểm tra data
+            console.log('Record for rowClassName:', {
+              id: record.id || record.ID,
+              IS_CANCELED: record.IS_CANCELED,
+              IS_DELETED: record.IS_DELETED,
+              typeofCanceled: typeof record.IS_CANCELED,
+              typeofDeleted: typeof record.IS_DELETED
+            });
+
+            // Kiểm tra cả IS_CANCELED và IS_DELETED với nhiều kiểu dữ liệu
+            if (record.IS_CANCELED === 1 || record.IS_CANCELED === '1' || record.IS_CANCELED === true) {
+              console.log('Applying row-canceled class');
+              return 'row-canceled';
+            }
+            if (record.STATUS === 'Pending') {
+              return 'row-pending';
+            }
+            if (record.STATUS === 'Cancel') {
+              return 'row-cancel';
+            }
             return '';
           }}
           onChange={(pagination, filters) => {

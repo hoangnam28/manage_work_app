@@ -10,6 +10,7 @@ import { EyeOutlined } from "@ant-design/icons";
 import { toast, Toaster } from 'sonner';
 import * as XLSX from 'xlsx';
 import './Impedance.css';
+import { useCallback } from 'react';
 
 const { Title } = Typography;
 
@@ -43,6 +44,29 @@ const Impedance = () => {
     }, 2000);
   };
 
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await fetchImpedanceData();
+      // Đảm bảo dữ liệu là mảng
+      const data = Array.isArray(response) ? response :
+        (response && Array.isArray(response.data) ? response.data : []);
+      setImpedanceData(data);
+      setFilteredData(data);
+    } catch (error) {
+      console.error('Error fetching impedance data:', error);
+      if (error.response?.status === 403 || error.response?.status === 401) {
+        handleTokenExpiration();
+      } else {
+        toast.error('Lỗi khi tải dữ liệu');
+        setImpedanceData([]);
+        setFilteredData([]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     const token = localStorage.getItem('accessToken');
     if (token) {
@@ -64,31 +88,7 @@ const Impedance = () => {
       }
     }
     loadData();
-  }, [shouldRefresh]);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const response = await fetchImpedanceData();
-      // Đảm bảo dữ liệu là mảng
-      const data = Array.isArray(response) ? response :
-        (response && Array.isArray(response.data) ? response.data : []);
-      setImpedanceData(data);
-      setFilteredData(data);
-    } catch (error) {
-      console.error('Error fetching impedance data:', error);
-      if (error.response?.status === 403 || error.response?.status === 401) {
-        handleTokenExpiration();
-      } else {
-        toast.error('Lỗi khi tải dữ liệu');
-        setImpedanceData([]);
-        setFilteredData([]);
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  }, [shouldRefresh, loadData]);
   const handleCreate = async (values) => {
     try {
       if (!values.imp_1 || !values.imp_2 || !values.imp_3 || !values.imp_4) {
