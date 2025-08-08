@@ -2,15 +2,23 @@ import React, { useEffect } from 'react';
 import { Modal, Form, Input, DatePicker, Select, InputNumber, Tabs, Alert } from 'antd';
 import moment from 'moment';
 import { toast } from 'sonner';
+import { CopyOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
+const MaterialPPModal = ({
+  open,
+  onCancel,
+  onSubmit,
+  editingRecord,
+  cloneRecord = null,
+  mode = 'create' }) => {
+
   const [form] = Form.useForm();
   useEffect(() => {
     if (open) {
-      if (editingRecord) {
+      if (mode === 'edit' && editingRecord) {
         const formattedRecord = Object.keys(editingRecord).reduce((acc, key) => {
           if (key.toUpperCase() === 'ID') {
             acc.id = editingRecord[key];
@@ -23,15 +31,34 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
           request_date: formattedRecord.request_date ? moment(formattedRecord.request_date) : null,
           complete_date: formattedRecord.complete_date ? moment(formattedRecord.complete_date) : null,
         });
+      } else if (mode === 'clone' && cloneRecord) {
+        const formattedClone = Object.keys(cloneRecord).reduce((acc, key) => {
+          if (key.toUpperCase() === 'ID') {
+            acc.id = cloneRecord[key];
+          }
+          acc[key.toLowerCase()] = cloneRecord[key];
+          return acc;
+        }, {});
+        form.setFieldsValue({
+          ...formattedClone,
+          name: '',
+          request_date: moment(), 
+          handler: '',
+          complete_date: formattedClone.complete_date ? moment(formattedClone.complete_date) : null,
+          status: 'Pending',
+        });
       } else {
         form.resetFields();
         form.setFieldsValue({
           status: 'Pending',
-          is_hf: 'FALSE'
+          is_hf: 'FALSE',
+          request_date: moment(),
         });
       }
     }
-  }, [open, editingRecord, form]); const handleSubmit = async () => {
+  }, [open, editingRecord, cloneRecord, mode, form]);
+
+  const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       if (values.request_date) {
@@ -40,7 +67,7 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
       if (values.complete_date) {
         values.complete_date = values.complete_date.toDate().toISOString();
       }
-      if (editingRecord) {
+      if (mode === 'edit' && editingRecord) {
         const recordId = editingRecord.ID || editingRecord.id;
         if (!recordId) {
           throw new Error('Không tìm thấy ID bản ghi');
@@ -48,23 +75,41 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
         values.id = recordId;
       }
 
-      await onSubmit(values);
+      await onSubmit(values, mode);
 
-      if (editingRecord) {
+      if (mode === 'edit') {
         toast.success('Cập nhật thành công!');
+      } else if (mode === 'clone') {
+        toast.success('Tạo bản sao thành công!');
       } else {
         toast.success('Thêm mới thành công!');
-        form.resetFields();
       }
+      form.resetFields();
+      onCancel();
 
     } catch (error) {
       console.error('Validation failed:', error);
       toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu'));
     }
   };
+  const getModalTitle = () => {
+    switch (mode) {
+      case 'edit':
+        return 'Sửa Material PP';
+      case 'clone':
+        return 'Tạo bản sao Material PP';
+      default:
+        return 'Thêm Material PP';
+    }
+  };
   return (
     <Modal
-      title={editingRecord ? 'Sửa Material PP' : 'Thêm Material PP'}
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {mode === 'clone' && <CopyOutlined />}
+          {getModalTitle()}
+        </div>
+      }
       open={open}
       onOk={handleSubmit}
       onCancel={onCancel}
@@ -76,6 +121,7 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
         height: 'calc(100vh - 200px)',
         overflow: 'auto'
       }}
+      okText={mode === 'edit' ? 'Cập nhật' : (mode === 'clone' ? 'Tạo bản sao' : 'Thêm mới')}
     >
       <Form
         form={form}
@@ -86,13 +132,17 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
         }}
       >
 
-        <Tabs defaultActiveKey="1">
-          {editingRecord && (
+        <Tabs defaultActiveKey={mode === 'edit' ? "1" : "2"}>
+          {(mode === 'edit' || mode === 'clone') && (
             <TabPane tab="1. Thông tin yêu cầu" key="1">
               <Alert
                 message="Thông tin yêu cầu"
-                description="Thông tin người yêu cầu và trạng thái xử lý"
-                type="info"
+                description={
+                  mode === 'clone'
+                    ? "Thông tin người yêu cầu và trạng thái xử lý (đã được reset cho bản ghi mới)"
+                    : "Thông tin người yêu cầu và trạng thái xử lý"
+                }
+                type={mode === 'clone' ? "warning" : "info"}
                 showIcon
                 style={{ marginBottom: 16 }}
               />
@@ -101,8 +151,9 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
                   name="name"
                   label="Người yêu cầu"
                   rules={[{ required: true, message: 'Vui lòng nhập người yêu cầu' }]}
+
                 >
-                  <Input />
+                  <Input placeholder={mode === 'clone' ? "Nhập người yêu cầu mới" : ""} />
                 </Form.Item>
                 <Form.Item
                   name="request_date"
@@ -115,7 +166,7 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
                   name="handler"
                   label="Người xử lý"
                 >
-                  <Input />
+                  <Input placeholder={mode === 'clone' ? "Nhập người xử lý mới" : ""} />
                 </Form.Item>
                 <Form.Item
                   name="status"
@@ -141,8 +192,12 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
           <TabPane tab="2. Thông số kỹ thuật" key="2">
             <Alert
               message="Thông số kỹ thuật"
-              description="Các thông số kỹ thuật cơ bản của vật liệu"
-              type="info"
+              description={
+                mode === 'clone'
+                  ? "Các thông số kỹ thuật cơ bản của vật liệu (đã sao chép từ bản ghi gốc, bạn có thể chỉnh sửa)"
+                  : "Các thông số kỹ thuật cơ bản của vật liệu"
+              }
+              type={mode === 'clone' ? "success" : "info"}
               showIcon
               style={{ marginBottom: 16 }}
             />
@@ -188,7 +243,7 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
                 name="pp_type"
                 label="PP Type"
               >
-                <Input style={{ width: '100%' }}/>
+                <Input style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="tg_min"
@@ -237,12 +292,15 @@ const MaterialPPModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               </Form.Item>
             </div>
           </TabPane>
-
-          <TabPane tab="3. Thông số DK/DF" key="3">
+ <TabPane tab="3. Thông số DK/DF" key="3">
             <Alert
               message="Thông số DK/DF theo tần số"
-              description="Các giá trị DK/DF ở các mức tần số khác nhau"
-              type="info"
+              description={
+                mode === 'clone'
+                  ? "Các giá trị DK/DF ở các mức tần số khác nhau (đã sao chép từ bản ghi gốc)"
+                  : "Các giá trị DK/DF ở các mức tần số khác nhau"
+              }
+              type={mode === 'clone' ? "success" : "info"}
               showIcon
               style={{ marginBottom: 16 }}
             />

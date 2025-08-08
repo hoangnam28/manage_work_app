@@ -1,16 +1,24 @@
 import React, { useEffect } from 'react';
 import { Modal, Form, Input, DatePicker, Select, InputNumber, Tabs, Alert } from 'antd';
 import moment from 'moment';
-import { toast} from 'sonner';
+import { toast } from 'sonner';
+import { CopyOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
 
-const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
+const MaterialCoreModal = ({
+  open,
+  onCancel,
+  onSubmit,
+  editingRecord,
+  cloneRecord = null,
+  mode = 'create' }) => {
   const [form] = Form.useForm();
-  useEffect(() => {    
+
+  useEffect(() => {
     if (open) {
-      if (editingRecord) {
+      if (mode === 'edit' && editingRecord) {
         const formattedRecord = Object.keys(editingRecord).reduce((acc, key) => {
           if (key.toUpperCase() === 'ID') {
             acc.id = editingRecord[key];
@@ -21,52 +29,106 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
         form.setFieldsValue({
           ...formattedRecord,
           request_date: formattedRecord.request_date ? moment(formattedRecord.request_date) : null,
-          complete_date: formattedRecord.complete_date ? moment(formattedRecord.complete_date) : null,         
+          complete_date: formattedRecord.complete_date ? moment(formattedRecord.complete_date) : null,
           top_foil_cu_weight: formattedRecord.top_foil_cu_weight || null
         });
+      } else if (mode === 'clone' && cloneRecord) {
+        const formattedRecord = Object.keys(cloneRecord).reduce((acc, key) => {
+          if (key.toUpperCase() === 'ID') {
+            return acc; // Skip ID field for clone
+          }
+          acc[key.toLowerCase()] = cloneRecord[key];
+          return acc;
+        }, {});
+        form.setFieldsValue({
+          ...formattedRecord,
+          requester_name: '', // Clear requester name để user nhập mới
+          request_date: moment(), // Set ngày hiện tại
+          handler: '', // Clear handler
+          status: 'Pending', // Reset về Pending
+          complete_date: null, // Clear complete date
+          top_foil_cu_weight: formattedRecord.top_foil_cu_weight || null,
+          bot_foil_cu_weight: formattedRecord.bot_foil_cu_weight || null,
+        });
       } else {
+        // Mode create mới hoàn toàn
         form.resetFields();
         form.setFieldsValue({
           status: 'Pending',
-          is_hf: 'FALSE'
+          is_hf: 'FALSE',
+          request_date: moment() // Set ngày hiện tại cho bản ghi mới
         });
       }
     }
-  }, [open, editingRecord, form]);const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      if (values.request_date) {
-        values.request_date = values.request_date.toDate().toISOString();
-      }
-      if (values.complete_date) {
-        values.complete_date = values.complete_date.toDate().toISOString();
-      }      
-      if (editingRecord) {
-        const recordId = editingRecord.ID || editingRecord.id;
-        if (!recordId) {
-          throw new Error('Không tìm thấy ID bản ghi');
-        }
-        values.id = recordId;
-      }
+  }, [open, editingRecord, cloneRecord, mode, form]);
+const handleSubmit = async () => {
+  try {
+    // Validate form trước
+    const values = await form.validateFields();
 
-      await onSubmit(values);
-      
-      if (editingRecord) {
-        toast.success('Cập nhật thành công!');
-      } else {
-        toast.success('Thêm mới thành công!');
-        form.resetFields(); 
-      }
-      onCancel();
+    // Format dates
+    if (values.request_date) {
+      values.request_date = values.request_date.toDate().toISOString();
+    }
+    if (values.complete_date) {
+      values.complete_date = values.complete_date.toDate().toISOString();
+    }
 
-    } catch (error) {
-      console.error('Validation failed:', error);
-      toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu'));
+    // Chỉ set ID khi đang edit
+    if (mode === 'edit' && editingRecord) {
+      const recordId = editingRecord.ID || editingRecord.id;
+      if (!recordId) {
+        throw new Error('Không tìm thấy ID bản ghi');
+      }
+      values.id = recordId;
+    }
+
+    // Thực hiện submit và đợi kết quả
+    const result = await onSubmit(values, mode);
+    
+    // Kiểm tra kết quả trả về
+    if (result && result.success === false) {
+      throw new Error(result.message || 'Có lỗi xảy ra');
+    }
+
+    // Hiển thị toast success với message từ result hoặc default
+    const successMessage = result?.message || (
+      mode === 'edit' ? 'Cập nhật thành công!' : 
+      mode === 'clone' ? 'Tạo bản sao thành công!' : 
+      'Thêm mới thành công!'
+    );
+    
+    toast.success(successMessage);
+
+    // Reset form và đóng modal
+    form.resetFields();
+    if (onCancel) onCancel();
+
+  } catch (error) {
+    console.error('Submit failed:', error);
+    toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu'));
+  }
+};
+
+  // Generate modal title based on mode
+  const getModalTitle = () => {
+    switch (mode) {
+      case 'edit':
+        return 'Sửa Material Core';
+      case 'clone':
+        return 'Tạo bản sao Material Core';
+      default:
+        return 'Thêm Material Core';
     }
   };
   return (
     <Modal
-      title={editingRecord ? 'Sửa Material Core' : 'Thêm Material Core'}
+      title={
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {mode === 'clone' && <CopyOutlined />}
+          {getModalTitle()}
+        </div>
+      }
       open={open}
       onOk={handleSubmit}
       onCancel={onCancel}
@@ -78,6 +140,7 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
         height: 'calc(100vh - 200px)',
         overflow: 'auto'
       }}
+      okText={mode === 'edit' ? 'Cập nhật' : (mode === 'clone' ? 'Tạo bản sao' : 'Thêm mới')}
     >
       <Form
         form={form}
@@ -87,64 +150,71 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
           is_hf: 'FALSE'
         }}
       >
-        
-          <Tabs defaultActiveKey="1">
-            { editingRecord && (
-          <TabPane tab="1. Thông tin yêu cầu" key="1">
-            <Alert
-              message="Thông tin yêu cầu"
-              description="Thông tin người yêu cầu và trạng thái xử lý"
-              type="info"
-              showIcon
-              style={{ marginBottom: 16 }}
-            />
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
-              <Form.Item
-                name="requester_name"
-                label="Người yêu cầu"
-                rules={[{ required: true, message: 'Vui lòng nhập người yêu cầu' }]}
-              >
-                <Input />
-              </Form.Item>
-              <Form.Item
-                name="request_date"
-                label="Ngày yêu cầu"
-                rules={[{ required: true, message: 'Vui lòng chọn ngày yêu cầu' }]}
-              >
-                <DatePicker style={{ width: '100%' }} />
-              </Form.Item>
-              <Form.Item
-                name="handler"
-                label="Người xử lý"
-              >
-                <Input />
-              </Form.Item>
-              <Form.Item
-                name="status"
-                label="Trạng thái"
-                rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
-              >
-                <Select>
-                  <Option value="Pending">Pending</Option>
-                  <Option value="Approve">Approve</Option>
-                  <Option value="Cancel">Cancel</Option>
-                </Select>
-              </Form.Item>
-              <Form.Item
-                name="complete_date"
-                label="Ngày hoàn thành"
-              >
-                <DatePicker style={{ width: '100%' }} />
-              </Form.Item>
-            </div>
-          </TabPane>
-          )},
-       
+        <Tabs defaultActiveKey={mode === 'edit' ? "1" : "2"}>
+          {/* Tab 1: Thông tin yêu cầu - chỉ hiện khi edit hoặc clone */}
+          {(mode === 'edit' || mode === 'clone') && (
+            <TabPane tab="1. Thông tin yêu cầu" key="1">
+              <Alert
+                message="Thông tin yêu cầu"
+                description={
+                  mode === 'clone'
+                    ? "Thông tin người yêu cầu và trạng thái xử lý (đã được reset cho bản ghi mới)"
+                    : "Thông tin người yêu cầu và trạng thái xử lý"
+                }
+                type={mode === 'clone' ? "warning" : "info"}
+                showIcon
+                style={{ marginBottom: 16 }}
+              />
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+                <Form.Item
+                  name="requester_name"
+                  label="Người yêu cầu"
+                  rules={[{ required: true, message: 'Vui lòng nhập người yêu cầu' }]}
+                >
+                  <Input placeholder={mode === 'clone' ? "Nhập người yêu cầu mới" : ""} />
+                </Form.Item>
+                <Form.Item
+                  name="request_date"
+                  label="Ngày yêu cầu"
+                  rules={[{ required: true, message: 'Vui lòng chọn ngày yêu cầu' }]}
+                >
+                  <DatePicker style={{ width: '100%' }} />
+                </Form.Item>
+                <Form.Item
+                  name="handler"
+                  label="Người xử lý"
+                >
+                  <Input placeholder={mode === 'clone' ? "Nhập người xử lý mới" : ""} />
+                </Form.Item>
+                <Form.Item
+                  name="status"
+                  label="Trạng thái"
+                  rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
+                >
+                  <Select>
+                    <Option value="Pending">Pending</Option>
+                    <Option value="Approve">Approve</Option>
+                    <Option value="Cancel">Cancel</Option>
+                  </Select>
+                </Form.Item>
+                <Form.Item
+                  name="complete_date"
+                  label="Ngày hoàn thành"
+                >
+                  <DatePicker style={{ width: '100%' }} />
+                </Form.Item>
+              </div>
+            </TabPane>
+          )}
           <TabPane tab="2. Thông số kỹ thuật" key="2">
             <Alert
               message="Thông số kỹ thuật"
-              description="Các thông số kỹ thuật cơ bản của vật liệu"
-              type="info"
+              description={
+                mode === 'clone'
+                  ? "Các thông số kỹ thuật cơ bản của vật liệu (đã sao chép từ bản ghi gốc, bạn có thể chỉnh sửa)"
+                  : "Các thông số kỹ thuật cơ bản của vật liệu"
+              }
+              type={mode === 'clone' ? "success" : "info"}
               showIcon
               style={{ marginBottom: 16 }}
             />
@@ -152,44 +222,43 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               <Form.Item
                 name="vendor"
                 label="Vendor"
-                rules={[{required: true, message:"Vui lòng nhập Vendor"}]}
-                
+                rules={[{ required: true, message: "Vui lòng nhập Vendor" }]}
               >
                 <Input
-                placeholder={ "Nhập một vendor ví dụ: Noya" }/>
+                  placeholder={"Nhập một vendor ví dụ: Noya"} />
               </Form.Item>
               <Form.Item
                 name="family"
                 label="Family"
-                rules={[{required: true, message:"Vui lòng nhập FAMILY"}]}
-              > 
+                rules={[{ required: true, message: "Vui lòng nhập FAMILY" }]}
+              >
                 <Input />
               </Form.Item>
               <Form.Item
                 name="prepreg_count"
                 label="PREPREG Count"
-                rules={[{required: true, message:"Vui lòng nhập PREPREG COUNT"}]}
+                rules={[{ required: true, message: "Vui lòng nhập PREPREG COUNT" }]}
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="nominal_thickness"
                 label="Nominal Thickness"
-                rules={[{required: true, message:"Vui lòng nhập NOMINAL THICKNESS"}]}
+                rules={[{ required: true, message: "Vui lòng nhập NOMINAL THICKNESS" }]}
               >
                 <InputNumber style={{ width: '100%' }} step={0.001} />
               </Form.Item>
               <Form.Item
                 name="spec_thickness"
                 label="Spec Thickness"
-                rules={[{required: true, message:"Vui lòng nhập SPEC THICKNESS"}]}
+                rules={[{ required: true, message: "Vui lòng nhập SPEC THICKNESS" }]}
               >
                 <InputNumber style={{ width: '100%' }} step={0.001} />
               </Form.Item>
               <Form.Item
                 name="preference_class"
                 label="Preference Class"
-                rules={[{required: true, message:"Vui lòng nhập PREFERENCE CLASS"}]}
+                rules={[{ required: true, message: "Vui lòng nhập PREFERENCE CLASS" }]}
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
@@ -202,22 +271,25 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               <Form.Item
                 name="top_foil_cu_weight"
                 label="Top Foil Cu Weight"
-                rules={[{ required: true, message: editingRecord ? 'Vui lòng chọn một giá trị' : 'Vui lòng chọn ít nhất một giá trị' },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      const bot = getFieldValue('bot_foil_cu_weight');
-                      if (!value || !bot) return Promise.resolve();
-                      if (Array.isArray(value) && Array.isArray(bot) && value.length !== bot.length) {
-                        return Promise.reject(new Error('Số lượng giá trị Top/Bot Foil Cu Weight phải bằng nhau'));
-                      }
-                      return Promise.resolve();
+                rules={[{
+                  required: true,
+                  message: mode === 'edit' ? 'Vui lòng chọn một giá trị' : 'Vui lòng chọn ít nhất một giá trị'
+                },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    const bot = getFieldValue('bot_foil_cu_weight');
+                    if (!value || !bot) return Promise.resolve();
+                    if (Array.isArray(value) && Array.isArray(bot) && value.length !== bot.length) {
+                      return Promise.reject(new Error('Số lượng giá trị Top/Bot Foil Cu Weight phải bằng nhau'));
                     }
-                  })
+                    return Promise.resolve();
+                  }
+                })
                 ]}
               >
                 <Select
-                  mode={editingRecord ? undefined : "multiple"}
-                  placeholder={editingRecord ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị"}
+                  mode={mode === 'edit' ? undefined : "multiple"}
+                  placeholder={mode === 'edit' ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị"}
                 >
                   <Option value="L">L</Option>
                   <Option value="H">H</Option>
@@ -228,22 +300,25 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               <Form.Item
                 name="bot_foil_cu_weight"
                 label="Bottom Foil Cu Weight"
-                rules={[{ required: true, message: editingRecord ? 'Vui lòng chọn một giá trị' : 'Vui lòng chọn ít nhất một giá trị' },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      const top = getFieldValue('top_foil_cu_weight');
-                      if (!value || !top) return Promise.resolve();
-                      if (Array.isArray(value) && Array.isArray(top) && value.length !== top.length) {
-                        return Promise.reject(new Error('Số lượng giá trị Top/Bot Foil Cu Weight phải bằng nhau'));
-                      }
-                      return Promise.resolve();
+                rules={[{
+                  required: true,
+                  message: mode === 'edit' ? 'Vui lòng chọn một giá trị' : 'Vui lòng chọn ít nhất một giá trị'
+                },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    const top = getFieldValue('top_foil_cu_weight');
+                    if (!value || !top) return Promise.resolve();
+                    if (Array.isArray(value) && Array.isArray(top) && value.length !== top.length) {
+                      return Promise.reject(new Error('Số lượng giá trị Top/Bot Foil Cu Weight phải bằng nhau'));
                     }
-                  })
+                    return Promise.resolve();
+                  }
+                })
                 ]}
               >
                 <Select
-                  mode={editingRecord ? undefined : "multiple"}
-                  placeholder={editingRecord ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị"}
+                  mode={mode === 'edit' ? undefined : "multiple"}
+                  placeholder={mode === 'edit' ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị"}
                 >
                   <Option value="L">L</Option>
                   <Option value="H">H</Option>
@@ -254,21 +329,21 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
               <Form.Item
                 name="tg_min"
                 label="Tg Min"
-                rules={[{required: true, message:"Vui lòng nhập TG_MIN"}]}
+                rules={[{ required: true, message: "Vui lòng nhập TG_MIN" }]}
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="tg_max"
                 label="Tg Max"
-                rules={[{required: true, message:"Vui lòng nhập TG_MAX"}]}
+                rules={[{ required: true, message: "Vui lòng nhập TG_MAX" }]}
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="center_glass"
                 label="Center Glass"
-                rules={[{required: true, message:"Vui lòng nhập CENTER_GLASS"}]}
+                rules={[{ required: true, message: "Vui lòng nhập CENTER_GLASS" }]}
               >
                 <Input />
               </Form.Item>
@@ -311,8 +386,12 @@ const MaterialCoreModal = ({ open, onCancel, onSubmit, editingRecord }) => {
           <TabPane tab="3. Thông số DK/DF" key="3">
             <Alert
               message="Thông số DK/DF theo tần số"
-              description="Các giá trị DK/DF ở các mức tần số khác nhau"
-              type="info"
+              description={
+                mode === 'clone'
+                  ? "Các giá trị DK/DF ở các mức tần số khác nhau (đã sao chép từ bản ghi gốc)"
+                  : "Các giá trị DK/DF ở các mức tần số khác nhau"
+              }
+              type={mode === 'clone' ? "success" : "info"}
               showIcon
               style={{ marginBottom: 16 }}
             />

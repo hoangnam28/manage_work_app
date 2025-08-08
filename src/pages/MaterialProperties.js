@@ -6,7 +6,8 @@ import {
   DeleteOutlined,
   PlusOutlined,
   SearchOutlined,
-  HistoryOutlined
+  HistoryOutlined,
+  CopyOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -35,6 +36,8 @@ const MaterialProperties = () => {
   const [historyData, setHistoryData] = useState([]);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [importReviewModalVisible, setImportReviewModalVisible] = useState(false);
+  const [cloneRecord, setCloneRecord] = useState(null);
+  const [modalMode, setModalMode] = useState('create');
 
   const fetchData = async () => {
     setLoading(true);
@@ -52,7 +55,7 @@ const MaterialProperties = () => {
   useEffect(() => {
     fetchData();
   }, []);
-  const handleCreate = async (values) => {
+  const handleCreate = async (values, mode = 'create') => {
     try {
       let requesterName = 'Unknown';
       try {
@@ -80,7 +83,8 @@ const MaterialProperties = () => {
           status: 'Pending',
         });
       }
-
+      setCloneRecord(null); // Reset clone record
+      setModalMode('create'); // Reset mode
       setModalVisible(false);
       fetchData();
     } catch (error) {
@@ -130,108 +134,115 @@ const MaterialProperties = () => {
     }
   };
   const handleExport = async () => {
-      try {
-        const response = await exportMaterialPp(data);
-        const url = window.URL.createObjectURL(new Blob([response.data]));
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', 'MaterialCoreExport.xlsm');
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      } catch (error) {
-        toast.error('Lỗi khi xuất file');
-      }
-    };
+    try {
+      const response = await exportMaterialPp(data);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'MaterialCoreExport.xlsm');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      toast.error('Lỗi khi xuất file');
+    }
+  };
 
-const getColumnSearchProps = dataIndex => ({
-  filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
-    <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
-      <Input
-        ref={searchInput}
-        placeholder={`Tìm kiếm ${dataIndex}`}
-        value={selectedKeys[0]}
-        onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-        onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
-        style={{ marginBottom: 8, display: 'block' }}
-      />
-      <Space>
-        <Button
-          type="primary"
-          onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
-          icon={<SearchOutlined />}
-          size="small"
-          style={{ width: 90 }}
-        >
-          Tìm kiếm
-        </Button>
-        <Button
-          onClick={() => clearFilters && handleReset(clearFilters)}
-          size="small"
-          style={{ width: 90 }}
-        >
-          Reset
-        </Button>
-        <Button
-          type="link"
-          size="small"
-          onClick={() => {
-            close();
-          }}
-        >
-          Đóng
-        </Button>
-      </Space>
-    </div>
-  ),
-  filterIcon: (filtered) => (
-    <SearchOutlined
-      style={{ color: filtered ? '#1890ff' : undefined }}
-    />
-  ),
-  onFilter: (value, record) => {
-    // Fix: Handle null/undefined values safely
-    const fieldValue = record[dataIndex];
-    if (fieldValue === null || fieldValue === undefined) {
-      return false; // or return true if you want to include null values in search
-    }
-    return fieldValue
-      .toString()
-      .toLowerCase()
-      .includes(value.toLowerCase());
-  },
-  onFilterDropdownOpenChange: (visible) => {
-    if (visible) {
-      setTimeout(() => searchInput.current?.select(), 100);
-    }
-  },
-  render: (text) =>
-    searchedColumn === dataIndex ? (
-      <Highlighter
-        highlightStyle={{
-          backgroundColor: '#ffc069',
-          padding: 0,
-        }}
-        searchWords={[searchText]}
-        autoEscape
-        textToHighlight={text ? text.toString() : ''}
-      />
-    ) : (
-      text
+  const handleClone = (record) => {
+    setModalMode('clone');
+    setCloneRecord(record);
+    setEditingRecord(null);
+    setModalVisible(true);
+  };
+
+  const getColumnSearchProps = dataIndex => ({
+    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
+      <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+        <Input
+          ref={searchInput}
+          placeholder={`Tìm kiếm ${dataIndex}`}
+          value={selectedKeys[0]}
+          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          style={{ marginBottom: 8, display: 'block' }}
+        />
+        <Space>
+          <Button
+            type="primary"
+            onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+            icon={<SearchOutlined />}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Tìm kiếm
+          </Button>
+          <Button
+            onClick={() => clearFilters && handleReset(clearFilters)}
+            size="small"
+            style={{ width: 90 }}
+          >
+            Reset
+          </Button>
+          <Button
+            type="link"
+            size="small"
+            onClick={() => {
+              close();
+            }}
+          >
+            Đóng
+          </Button>
+        </Space>
+      </div>
     ),
-});
+    filterIcon: (filtered) => (
+      <SearchOutlined
+        style={{ color: filtered ? '#1890ff' : undefined }}
+      />
+    ),
+    onFilter: (value, record) => {
+      // Fix: Handle null/undefined values safely
+      const fieldValue = record[dataIndex];
+      if (fieldValue === null || fieldValue === undefined) {
+        return false; // or return true if you want to include null values in search
+      }
+      return fieldValue
+        .toString()
+        .toLowerCase()
+        .includes(value.toLowerCase());
+    },
+    onFilterDropdownOpenChange: (visible) => {
+      if (visible) {
+        setTimeout(() => searchInput.current?.select(), 100);
+      }
+    },
+    render: (text) =>
+      searchedColumn === dataIndex ? (
+        <Highlighter
+          highlightStyle={{
+            backgroundColor: '#ffc069',
+            padding: 0,
+          }}
+          searchWords={[searchText]}
+          autoEscape
+          textToHighlight={text ? text.toString() : ''}
+        />
+      ) : (
+        text
+      ),
+  });
 
-const handleSearch = (selectedKeys, confirm, dataIndex) => {
-  confirm();
-  setSearchText(selectedKeys[0]);
-  setSearchedColumn(dataIndex);
-};
+  const handleSearch = (selectedKeys, confirm, dataIndex) => {
+    confirm();
+    setSearchText(selectedKeys[0]);
+    setSearchedColumn(dataIndex);
+  };
 
-const handleReset = (clearFilters) => {
-  clearFilters();
-  setSearchText('');
-  fetchData();
-};
+  const handleReset = (clearFilters) => {
+    clearFilters();
+    setSearchText('');
+    fetchData();
+  };
 
 
   const columns = [
@@ -241,7 +252,22 @@ const handleReset = (clearFilters) => {
       dataIndex: 'VENDOR',
       key: 'vendor',
       width: 150,
-      align: 'center'
+      align: 'center',
+      render: (text, record) => (
+        <Button
+          type="link"
+          onClick={() => handleClone(record)}
+          style={{
+            padding: 0,
+            height: 'auto',
+            color: '#1890ff',
+            fontWeight: 'normal'
+          }}
+          title="Click để tạo bản sao từ bản ghi này"
+        >
+          {text}
+        </Button>
+      ),
     },
     {
       title: 'FAMILY',
@@ -619,11 +645,21 @@ const handleReset = (clearFilters) => {
             type="primary"
             icon={<EditOutlined />}
             onClick={() => {
+               setModalMode('edit');
               setEditingRecord(record);
+              setCloneRecord(null);
               setModalVisible(true);
             }}
+            title="Sửa"
           />
-           <Button
+          <Button
+            type="default"
+            icon={<CopyOutlined />}
+            onClick={() => handleClone(record)}
+            title="Tạo bản sao"
+            style={{ color: '#52c41a', borderColor: '#52c41a' }}
+          />
+          <Button
             type="primary"
             icon={<HistoryOutlined />}
             onClick={async () => {
@@ -656,32 +692,33 @@ const handleReset = (clearFilters) => {
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <h1>Material Prepreg</h1>
           <div>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditingRecord(null);
-              setModalVisible(true);
-              
-            }}
-            style={{ marginRight: 8 }}
-          >
-            Thêm mới
-          </Button>
-          <Button
-            type="default"
-            onClick={handleExport}
-            style={{ marginRight: 8 }}
-          >
-            Xuất Excel
-          </Button>
-          <Button
-            type="default"
-            onClick={() => setImportReviewModalVisible(true)}
-          >
-            Import Excel
-          </Button>
-        </div>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+               onClick={() => {
+                setModalMode('create');
+                setEditingRecord(null);
+                setCloneRecord(null);
+                setModalVisible(true);
+              }}
+              style={{ marginRight: 8 }}
+            >
+              Thêm mới
+            </Button>
+            <Button
+              type="default"
+              onClick={handleExport}
+              style={{ marginRight: 8 }}
+            >
+              Xuất Excel
+            </Button>
+            <Button
+              type="default"
+              onClick={() => setImportReviewModalVisible(true)}
+            >
+              Import Excel
+            </Button>
+          </div>
         </div>
 
         <Table
@@ -708,12 +745,15 @@ const handleReset = (clearFilters) => {
           onCancel={() => {
             setModalVisible(false);
             setEditingRecord(null);
+            setCloneRecord(null);
+            setModalMode('create');
           }}
-          onSubmit={editingRecord ? handleUpdate : handleCreate}
+            onSubmit={modalMode === 'edit' ? handleUpdate : handleCreate}
           editingRecord={editingRecord}
+          cloneRecord={cloneRecord}
+          mode={modalMode}
         />
-        
-          <MaterialPpHistoryModal
+        <MaterialPpHistoryModal
           open={historyModalVisible}
           onCancel={() => setHistoryModalVisible(false)}
           data={historyData}

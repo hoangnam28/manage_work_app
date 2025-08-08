@@ -10,7 +10,8 @@ import {
   ImportOutlined,
   DownOutlined,
   FileExcelOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  CopyOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -38,34 +39,31 @@ const MaterialCore = () => {
   const [historyData, setHistoryData] = useState([]);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [importModalVisible, setImportModalVisible] = useState(false);
+  const [cloneRecord, setCloneRecord] = useState(null);
+  const [modalMode, setModalMode] = useState('create'); // 'create', 'edit', 'clone'
 
   // State cho pagination
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 100,
+    pageSize: 10,
     total: 0,
     showSizeChanger: true,
     showQuickJumper: true,
     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
-    pageSizeOptions: ['50', '100', '200', '500'],
+    pageSizeOptions: ['10', '20', '50', '100', '200', '500'],
   });
 
-  // State cho global search
   const [globalSearch, setGlobalSearch] = useState('');
 
   const fetchData = async (page = 1, pageSize = 100, search = '') => {
     setLoading(true);
     try {
-      // Cập nhật API call để truyền các tham số pagination
       const response = await fetchMaterialCoreList({
         page,
         pageSize,
-        search: search || globalSearch // Sử dụng global search nếu không có search parameter
+        search: search || globalSearch 
       });
 
-      console.log('API Response:', response);
-
-      // Kiểm tra cấu trúc response
       if (response.data && response.pagination) {
         setData(response.data || []);
         setPagination(prev => ({
@@ -75,7 +73,6 @@ const MaterialCore = () => {
           total: response.pagination.totalRecords,
         }));
       } else {
-        // Fallback cho API cũ (nếu chưa update)
         setData(response.data || []);
         setPagination(prev => ({
           ...prev,
@@ -92,7 +89,7 @@ const MaterialCore = () => {
 
   useEffect(() => {
     fetchData(pagination.current, pagination.pageSize);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Handle global search
@@ -114,71 +111,87 @@ const MaterialCore = () => {
     fetchData(targetPage, pageSize, globalSearch);
   };
 
-  const handleCreate = async (values) => {
+  const handleCreate = async (values, mode = 'create') => {
+  try {
+    let requesterName = 'Unknown';
     try {
-      let requesterName = 'Unknown';
-      try {
-        const userStr = localStorage.getItem('userInfo');
-        if (userStr) {
-          const userObj = JSON.parse(userStr);
-          requesterName = userObj.username || 'Unknown';
-        }
-      } catch (e) {
-        requesterName = localStorage.getItem('username') || 'Unknown';
+      const userStr = localStorage.getItem('userInfo');
+      if (userStr) {
+        const userObj = JSON.parse(userStr);
+        requesterName = userObj.username || 'Unknown';
       }
-
-      const today = new Date();
-      const topArr = Array.isArray(values.top_foil_cu_weight) ? values.top_foil_cu_weight : [values.top_foil_cu_weight];
-      const botArr = Array.isArray(values.bot_foil_cu_weight) ? values.bot_foil_cu_weight : [values.bot_foil_cu_weight];
-
-      await createMaterialCore({
-        ...values,
-        requester_name: requesterName,
-        request_date: today,
-        status: 'Pending',
-        top_foil_cu_weight: topArr,
-        bot_foil_cu_weight: botArr
-      });
-
-      toast.success(`Đã thêm thành công ${topArr.length} bản ghi`);
-      setModalVisible(false);
-      // Refresh current page
-      fetchData(pagination.current, pagination.pageSize);
-    } catch (error) {
-      console.error('Error creating material core:', error);
-      toast.error('Lỗi khi thêm mới');
+    } catch (e) {
+      requesterName = localStorage.getItem('username') || 'Unknown';
     }
-  };
 
-  const handleUpdate = async (values) => {
-    try {
-      const recordId = editingRecord.ID || editingRecord.id;
+    const today = new Date();
+    const topArr = Array.isArray(values.top_foil_cu_weight) ? values.top_foil_cu_weight : [values.top_foil_cu_weight];
+    const botArr = Array.isArray(values.bot_foil_cu_weight) ? values.bot_foil_cu_weight : [values.bot_foil_cu_weight];
 
-      if (!recordId) {
-        throw new Error('ID không hợp lệ');
-      }
+    const result = await createMaterialCore({
+      ...values,
+      requester_name: requesterName,
+      request_date: today,
+      status: 'Pending',
+      top_foil_cu_weight: topArr,
+      bot_foil_cu_weight: botArr
+    });
 
-      console.log('Updating record:', {
-        recordId,
-        editingRecord,
-        values
-      });
-
-      await updateMaterialCore(recordId, values);
-      toast.success('Cập nhật thành công');
-      setModalVisible(false);
-      setEditingRecord(null);
-      // Refresh current page
-      fetchData(pagination.current, pagination.pageSize);
-    } catch (error) {
-      console.error('Error updating material core:', error);
-      toast.error('Lỗi khi cập nhật: ' + (error.message || 'Đã có lỗi xảy ra'));
+    if (result && result.success === false) {
+      throw new Error(result.message || 'Tạo mới thất bại');
     }
-  };
+
+    await fetchData(pagination.current, pagination.pageSize);
+    
+    setModalVisible(false);
+    setCloneRecord(null); 
+    setModalMode('create'); 
+    
+    const successMessage = mode === 'clone'
+      ? `Đã tạo bản sao thành công ${topArr.length} bản ghi`
+      : `Đã thêm thành công ${topArr.length} bản ghi`;
+      
+    return { success: true, message: successMessage };
+    
+  } catch (error) {
+    console.error('Error creating material core:', error);
+    throw new Error('Lỗi khi thêm mới: ' + (error.message || 'Đã có lỗi xảy ra'));
+  }
+};
+
+ const handleUpdate = async (values) => {
+  try {
+    const recordId = editingRecord.ID || editingRecord.id;
+
+    if (!recordId) {
+      throw new Error('ID không hợp lệ');
+    }
+
+    console.log('Updating record:', {
+      recordId,
+      editingRecord,
+      values
+    });
+
+    const result = await updateMaterialCore(recordId, values);
+    if (result && result.success === false) {
+      throw new Error(result.message || 'Cập nhật thất bại');
+    }
+    await fetchData(pagination.current, pagination.pageSize);
+    
+    setModalVisible(false);
+    setEditingRecord(null);
+    
+    return { success: true, message: 'Cập nhật thành công' };
+    
+  } catch (error) {
+    console.error('Error updating material core:', error);
+    throw new Error('Lỗi khi cập nhật: ' + (error.message || 'Đã có lỗi xảy ra'));
+  }
+};
 
   const handleDelete = async (recordId) => {
     try {
-      // Đảm bảo lấy đúng id, ưu tiên id, nếu không có thì lấy ID
       const id = Number(recordId?.id ?? recordId?.ID ?? recordId);
       if (!id || isNaN(id)) {
         toast.error('ID không hợp lệ, không thể xóa!');
@@ -186,7 +199,6 @@ const MaterialCore = () => {
       }
       await deleteMaterialCore(id);
       toast.success('Xóa thành công');
-      // Refresh current page
       fetchData(pagination.current, pagination.pageSize);
     } catch (error) {
       console.error('Error deleting material core:', error);
@@ -196,10 +208,7 @@ const MaterialCore = () => {
 
   const handleExport = async () => {
     try {
-      // Show loading toast
       const loadingToast = toast.loading('Đang xuất dữ liệu...');
-
-      // Export all data (function will fetch all data internally)
       const response = await exportMaterialCore();
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -209,10 +218,7 @@ const MaterialCore = () => {
       document.body.appendChild(link);
       link.click();
       link.remove();
-
-      // Clean up
       window.URL.revokeObjectURL(url);
-
       toast.dismiss(loadingToast);
       toast.success('Xuất file thành công!');
     } catch (error) {
@@ -220,8 +226,6 @@ const MaterialCore = () => {
       toast.error('Lỗi khi xuất file: ' + (error.message || 'Đã có lỗi xảy ra'));
     }
   };
-
-  // Handle import success
   const handleImportSuccess = () => {
     toast.success('Import thành công!');
     fetchData(pagination.current, pagination.pageSize); // Refresh data
@@ -229,7 +233,12 @@ const MaterialCore = () => {
   const refreshCurrentData = () => {
     fetchData(pagination.current, pagination.pageSize, globalSearch);
   };
-
+  const handleClone = (record) => {
+    setModalMode('clone');
+    setCloneRecord(record);
+    setEditingRecord(null);
+    setModalVisible(true);
+  };
   const getColumnSearchProps = (dataIndex) => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
       <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
@@ -305,20 +314,16 @@ const MaterialCore = () => {
         text
       ),
   });
-
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
     confirm();
     setSearchText(selectedKeys[0]);
     setSearchedColumn(dataIndex);
   };
-
   const handleReset = (clearFilters) => {
     clearFilters();
     setSearchText('');
     setSearchedColumn('');
   };
-
-  // Import dropdown menu
   const importMenu = (
     <Menu>
       <Menu.Item
@@ -338,6 +343,21 @@ const MaterialCore = () => {
       key: 'vendor',
       width: 150,
       align: 'center',
+      render: (text, record) => (
+        <Button
+          type="link"
+          onClick={() => handleClone(record)}
+          style={{
+            padding: 0,
+            height: 'auto',
+            color: '#1890ff',
+            fontWeight: 'normal'
+          }}
+          title="Click để tạo bản sao từ bản ghi này"
+        >
+          {text}
+        </Button>
+      ),
     },
     {
       title: 'Family',
@@ -830,7 +850,7 @@ const MaterialCore = () => {
       title: 'Thao tác',
       key: 'action',
       fixed: 'right',
-      width: 180,
+      width: 220, // Tăng width để chứa thêm button
       align: 'center',
       render: (_, record) => (
         <Space size="middle">
@@ -838,9 +858,19 @@ const MaterialCore = () => {
             type="primary"
             icon={<EditOutlined />}
             onClick={() => {
+              setModalMode('edit');
               setEditingRecord(record);
+              setCloneRecord(null);
               setModalVisible(true);
             }}
+            title="Sửa"
+          />
+          <Button
+            type="default"
+            icon={<CopyOutlined />}
+            onClick={() => handleClone(record)}
+            title="Tạo bản sao"
+            style={{ color: '#52c41a', borderColor: '#52c41a' }}
           />
           <Button
             type="primary"
@@ -854,6 +884,7 @@ const MaterialCore = () => {
                 toast.error('Lỗi khi lấy lịch sử');
               }
             }}
+            title="Lịch sử"
           />
           <Popconfirm
             title="Xác nhận xóa?"
@@ -861,11 +892,11 @@ const MaterialCore = () => {
             okText="Có"
             cancelText="Không"
           >
-            <Button type="primary" danger icon={<DeleteOutlined />} />
+            <Button type="primary" danger icon={<DeleteOutlined />} title="Xóa" />
           </Popconfirm>
         </Space>
       ),
-    },
+    }
   ];
 
   return (
@@ -879,20 +910,20 @@ const MaterialCore = () => {
               type="primary"
               icon={<PlusOutlined />}
               onClick={() => {
+                setModalMode('create');
                 setEditingRecord(null);
+                setCloneRecord(null);
                 setModalVisible(true);
               }}
               style={{ marginRight: 8 }}
             >
               Thêm mới
             </Button>
-
             <Dropdown overlay={importMenu} trigger={['click']}>
               <Button style={{ marginRight: 8 }}>
                 <FileExcelOutlined /> Import/Export <DownOutlined />
               </Button>
             </Dropdown>
-
             <Button
               type="default"
               onClick={handleExport}
@@ -913,8 +944,6 @@ const MaterialCore = () => {
             onSearch={handleGlobalSearch}
             style={{ width: 400 }}
           />
-
-          {/* Thêm button refresh */}
           <Button
             icon={<ReloadOutlined />}
             onClick={refreshCurrentData}
@@ -936,26 +965,24 @@ const MaterialCore = () => {
             return '';
           }}
         />
-
-        {/* Create/Edit Modal */}
         <CreateMaterialCoreModal
           open={modalVisible}
           onCancel={() => {
             setModalVisible(false);
             setEditingRecord(null);
+            setCloneRecord(null);
+            setModalMode('create');
           }}
-          onSubmit={editingRecord ? handleUpdate : handleCreate}
+          onSubmit={modalMode === 'edit' ? handleUpdate : handleCreate}
           editingRecord={editingRecord}
+          cloneRecord={cloneRecord}
+          mode={modalMode}
         />
-
-        {/* History Modal */}
         <MaterialCoreHistoryModal
           open={historyModalVisible}
           onCancel={() => setHistoryModalVisible(false)}
           data={historyData}
         />
-
-        {/* Import Modal */}
         <ImportMaterialCoreReviewModal
           open={importModalVisible}
           onCancel={() => setImportModalVisible(false)}
