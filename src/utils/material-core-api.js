@@ -140,3 +140,53 @@ export const importMaterialCoreData = async (data) => {
   });
   return response.data;
 };
+
+export const exportMaterialCoreXml = async () => {
+  const token = localStorage.getItem('accessToken');
+  
+  try {
+    const response = await axios.get(`/material-core/export-xml`, {
+      headers: { Authorization: `Bearer ${token}` },
+      responseType: 'blob', // Important: để nhận file blob
+    });
+
+    return response;
+  } catch (error) {
+    console.error('Error exporting XML:', error);
+    throw error;
+  }
+};
+
+export const downloadFile = (response, defaultFilename = 'download') => {
+  try {
+    // Lấy filename từ Content-Disposition header nếu có
+    const contentDisposition = response.headers['content-disposition'];
+    let filename = defaultFilename;
+    
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (match && match[1]) {
+        filename = match[1].replace(/['"]/g, '');
+      }
+    }
+
+    // Tạo blob URL và trigger download
+    const blob = new Blob([response.data], { 
+      type: response.headers['content-type'] || 'application/octet-stream' 
+    });
+    
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    
+    // Cleanup
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(link);
+  } catch (error) {
+    console.error('Error downloading file:', error);
+    throw error;
+  }
+};
