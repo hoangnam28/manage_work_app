@@ -147,7 +147,6 @@ const handleSubmit = async () => {
         layout="vertical"
         initialValues={{
           status: 'Pending',
-          is_hf: 'FALSE'
         }}
       >
         <Tabs defaultActiveKey={mode === 'edit' ? "1" : "2"}>

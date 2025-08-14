@@ -1,10 +1,26 @@
 import axios from './axios';
 
-export const fetchMaterialNewList = async () => {
+// ✅ SỬA: Đơn giản hóa cách truyền tham số search
+export const fetchMaterialNewList = async (params = {}) => {
   const token = localStorage.getItem('accessToken');
+  const { page = 1, pageSize = 20, ...searchParams } = params;
+  
+  console.log('API call params:', { page, pageSize, searchParams });
+  
+  // ✅ Trực tiếp sử dụng các tham số search mà không cần prefix
+  const queryParams = {
+    page,
+    pageSize,
+    ...searchParams // Trực tiếp spread các search parameters
+  };
+  
+  console.log('Final query params:', queryParams);
+  
   const response = await axios.get(`/material-new/list`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
+    params: queryParams
   });
+  
   return response.data;
 };
 
@@ -43,26 +59,4 @@ export const fetchMaterialNewHistory = async (id) => {
     console.error('Error fetching history:', error);
     throw error;
   }
-};
-
-
-export const exportMaterialNew = async (data) => {
-  const token = localStorage.getItem('accessToken');
-  const normalizeKeys = (obj) => {
-    const result = {};
-    Object.keys(obj).forEach((key) => {
-      result[key.toUpperCase()] = obj[key];
-    });
-    return result;
-  };
-  const normalizedData = Array.isArray(data) ? data.map(normalizeKeys) : data;
-  const response = await axios.post(
-    `/material-new/export-xlsm`,
-    { data: normalizedData },
-    {
-      headers: { Authorization: `Bearer ${token}` },
-      responseType: 'blob', 
-    }
-  );
-  return response;
 };

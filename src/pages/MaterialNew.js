@@ -6,7 +6,9 @@ import {
   DeleteOutlined,
   PlusOutlined,
   SearchOutlined,
-  HistoryOutlined
+  HistoryOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -14,7 +16,6 @@ import {
   createMaterialNew,
   updateMaterialNew,
   deleteMaterialNew,
-  exportMaterialNew,
   fetchMaterialNewHistory
 } from '../utils/material-new-api';
 import CreateMaterialNewModal from '../components/modal/CreateMaterialNewModal';
@@ -22,25 +23,58 @@ import HistoryNewModal from '../components/modal/MaterialNewHistoryModal';
 import { toast, Toaster } from 'sonner';
 import './MaterialCore.css';
 import ImportMaterialNewModal from '../components/modal/ImportMaterialNewModal';
-
+import * as XLSX from 'xlsx';
 
 const MaterialProperties = () => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
-  const [searchText, setSearchText] = useState('');
-  const [searchedColumn, setSearchedColumn] = useState('');
+  const [searchFilters, setSearchFilters] = useState({});
   const searchInput = useRef(null);
   const [historyData, setHistoryData] = useState([]);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [importReviewModalVisible, setImportReviewModalVisible] = useState(false);
 
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    pageSizeOptions: ['10', '20', '50', '100'],
+    showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`
+  });
 
-  const fetchData = async () => {
+  // ✅ SỬA: Cải thiện hàm fetchData để xử lý search filters đúng cách
+  const fetchData = async (page = null, pageSize = null, filters = null) => {
     setLoading(true);
     try {
-      const response = await fetchMaterialNewList();
+      const currentPage = page || pagination.current;
+      const currentPageSize = pageSize || pagination.pageSize;
+      const currentFilters = filters !== null ? filters : searchFilters;
+
+      console.log('Fetching data with params:', {
+        page: currentPage,
+        pageSize: currentPageSize,
+        filters: currentFilters
+      });
+
+      const response = await fetchMaterialNewList({
+        page: currentPage,
+        pageSize: currentPageSize,
+        ...currentFilters // ✅ Trực tiếp truyền filters thay vì wrap trong search object
+      });
+
+      // Kiểm tra và điều chỉnh trang hiện tại nếu vượt quá tổng số trang
+      const totalPages = Math.ceil((response.pagination?.totalRecords || 0) / currentPageSize);
+      const adjustedCurrent = Math.min(currentPage, totalPages || 1);
+
+      if (adjustedCurrent !== currentPage && totalPages > 0) {
+        // Nếu trang hiện tại đã bị điều chỉnh, gọi lại API với trang đúng
+        return fetchData(adjustedCurrent, currentPageSize, currentFilters);
+      }
+
       // Convert all keys to uppercase for consistency
       const formattedData = (response.data || []).map(item => {
         const newItem = {};
@@ -49,7 +83,15 @@ const MaterialProperties = () => {
         });
         return newItem;
       });
+
       setData(formattedData);
+      setPagination(prev => ({
+        ...prev,
+        current: adjustedCurrent,
+        pageSize: currentPageSize,
+        total: response.pagination?.totalRecords || 0
+      }));
+
     } catch (error) {
       console.error('Error fetching material core data:', error);
       toast.error('Lỗi khi tải dữ liệu');
@@ -60,11 +102,12 @@ const MaterialProperties = () => {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
   const handleCreate = async (values) => {
     try {
       await createMaterialNew(values);
-
       setModalVisible(false);
       fetchData();
     } catch (error) {
@@ -72,19 +115,13 @@ const MaterialProperties = () => {
       toast.error('Lỗi khi thêm mới');
     }
   };
+
   const handleUpdate = async (values) => {
     try {
       const recordId = editingRecord.ID || editingRecord.id;
-
       if (!recordId) {
         throw new Error('ID không hợp lệ');
       }
-
-      console.log('Updating record:', {
-        recordId,
-        editingRecord,
-        values
-      });
 
       await updateMaterialNew(recordId, values);
       toast.success('Cập nhật thành công');
@@ -99,7 +136,6 @@ const MaterialProperties = () => {
 
   const handleDelete = async (recordId) => {
     try {
-      // Đảm bảo lấy đúng id, ưu tiên id, nếu không có thì lấy ID
       const id = Number(recordId?.id ?? recordId?.ID ?? recordId);
       if (!id || isNaN(id)) {
         toast.error('ID không hợp lệ, không thể xóa!');
@@ -113,18 +149,80 @@ const MaterialProperties = () => {
       toast.error('Lỗi khi xóa');
     }
   };
-  const handleExport = async () => {
+
+  const handleStatusChange = async (record, status) => {
     try {
-      const response = await exportMaterialNew(data);
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', 'MaterialCoreExport.xlsm');
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      const id = record.ID || record.id;
+      if (!id) {
+        toast.error('ID không hợp lệ, không thể cập nhật trạng thái!');
+        return;
+      }
+
+      const loadingToast = toast.loading('Đang cập nhật...');
+
+      try {
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        const handler = userInfo.username || 'Unknown';
+
+        const updateData = {
+          status,
+          handler,
+          ...(status === 'Approve' ? { complete_date: new Date().toISOString() } : {}),
+        };
+
+        const result = await updateMaterialNew(id, updateData);
+        toast.dismiss(loadingToast);
+        
+        if (result && result.success === false) {
+          throw new Error(result.message || 'Cập nhật trạng thái thất bại');
+        }
+
+        toast.success(`Đã cập nhật trạng thái thành công: ${status}`);
+        fetchData();
+
+      } catch (error) {
+        toast.dismiss(loadingToast);
+        console.error('Error updating status:', error);
+        toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
+      }
+
     } catch (error) {
-      toast.error('Lỗi khi xuất file');
+      console.error('Error updating status:', error);
+      toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
+    }
+  };
+
+  const handleExport = () => {
+    try {
+      const exportData = data.map(item => ({
+        VENDOR: item.VENDOR,
+        FAMILY_CORE: item.FAMILY_CORE,
+        FAMILY_PP: item.FAMILY_PP,
+        IS_HF: item.IS_HF,
+        MATERIAL_TYPE: item.MATERIAL_TYPE,
+        ERP: item.ERP,
+        ERP_PP: item.ERP_PP,
+        ERP_VENDOR: item.ERP_VENDOR,
+        IS_CAF: item.IS_CAF,
+        TG: item.TG,
+        BORD_TYPE: item.BORD_TYPE,
+        PLASTIC: item.PLASTIC,
+        FILE_NAME: item.FILE_NAME,
+        DATA: item.DATA,
+        REQUESTER_NAME: item.REQUESTER_NAME,
+        REQUEST_DATE: item.REQUEST_DATE ? new Date(item.REQUEST_DATE).toLocaleDateString() : '',
+        STATUS: item.STATUS
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+      XLSX.utils.book_append_sheet(wb, ws, "Material New");
+      XLSX.writeFile(wb, "MaterialNew.xlsx");
+
+      toast.success('Xuất file Excel thành công');
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      toast.error('Lỗi khi xuất file Excel');
     }
   };
 
@@ -150,7 +248,7 @@ const MaterialProperties = () => {
             Tìm kiếm
           </Button>
           <Button
-            onClick={() => clearFilters && handleReset(clearFilters)}
+            onClick={() => clearFilters && handleReset(clearFilters, dataIndex)}
             size="small"
             style={{ width: 90 }}
           >
@@ -159,9 +257,7 @@ const MaterialProperties = () => {
           <Button
             type="link"
             size="small"
-            onClick={() => {
-              close();
-            }}
+            onClick={() => close()}
           >
             Đóng
           </Button>
@@ -173,47 +269,84 @@ const MaterialProperties = () => {
         style={{ color: filtered ? '#1890ff' : undefined }}
       />
     ),
-    onFilter: (value, record) =>
-      record[dataIndex]
-        .toString()
-        .toLowerCase()
-        .includes(value.toLowerCase()),
+    filteredValue: searchFilters[dataIndex] ? [searchFilters[dataIndex]] : null,
     onFilterDropdownOpenChange: (visible) => {
       if (visible) {
         setTimeout(() => searchInput.current?.select(), 100);
       }
     },
-    render: (text) =>
-      searchedColumn === dataIndex ? (
+    render: (text) => {
+      const searchValue = searchFilters[dataIndex];
+      return searchValue ? (
         <Highlighter
           highlightStyle={{
             backgroundColor: '#ffc069',
             padding: 0,
           }}
-          searchWords={[searchText]}
+          searchWords={[searchValue]}
           autoEscape
           textToHighlight={text ? text.toString() : ''}
         />
       ) : (
         text
-      ),
+      );
+    }
   });
 
+  // ✅ SỬA: Đơn giản hóa handleSearch
   const handleSearch = (selectedKeys, confirm, dataIndex) => {
+    const searchValue = selectedKeys[0];
+    
+    // Cập nhật search filters
+    const newFilters = { ...searchFilters };
+    if (searchValue) {
+      newFilters[dataIndex] = searchValue;
+    } else {
+      delete newFilters[dataIndex];
+    }
+    setSearchFilters(newFilters);
+    // Reset về trang 1 và fetch data với search filters mới
+    setPagination(prev => ({
+      ...prev,
+      current: 1
+    }));
+    
     confirm();
-    setSearchText(selectedKeys[0]);
-    setSearchedColumn(dataIndex);
+    fetchData(1, pagination.pageSize, newFilters);
+    
   };
 
-  const handleReset = (clearFilters) => {
+  // ✅ SỬA: Đơn giản hóa handleReset
+  const handleReset = (clearFilters, dataIndex) => {
+    const newFilters = { ...searchFilters };
+    delete newFilters[dataIndex];
+    setSearchFilters(newFilters);
+
+    setPagination(prev => ({
+      ...prev,
+      current: 1
+    }));
+
+    fetchData(1, pagination.pageSize, newFilters);
     clearFilters();
-    setSearchText('');
-    fetchData();
   };
 
+  // ✅ SỬA: Sửa handleTableChange để xử lý pagination với search filters
+  const handleTableChange = (paginationConfig, filters, sorter) => {
+    console.log('Table change:', paginationConfig, 'Current filters:', searchFilters);
+    
+    // Cập nhật pagination state
+    setPagination(prev => ({
+      ...prev,
+      current: paginationConfig.current,
+      pageSize: paginationConfig.pageSize
+    }));
+
+    // Fetch data với current search filters
+    fetchData(paginationConfig.current, paginationConfig.pageSize, searchFilters);
+  };
 
   const columns = [
-
     {
       title: 'VENDOR',
       dataIndex: 'VENDOR',
@@ -370,6 +503,34 @@ const MaterialProperties = () => {
             }}
           />
           <Popconfirm
+            title="Chọn trạng thái"
+            okText="Approve"
+            cancelText="Cancel"
+            okButtonProps={{
+              icon: <CheckCircleOutlined />,
+              style: { backgroundColor: '#52c41a', borderColor: '#52c41a' }
+            }}
+            cancelButtonProps={{
+              icon: <CloseCircleOutlined />,
+              style: { backgroundColor: '#8c8c8c', borderColor: '#8c8c8c', color: 'white' }
+            }}
+            onConfirm={() => handleStatusChange(record, 'Approve')}
+            onCancel={() => handleStatusChange(record, 'Cancel')}
+          >
+            <Button
+              type={record.STATUS === 'Approve' ? 'primary' : 'default'}
+              style={{
+                backgroundColor: record.STATUS === 'Approve' ? '#52c41a' :
+                  record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                borderColor: record.STATUS === 'Approve' ? '#52c41a' :
+                  record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                color: record.STATUS === 'Cancel' ? 'white' : ''
+              }}
+            >
+              {record.STATUS || 'Pending'}
+            </Button>
+          </Popconfirm>
+          <Popconfirm
             title="Xác nhận xóa?"
             onConfirm={() => handleDelete(record)}
             okText="Có"
@@ -395,7 +556,6 @@ const MaterialProperties = () => {
               onClick={() => {
                 setEditingRecord(null);
                 setModalVisible(true);
-
               }}
               style={{ marginRight: 8 }}
             >
@@ -420,14 +580,23 @@ const MaterialProperties = () => {
           columns={columns}
           dataSource={data}
           loading={loading}
-          rowKey="id"
-          scroll={{ x: 'max-content' }}
+          rowKey={(record) => record.ID || record.id}
+          scroll={{ x: 'max-content', y: 'calc(100vh - 280px)' }}
           size="middle"
+          sticky
           pagination={{
-            defaultPageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng số ${total} bản ghi`
+            ...pagination,
+            // ✅ SỬA: Đơn giản hóa pagination handlers
+            onChange: (page, pageSize) => {
+              console.log('Pagination onChange:', page, pageSize);
+              fetchData(page, pageSize, searchFilters);
+            },
+            onShowSizeChange: (current, size) => {
+              console.log('Page size changed:', current, size);
+              fetchData(1, size, searchFilters);
+            }
           }}
+          onChange={handleTableChange}
           rowClassName={(record) => {
             if (record.STATUS === 'Pending') return 'row-pending';
             if (record.STATUS === 'Cancel') return 'row-cancel';

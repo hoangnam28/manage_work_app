@@ -10,8 +10,9 @@ import {
   ImportOutlined,
   DownOutlined,
   FileExcelOutlined,
-  ReloadOutlined,
-  CopyOutlined
+  CopyOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -35,52 +36,49 @@ const MaterialCore = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
-  const [searchText, setSearchText] = useState('');
-  const [searchedColumn, setSearchedColumn] = useState('');
   const searchInput = useRef(null);
   const [historyData, setHistoryData] = useState([]);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [importModalVisible, setImportModalVisible] = useState(false);
   const [cloneRecord, setCloneRecord] = useState(null);
   const [modalMode, setModalMode] = useState('create'); // 'create', 'edit', 'clone'
+  const [searchFilters, setSearchFilters] = useState({});
 
-  // State cho pagination
   const [pagination, setPagination] = useState({
     current: 1,
-    pageSize: 10,
+    pageSize: 20,
     total: 0,
     showSizeChanger: true,
     showQuickJumper: true,
     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
-    pageSizeOptions: ['10', '20', '50', '100', '200', '500'],
+    pageSizeOptions: ['20','50', '100', '200', '500'],
   });
 
-  const [globalSearch, setGlobalSearch] = useState('');
-
-  const fetchData = async (page = 1, pageSize = 100, search = '') => {
+ const fetchData = async (page = 1, pageSize = 20, filters = {}) => {
     setLoading(true);
     try {
+      // Xây dựng query params cho tìm kiếm
+      const searchQuery = {};
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) {
+          searchQuery[key.toLowerCase()] = value;
+        }
+      });
+      
       const response = await fetchMaterialCoreList({
         page,
         pageSize,
-        search: search || globalSearch
+        search: searchQuery
       });
+      setData(response.data || []);
 
-      if (response.data && response.pagination) {
-        setData(response.data || []);
-        setPagination(prev => ({
-          ...prev,
-          current: response.pagination.currentPage,
-          pageSize: response.pagination.pageSize,
-          total: response.pagination.totalRecords,
-        }));
-      } else {
-        setData(response.data || []);
-        setPagination(prev => ({
-          ...prev,
-          total: response.data?.length || 0,
-        }));
-      }
+      setPagination(prev => ({
+        ...prev,
+        current: page,
+        pageSize: pageSize,
+        total: response.pagination?.totalRecords || 0
+      }));
+
     } catch (error) {
       console.error('Error fetching material core data:', error);
       toast.error('Lỗi khi tải dữ liệu');
@@ -88,30 +86,11 @@ const MaterialCore = () => {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchData(pagination.current, pagination.pageSize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+ useEffect(() => {
+    fetchData(1, 20); 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Handle global search
-  const handleGlobalSearch = (value) => {
-    setGlobalSearch(value);
-    setPagination(prev => ({ ...prev, current: 1 })); // Reset về trang 1
-    fetchData(1, pagination.pageSize, value);
-  };
-
-  // Handle table change (pagination, sorter, filter)
-  const handleTableChange = (paginationConfig, filters, sorter) => {
-    console.log('Table change:', { paginationConfig, filters, sorter });
-
-    const { current, pageSize } = paginationConfig;
-
-    // Reset về trang 1 nếu thay đổi pageSize
-    const targetPage = pageSize !== pagination.pageSize ? 1 : current;
-
-    fetchData(targetPage, pageSize, globalSearch);
-  };
 
   const handleCreate = async (values, mode = 'create') => {
     try {
@@ -143,7 +122,8 @@ const MaterialCore = () => {
         throw new Error(result.message || 'Tạo mới thất bại');
       }
 
-      await fetchData(pagination.current, pagination.pageSize);
+      // Refresh với current pagination hoặc về trang đầu
+      fetchData(1, pagination.pageSize); // Reset về trang 1 để thấy record mới
 
       setModalVisible(false);
       setCloneRecord(null);
@@ -179,7 +159,9 @@ const MaterialCore = () => {
       if (result && result.success === false) {
         throw new Error(result.message || 'Cập nhật thất bại');
       }
-      await fetchData(pagination.current, pagination.pageSize);
+
+      // Refresh với current pagination
+      fetchData(pagination.current, pagination.pageSize);
 
       setModalVisible(false);
       setEditingRecord(null);
@@ -192,6 +174,56 @@ const MaterialCore = () => {
     }
   };
 
+  const handleStatusChange = async (record, status) => {
+    try {
+      const id = record.ID || record.id;
+      if (!id) {
+        toast.error('ID không hợp lệ, không thể cập nhật trạng thái!');
+        return;
+      }
+
+      const loadingToast = toast.loading('Đang cập nhật...');
+
+      try {
+        // Lấy thông tin người dùng từ localStorage
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        const handler = userInfo.username || 'Unknown';
+
+        // Chuẩn bị dữ liệu cập nhật
+        const updateData = {
+          status,
+          handler,
+          // Chỉ cập nhật complete_date khi status là Approve
+          ...(status === 'Approve' ? { complete_date: new Date().toISOString() } : {}),
+          ...(record.DATA_SOURCE ? {} : { 
+            data_source: `C:\\data_source\\${record.VENDOR || 'unknown'}\\${record.FAMILY || 'unknown'}`
+          })
+        };
+
+        const result = await updateMaterialCore(id, updateData);
+        toast.dismiss(loadingToast);
+        if (result && result.success === false) {
+          throw new Error(result.message || 'Cập nhật trạng thái thất bại');
+        }
+
+        toast.success(`Đã cập nhật trạng thái thành công: ${status}`);
+
+        // Refresh với current pagination
+        setTimeout(() => {
+          fetchData(pagination.current, pagination.pageSize);
+        }, 500);
+
+      } catch (error) {
+        toast.dismiss(loadingToast);
+        console.error('Error updating status:', error);
+        toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
+      }
+
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
+    }
+  };
   const handleDelete = async (recordId) => {
     try {
       const id = Number(recordId?.id ?? recordId?.ID ?? recordId);
@@ -201,12 +233,16 @@ const MaterialCore = () => {
       }
       await deleteMaterialCore(id);
       toast.success('Xóa thành công');
+
+      // Refresh với current pagination
       fetchData(pagination.current, pagination.pageSize);
     } catch (error) {
       console.error('Error deleting material core:', error);
       toast.error('Lỗi khi xóa');
     }
   };
+  // Frontend: MaterialCore.js - Optimized handleStatusChange
+
 
   const handleExport = async () => {
     try {
@@ -245,10 +281,7 @@ const MaterialCore = () => {
   };
   const handleImportSuccess = () => {
     toast.success('Import thành công!');
-    fetchData(pagination.current, pagination.pageSize); // Refresh data
-  };
-  const refreshCurrentData = () => {
-    fetchData(pagination.current, pagination.pageSize, globalSearch);
+    fetchData(1, pagination.pageSize); // Refresh data
   };
   const handleClone = (record) => {
     setModalMode('clone');
@@ -256,7 +289,7 @@ const MaterialCore = () => {
     setEditingRecord(null);
     setModalVisible(true);
   };
-  const getColumnSearchProps = (dataIndex) => ({
+  const getColumnSearchProps = dataIndex => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
       <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
         <Input
@@ -278,7 +311,7 @@ const MaterialCore = () => {
             Tìm kiếm
           </Button>
           <Button
-            onClick={() => clearFilters && handleReset(clearFilters)}
+            onClick={() => clearFilters && handleReset(clearFilters, dataIndex)}
             size="small"
             style={{ width: 90 }}
           >
@@ -287,9 +320,7 @@ const MaterialCore = () => {
           <Button
             type="link"
             size="small"
-            onClick={() => {
-              close();
-            }}
+            onClick={() => close()}
           >
             Đóng
           </Button>
@@ -301,46 +332,81 @@ const MaterialCore = () => {
         style={{ color: filtered ? '#1890ff' : undefined }}
       />
     ),
-    onFilter: (value, record) => {
-      // Handle null/undefined values
-      const recordValue = record[dataIndex];
-      if (recordValue == null) return false;
-
-      return recordValue
-        .toString()
-        .toLowerCase()
-        .includes(value.toLowerCase());
-    },
+    // Bỏ onFilter vì sẽ search trên server
+    filteredValue: searchFilters[dataIndex] ? [searchFilters[dataIndex]] : null,
     onFilterDropdownOpenChange: (visible) => {
       if (visible) {
         setTimeout(() => searchInput.current?.select(), 100);
       }
     },
-    render: (text) =>
-      searchedColumn === dataIndex ? (
+    render: (text) => {
+      const searchValue = searchFilters[dataIndex];
+      return searchValue ? (
         <Highlighter
           highlightStyle={{
             backgroundColor: '#ffc069',
             padding: 0,
           }}
-          searchWords={[searchText]}
+          searchWords={[searchValue]}
           autoEscape
           textToHighlight={text ? text.toString() : ''}
         />
       ) : (
         text
-      ),
+      );
+    }
   });
-  const handleSearch = (selectedKeys, confirm, dataIndex) => {
+const handleSearch = (selectedKeys, confirm, dataIndex) => {
+    const searchValue = selectedKeys[0];
+    
+    // Cập nhật search filters
+    const newFilters = { ...searchFilters };
+    if (searchValue) {
+      newFilters[dataIndex] = searchValue;
+    } else {
+      delete newFilters[dataIndex];
+    }
+    setSearchFilters(newFilters);
+    // Reset về trang 1 và fetch data với search filters mới
+    setPagination(prev => ({
+      ...prev,
+      current: 1
+    }));
+    
     confirm();
-    setSearchText(selectedKeys[0]);
-    setSearchedColumn(dataIndex);
+    fetchData(1, pagination.pageSize, newFilters);
+    
   };
-  const handleReset = (clearFilters) => {
+  const handleReset = (clearFilters, dataIndex) => {
+    // Xóa filter cho column này
+    const newFilters = { ...searchFilters };
+    delete newFilters[dataIndex];
+    setSearchFilters(newFilters);
+    
+    // Reset pagination về trang 1
+    setPagination(prev => ({
+      ...prev,
+      current: 1
+    }));
+    
+    // Fetch data với filters đã bị xóa
+    fetchData(1, pagination.pageSize, newFilters);
+    
     clearFilters();
-    setSearchText('');
-    setSearchedColumn('');
   };
+  const handleTableChange = (paginationConfig, filters, sorter) => {
+    
+    // Cập nhật pagination state
+    setPagination(prev => ({
+      ...prev,
+      current: paginationConfig.current,
+      pageSize: paginationConfig.pageSize
+    }));
+
+    // Fetch data với current filters
+    fetchData(paginationConfig.current, paginationConfig.pageSize, searchFilters);
+  };
+
   const importMenu = (
     <Menu>
       <Menu.Item
@@ -410,7 +476,7 @@ const MaterialCore = () => {
       title: 'Nominal_Thickness',
       dataIndex: 'NOMINAL_THICKNESS',
       key: 'nominal_thickness',
-      width: 150,
+      width: 160,
       align: 'center',
       ...getColumnSearchProps('NOMINAL_THICKNESS')
     },
@@ -418,7 +484,7 @@ const MaterialCore = () => {
       title: 'Spec_Thickness',
       dataIndex: 'SPEC_THICKNESS',
       key: 'spec_thickness',
-      width: 120,
+      width: 150,
       align: 'center',
       ...getColumnSearchProps('SPEC_THICKNESS')
     },
@@ -448,7 +514,7 @@ const MaterialCore = () => {
       title: 'Top_Foil_Cu_Weight',
       dataIndex: 'TOP_FOIL_CU_WEIGHT',
       key: 'top_foil_cu_weight',
-      width: 150,
+      width: 180,
       align: 'center',
       ...getColumnSearchProps('TOP_FOIL_CU_WEIGHT')
     },
@@ -456,7 +522,7 @@ const MaterialCore = () => {
       title: 'Bottom_Foil_Cu_Weight',
       dataIndex: 'BOT_FOIL_CU_WEIGHT',
       key: 'bot_foil_cu_weight',
-      width: 150,
+      width: 200,
       align: 'center',
       ...getColumnSearchProps('BOT_FOIL_CU_WEIGHT')
     },
@@ -864,13 +930,6 @@ const MaterialCore = () => {
       align: 'center',
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'STATUS',
-      key: 'status',
-      width: 120,
-      align: 'center',
-    },
-    {
       title: 'Ngày hoàn thành',
       dataIndex: 'COMPLETE_DATE',
       key: 'complete_date',
@@ -919,6 +978,34 @@ const MaterialCore = () => {
             title="Lịch sử"
           />
           <Popconfirm
+            title="Chọn trạng thái"
+            okText="Approve"
+            cancelText="Cancel"
+            okButtonProps={{
+              icon: <CheckCircleOutlined />,
+              style: { backgroundColor: '#52c41a', borderColor: '#52c41a' }
+            }}
+            cancelButtonProps={{
+              icon: <CloseCircleOutlined />,
+              style: { backgroundColor: '#8c8c8c', borderColor: '#8c8c8c', color: 'white' }
+            }}
+            onConfirm={() => handleStatusChange(record, 'Approve')}
+            onCancel={() => handleStatusChange(record, 'Cancel')}
+          >
+            <Button
+              type={record.STATUS === 'Approve' ? 'primary' : 'default'}
+              style={{
+                backgroundColor: record.STATUS === 'Approve' ? '#52c41a' :
+                  record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                borderColor: record.STATUS === 'Approve' ? '#52c41a' :
+                  record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                color: record.STATUS === 'Cancel' ? 'white' : ''
+              }}
+            >
+              {record.STATUS || 'Pending'}
+            </Button>
+          </Popconfirm>
+          <Popconfirm
             title="Xác nhận xóa?"
             onConfirm={() => handleDelete(record)}
             okText="Có"
@@ -931,69 +1018,62 @@ const MaterialCore = () => {
     }
   ];
 
-return (
-  <MainLayout>
-    <Toaster position="top-right" richColors />
-    <div style={{ padding: '24px' }}>
-      <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-        <h1>Material Core</h1>
-        <div>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setModalMode('create');
-              setEditingRecord(null);
-              setCloneRecord(null);
-              setModalVisible(true);
-            }}
-            style={{ marginRight: 8 }}
-          >
-            Thêm mới
-          </Button>
-          <Button
-            type="default"
-            icon={<FileExcelOutlined />}
-            onClick={handleExportXml}
-            style={{ marginRight: 8, backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
-          >
-            Export XML
-          </Button>
-          
-          <Dropdown overlay={importMenu} trigger={['click']}>
-            <Button style={{ marginRight: 8 }}>
-              <FileExcelOutlined /> Import/Export <DownOutlined />
+  return (
+    <MainLayout>
+      <Toaster position="top-right" richColors />
+      <div style={{ padding: '24px' }}>
+        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
+          <h1 style={{ color: '#e29a51ff' }}>Core</h1>
+          <div>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setModalMode('create');
+                setEditingRecord(null);
+                setCloneRecord(null);
+                setModalVisible(true);
+              }}
+              style={{ marginRight: 8 }}
+            >
+              Thêm mới
             </Button>
-          </Dropdown>
-        </div>
-      </div>
+            <Button
+              type="default"
+              icon={<FileExcelOutlined />}
+              onClick={handleExportXml}
+              style={{ marginRight: 8, backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
+            >
+              Export XML
+            </Button>
 
-        <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
-          <Input.Search
-            placeholder="Tìm kiếm theo Vendor, Family, Handler, Requester..."
-            allowClear
-            enterButton="Tìm kiếm"
-            size="large"
-            value={globalSearch}
-            onChange={(e) => setGlobalSearch(e.target.value)}
-            onSearch={handleGlobalSearch}
-            style={{ width: 400 }}
-          />
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={refreshCurrentData}
-            title="Làm mới dữ liệu"
-          />
+            <Dropdown overlay={importMenu} trigger={['click']}>
+              <Button style={{ marginRight: 8 }}>
+                <FileExcelOutlined /> Import/Export <DownOutlined />
+              </Button>
+            </Dropdown>
+          </div>
         </div>
-        <Table
+    <Table
           columns={columns}
           dataSource={data}
           loading={loading}
           rowKey={(record) => record.ID || record.id}
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: 'max-content', y: 'calc(100vh - 280px)' }}
           size="middle"
-          pagination={pagination}
-          onChange={handleTableChange}
+          sticky
+          pagination={{
+            ...pagination,
+            onChange: (page, pageSize) => {
+              console.log('Pagination changed:', page, pageSize);
+              fetchData(page, pageSize, searchFilters); // Truyền searchFilters
+            },
+            onShowSizeChange: (current, size) => {
+              console.log('Page size changed:', current, size);
+              fetchData(1, size, searchFilters); // Reset về trang 1 với search filters
+            }
+          }}
+          onChange={handleTableChange} // Thêm onChange handler
           rowClassName={(record) => {
             if (record.STATUS === 'Pending') return 'row-pending';
             if (record.STATUS === 'Cancel') return 'row-cancel';

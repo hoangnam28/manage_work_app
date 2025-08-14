@@ -7,7 +7,9 @@ import {
   PlusOutlined,
   SearchOutlined,
   HistoryOutlined,
-  CopyOutlined
+  CopyOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -133,6 +135,53 @@ const MaterialProperties = () => {
       toast.error('Lỗi khi xóa');
     }
   };
+  const handleStatusChange = async (record, status) => {
+      try {
+        const id = record.ID || record.id;
+        if (!id) {
+          toast.error('ID không hợp lệ, không thể cập nhật trạng thái!');
+          return;
+        }
+  
+        const loadingToast = toast.loading('Đang cập nhật...');
+  
+        try {
+          // Lấy thông tin người dùng từ localStorage
+          const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+          const handler = userInfo.username || 'Unknown';
+  
+          // Chuẩn bị dữ liệu cập nhật
+          const updateData = {
+            status,
+            handler,
+            // Chỉ cập nhật complete_date khi status là Approve
+            ...(status === 'Approve' ? { complete_date: new Date().toISOString() } : {}),
+          };
+  
+          const result = await updateMaterialPp(id, updateData);
+          toast.dismiss(loadingToast);
+          if (result && result.success === false) {
+            throw new Error(result.message || 'Cập nhật trạng thái thất bại');
+          }
+  
+          toast.success(`Đã cập nhật trạng thái thành công: ${status}`);
+  
+          // Refresh với current pagination
+          setTimeout(() => {
+            fetchData();
+          }, 500);
+  
+        } catch (error) {
+          toast.dismiss(loadingToast);
+          console.error('Error updating status:', error);
+          toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
+        }
+  
+      } catch (error) {
+        console.error('Error updating status:', error);
+        toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
+      }
+    };
   const handleExport = async () => {
     try {
       const response = await exportMaterialPp(data);
@@ -645,7 +694,7 @@ const MaterialProperties = () => {
             type="primary"
             icon={<EditOutlined />}
             onClick={() => {
-               setModalMode('edit');
+              setModalMode('edit');
               setEditingRecord(record);
               setCloneRecord(null);
               setModalVisible(true);
@@ -673,6 +722,34 @@ const MaterialProperties = () => {
             }}
           />
           <Popconfirm
+            title="Chọn trạng thái"
+            okText="Approve"
+            cancelText="Cancel"
+            okButtonProps={{
+              icon: <CheckCircleOutlined />,
+              style: { backgroundColor: '#52c41a', borderColor: '#52c41a' }
+            }}
+            cancelButtonProps={{
+              icon: <CloseCircleOutlined />,
+              style: { backgroundColor: '#8c8c8c', borderColor: '#8c8c8c', color: 'white' }
+            }}
+            onConfirm={() => handleStatusChange(record, 'Approve')}
+            onCancel={() => handleStatusChange(record, 'Cancel')}
+          >
+            <Button
+              type={record.STATUS === 'Approve' ? 'primary' : 'default'}
+              style={{
+                backgroundColor: record.STATUS === 'Approve' ? '#52c41a' :
+                  record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                borderColor: record.STATUS === 'Approve' ? '#52c41a' :
+                  record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                color: record.STATUS === 'Cancel' ? 'white' : ''
+              }}
+            >
+              {record.STATUS || 'Pending'}
+            </Button>
+          </Popconfirm>
+          <Popconfirm
             title="Xác nhận xóa?"
             onConfirm={() => handleDelete(record)}
             okText="Có"
@@ -695,7 +772,7 @@ const MaterialProperties = () => {
             <Button
               type="primary"
               icon={<PlusOutlined />}
-               onClick={() => {
+              onClick={() => {
                 setModalMode('create');
                 setEditingRecord(null);
                 setCloneRecord(null);
@@ -726,8 +803,9 @@ const MaterialProperties = () => {
           dataSource={data}
           loading={loading}
           rowKey="id"
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: 'max-content', y: 'calc(100vh - 280px)' }}
           size="middle"
+          sticky
           pagination={{
             defaultPageSize: 10,
             showSizeChanger: true,
@@ -748,7 +826,7 @@ const MaterialProperties = () => {
             setCloneRecord(null);
             setModalMode('create');
           }}
-            onSubmit={modalMode === 'edit' ? handleUpdate : handleCreate}
+          onSubmit={modalMode === 'edit' ? handleUpdate : handleCreate}
           editingRecord={editingRecord}
           cloneRecord={cloneRecord}
           mode={modalMode}

@@ -1,20 +1,31 @@
 import axios from './axios';
 
-// Updated fetchMaterialCoreList with pagination support
+// Updated fetchMaterialCoreList with pagination and search support
 export const fetchMaterialCoreList = async (params = {}) => {
   const token = localStorage.getItem('accessToken');
-  const { page = 1, pageSize = 100, search = '' } = params;
+  const { page = 1, pageSize = 20, search = {} } = params;
+  
+  // Chuyển đổi object search thành query params
+  const searchParams = {};
+  if (typeof search === 'object') {
+    Object.entries(search).forEach(([key, value]) => {
+      if (value) {
+        searchParams[`search_${key}`] = value;
+      }
+    });
+  }
   
   const response = await axios.get(`/material-core/list`, {
     headers: { Authorization: `Bearer ${token}` },
     params: {
       page,
       pageSize,
-      search
+      ...searchParams // Gửi tất cả các tham số tìm kiếm
     }
   });
   return response.data;
 };
+
 
 // Add new function to fetch all data for export
 export const fetchAllMaterialCoreData = async () => {
