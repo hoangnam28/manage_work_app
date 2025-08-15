@@ -39,6 +39,12 @@ const DecideBoard = () => {
   const [onlyRequestEdit, setOnlyRequestEdit] = useState(false);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [selectedRecordForHistory, setSelectedRecordForHistory] = useState(null);
+  
+  // Thêm state cho modal hủy yêu cầu
+  const [cancelModalVisible, setCancelModalVisible] = useState(false);
+  const [cancellingRecord, setCancellingRecord] = useState(null);
+  const [cancelForm] = Form.useForm();
+  
   const navigate = useNavigate();
   const tableRef = useRef();
 
@@ -79,6 +85,7 @@ const DecideBoard = () => {
     };
     fetchUserInfo();
   }, []);
+  
   useEffect(() => {
     const fetchCustomers = async () => {
       console.log('Fetching customers...');
@@ -295,12 +302,29 @@ const DecideBoard = () => {
       ],
       onFilter: (value, record) => record.IS_CANCELED === value
     },
-
     {
-      title: "Note",
-      dataIndex: "NOTE",
-      align: "center",
-    },
+    title: "Note",
+    dataIndex: "NOTE",
+    align: "center",
+    render: (value, record) => {
+      // Nếu bản ghi bị hủy và có REASON thì hiển thị REASON
+      if (record.IS_CANCELED === 1 && record.REASON) {
+        return (
+          <div>
+            <div style={{ color: '#ff4d4f', fontStyle: 'italic' }}>
+              Lý do hủy: {record.REASON}
+            </div>
+            {value && (
+              <div style={{ color: '#999', fontSize: '12px' }}>
+                Note cũ: {value}
+              </div>
+            )}
+          </div>
+        );
+      }
+      return value;
+    }
+  },
     {
       title: "Lịch sử",
       key: "history",
@@ -362,14 +386,13 @@ const DecideBoard = () => {
                 handleEdit(record);
               }}
             />
-            <Popconfirm
-              title="Bạn có chắc chắn muốn hủy yêu cầu này?"
-              onConfirm={() => handleCancelRequest(record)}
-              okText="Có"
-              cancelText="Không"
-            >
-              <Button type='primary' danger icon={<CloseOutlined />} />
-            </Popconfirm>
+            <Button 
+              type='primary' 
+              danger 
+              icon={<CloseOutlined />} 
+              onClick={() => handleShowCancelModal(record)}
+              disabled={isDisabled}
+            />
             <Popconfirm
               title={record.CONFIRM_BY ? "Không thể xóa bản ghi đã xác nhận" : "Bạn có chắc chắn muốn xóa mã hàng này?"}
               onConfirm={() => handleDelete(record)}
@@ -508,36 +531,53 @@ const DecideBoard = () => {
     toast.error(errorMsg);
   }
 };
-  const handleCancelRequest = async (record) => {
-    const rowId = record.id !== undefined ? record.id : record.ID;
-    try {
-      setData(prevData =>
-        prevData.map(item => {
-          if ((item.id !== undefined ? item.id : item.ID) === rowId) {
-            return { ...item, IS_CANCELED: 1 };
-          }
-          return item;
-        })
-      );
-      const response = await cancelRequestMaterialDecide(rowId);
-      toast.success(response?.message || 'Hủy yêu cầu thành công!');
 
-    } catch (err) {
-      // Nếu lỗi, rollback UI
-      setData(prevData =>
-        prevData.map(item => {
-          if ((item.id !== undefined ? item.id : item.ID) === rowId) {
-            return { ...item, IS_CANCELED: 0 };
-          }
-          return item;
-        })
-      );
-      console.error('Delete error:', err);
-      const errorMsg = err?.response?.data?.message || err?.message || 'Lỗi xóa!';
-      toast.error(errorMsg);
+const handleShowCancelModal = (record) => {
+  setCancellingRecord(record);
+  cancelForm.setFieldsValue({
+    oldNote: record.NOTE || '', 
+    cancelReason: ''
+  });
+  setCancelModalVisible(true);
+};
+
+const handleCancelRequestWithReason = async () => {
+  try {
+    await cancelForm.validateFields();
+    const values = cancelForm.getFieldsValue();
+    const rowId = cancellingRecord.id !== undefined ? cancellingRecord.id : cancellingRecord.ID;
+    const reason = values.cancelReason?.trim() || ''; // Lấy lý do hủy
+    if (!reason) {
+      toast.error('Vui lòng nhập lý do hủy yêu cầu!');
+      return;
     }
-  };
 
+    const cancelInfo = {
+      reason: reason,
+    };
+
+
+    const response = await cancelRequestMaterialDecide(rowId, cancelInfo);
+    toast.success(response?.message || 'Hủy yêu cầu thành công!');
+    setCancelModalVisible(false);
+    setCancellingRecord(null);
+    cancelForm.resetFields();
+
+    // Refresh data
+    await fetchData();
+
+  } catch (err) {
+    if (err.name === 'ValidationError' || err.errorFields) {
+      console.log('Form validation errors:', err.errorFields);
+      // Không hiển thị toast error cho validation errors vì Ant Design sẽ hiển thị
+      return;
+    }
+    
+    console.error('Cancel request error:', err);
+    const errorMsg = err?.response?.data?.message || err?.message || 'Lỗi hủy yêu cầu!';
+    toast.error(errorMsg);
+  }
+};
   const handleRestore = async (record) => {
     const rowId = record.id !== undefined ? record.id : record.ID;
     try {
@@ -667,15 +707,6 @@ const DecideBoard = () => {
             showTotal: (total) => `Tổng số ${total} bản ghi`
           }}
           rowClassName={(record) => {
-            // Debug log để kiểm tra data
-            console.log('Record for rowClassName:', {
-              id: record.id || record.ID,
-              IS_CANCELED: record.IS_CANCELED,
-              IS_DELETED: record.IS_DELETED,
-              typeofCanceled: typeof record.IS_CANCELED,
-              typeofDeleted: typeof record.IS_DELETED
-            });
-
             // Kiểm tra cả IS_CANCELED và IS_DELETED với nhiều kiểu dữ liệu
             if (record.IS_CANCELED === 1 || record.IS_CANCELED === '1' || record.IS_CANCELED === true) {
               console.log('Applying row-canceled class');
@@ -1012,6 +1043,52 @@ const DecideBoard = () => {
           recordId={selectedRecordForHistory?.id !== undefined ? selectedRecordForHistory.id : selectedRecordForHistory?.ID}
           recordData={selectedRecordForHistory}
         />
+
+        {/* Modal Nhập lý do hủy */}
+        <Modal
+          title="Nhập lý do hủy yêu cầu"
+          open={cancelModalVisible}
+          onOk={handleCancelRequestWithReason}
+          onCancel={() => {
+            setCancelModalVisible(false);
+            setCancellingRecord(null);
+            cancelForm.resetFields();
+          }}
+          okText="Xác nhận"
+          cancelText="Đóng"
+        >
+          <Form form={cancelForm} layout="vertical">
+            <Form.Item
+              name="oldNote"
+              label="Note hiện tại"
+            >
+              <Input.TextArea
+                rows={2}
+                disabled
+                style={{ backgroundColor: '#f5f5f5' }}
+              />
+            </Form.Item>
+            <Form.Item
+              name="cancelReason"
+              label="Lý do hủy"
+              rules={[
+                {
+                  required: true,
+                  message: 'Vui lòng nhập lý do hủy yêu cầu'
+                },
+                {
+                  min: 10,
+                  message: 'Lý do hủy phải có ít nhất 10 ký tự'
+                }
+              ]}
+            >
+              <Input.TextArea
+                rows={4}
+                placeholder="Nhập lý do hủy yêu cầu (tối thiểu 10 ký tự)"
+              />
+            </Form.Item>
+          </Form>
+        </Modal>
       </div>
     </MainLayout>
   );
