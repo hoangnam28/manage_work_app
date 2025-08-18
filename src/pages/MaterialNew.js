@@ -167,7 +167,7 @@ const MaterialProperties = () => {
         const updateData = {
           status,
           handler,
-          ...(status === 'Approve' ? { complete_date: new Date().toISOString() } : {}),
+          ...(status === 'Approve' || 'Cancel' ? { complete_date: new Date().toISOString() } : {}),
         };
 
         const result = await updateMaterialNew(id, updateData);
@@ -462,6 +462,21 @@ const MaterialProperties = () => {
       dataIndex: 'REQUEST_DATE',
       key: 'REQUEST_DATE',
       width: 120,
+      align: 'center',
+      render: (date) => date ? new Date(date).toLocaleDateString() : ''
+    },
+    {
+      title: 'Người xử lý',
+      dataIndex: 'HANDLER',
+      key: 'HANDLER',
+      width: 150,
+      align: 'center',
+    },
+    {
+      title: 'Ngày hoàn thành',
+      dataIndex: 'COMPLETE_DATE',
+      key: 'COMPLETE_DATE',
+      width: 150,
       align: 'center',
       render: (date) => date ? new Date(date).toLocaleDateString() : ''
     },

@@ -1,11 +1,8 @@
 import axios from './axios';
 
-// Updated fetchMaterialCoreList with pagination and search support
 export const fetchMaterialCoreList = async (params = {}) => {
   const token = localStorage.getItem('accessToken');
   const { page = 1, pageSize = 20, search = {} } = params;
-  
-  // Chuyển đổi object search thành query params
   const searchParams = {};
   if (typeof search === 'object') {
     Object.entries(search).forEach(([key, value]) => {

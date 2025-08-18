@@ -349,18 +349,21 @@ const handleSubmit = async () => {
               <Form.Item
                 name="dk_01g"
                 label="DK_0.1GHz"
+                rules={[{ required: true, message: "Vui lòng nhập DK_0.1GHz" }]}
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>
               <Form.Item
                 name="df_01g"
                 label="DF_0.1GHz"
+                rules={[{ required: true, message: "Vui lòng nhập DF_0.1GHz" }]}
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>
               <Form.Item
                 name="is_hf"
                 label="IS_HF"
+                rules={[{ required: true, message: "Vui lòng chọn IS_HF" }]}
               >
                 <Select>
                   <Option value="TRUE">Có</Option>
@@ -370,12 +373,14 @@ const handleSubmit = async () => {
               <Form.Item
                 name="data_source"
                 label="DATA_SOURCE"
+                rules={[{ required: true, message: "Vui lòng nhập DATA_SOURCE" }]}
               >
                 <Input.TextArea />
               </Form.Item>
               <Form.Item
                 name="filename"
                 label="FILE_NAME"
+                rules={[{ required: true, message: "Vui lòng nhập FILE_NAME" }]}
               >
                 <Input />
               </Form.Item>

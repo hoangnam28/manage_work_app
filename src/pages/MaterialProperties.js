@@ -25,6 +25,7 @@ import MaterialPpHistoryModal from '../components/modal/MaterialPpHistoryModal';
 import { toast, Toaster } from 'sonner';
 import './MaterialCore.css';
 import ImportMaterialPpReviewModal from '../components/modal/ImportMaterialPpReviewModal';
+import { hasPermission, PermissionGuard } from '../utils/permissions';
 
 
 const MaterialProperties = () => {
@@ -136,52 +137,56 @@ const MaterialProperties = () => {
     }
   };
   const handleStatusChange = async (record, status) => {
+    if (!hasPermission('approve')) {
+      toast.error('Bạn không có quyền thay đổi trạng thái!');
+      return;
+    }
+    try {
+      const id = record.ID || record.id;
+      if (!id) {
+        toast.error('ID không hợp lệ, không thể cập nhật trạng thái!');
+        return;
+      }
+
+      const loadingToast = toast.loading('Đang cập nhật...');
+
       try {
-        const id = record.ID || record.id;
-        if (!id) {
-          toast.error('ID không hợp lệ, không thể cập nhật trạng thái!');
-          return;
+        // Lấy thông tin người dùng từ localStorage
+        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+        const handler = userInfo.username || 'Unknown';
+
+        // Chuẩn bị dữ liệu cập nhật
+        const updateData = {
+          status,
+          handler,
+          // Chỉ cập nhật complete_date khi status là Approve
+          ...(status === 'Approve' || 'Cancel' ? { complete_date: new Date().toISOString() } : {}),
+        };
+
+        const result = await updateMaterialPp(id, updateData);
+        toast.dismiss(loadingToast);
+        if (result && result.success === false) {
+          throw new Error(result.message || 'Cập nhật trạng thái thất bại');
         }
-  
-        const loadingToast = toast.loading('Đang cập nhật...');
-  
-        try {
-          // Lấy thông tin người dùng từ localStorage
-          const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-          const handler = userInfo.username || 'Unknown';
-  
-          // Chuẩn bị dữ liệu cập nhật
-          const updateData = {
-            status,
-            handler,
-            // Chỉ cập nhật complete_date khi status là Approve
-            ...(status === 'Approve' ? { complete_date: new Date().toISOString() } : {}),
-          };
-  
-          const result = await updateMaterialPp(id, updateData);
-          toast.dismiss(loadingToast);
-          if (result && result.success === false) {
-            throw new Error(result.message || 'Cập nhật trạng thái thất bại');
-          }
-  
-          toast.success(`Đã cập nhật trạng thái thành công: ${status}`);
-  
-          // Refresh với current pagination
-          setTimeout(() => {
-            fetchData();
-          }, 500);
-  
-        } catch (error) {
-          toast.dismiss(loadingToast);
-          console.error('Error updating status:', error);
-          toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
-        }
-  
+
+        toast.success(`Đã cập nhật trạng thái thành công: ${status}`);
+
+        // Refresh với current pagination
+        setTimeout(() => {
+          fetchData();
+        }, 500);
+
       } catch (error) {
+        toast.dismiss(loadingToast);
         console.error('Error updating status:', error);
         toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
       }
-    };
+
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
+    }
+  };
   const handleExport = async () => {
     try {
       const response = await exportMaterialPp(data);
@@ -683,73 +688,99 @@ const MaterialProperties = () => {
       align: 'center',
       render: (_, record) => (
         <Space size="middle">
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => {
-              setModalMode('edit');
-              setEditingRecord(record);
-              setCloneRecord(null);
-              setModalVisible(true);
-            }}
-            title="Sửa"
-          />
-          <Button
-            type="default"
-            icon={<CopyOutlined />}
-            onClick={() => handleClone(record)}
-            title="Tạo bản sao"
-            style={{ color: '#52c41a', borderColor: '#52c41a' }}
-          />
-          <Button
-            type="primary"
-            icon={<HistoryOutlined />}
-            onClick={async () => {
-              try {
-                const response = await fetchMaterialPpHistory(record.ID);
-                setHistoryData(response.data);
-                setHistoryModalVisible(true);
-              } catch (error) {
-                toast.error('Lỗi khi lấy lịch sử');
-              }
-            }}
-          />
-          <Popconfirm
-            title="Chọn trạng thái"
-            okText="Approve"
-            cancelText="Cancel"
-            okButtonProps={{
-              icon: <CheckCircleOutlined />,
-              style: { backgroundColor: '#52c41a', borderColor: '#52c41a' }
-            }}
-            cancelButtonProps={{
-              icon: <CloseCircleOutlined />,
-              style: { backgroundColor: '#8c8c8c', borderColor: '#8c8c8c', color: 'white' }
-            }}
-            onConfirm={() => handleStatusChange(record, 'Approve')}
-            onCancel={() => handleStatusChange(record, 'Cancel')}
-          >
+          <PermissionGuard requiredPermissions={['edit']}>
             <Button
-              type={record.STATUS === 'Approve' ? 'primary' : 'default'}
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => {
+                setModalMode('edit');
+                setEditingRecord(record);
+                setCloneRecord(null);
+                setModalVisible(true);
+              }}
+              title="Sửa"
+            />
+          </PermissionGuard>
+          <PermissionGuard requiredPermissions={['create']}>
+            <Button
+              type="default"
+              icon={<CopyOutlined />}
+              onClick={() => handleClone(record)}
+              title="Tạo bản sao"
+              style={{ color: '#52c41a', borderColor: '#52c41a' }}
+            />
+          </PermissionGuard>
+          <PermissionGuard requiredPermissions={['view']}>
+            <Button
+              type="primary"
+              icon={<HistoryOutlined />}
+              onClick={async () => {
+                try {
+                  const response = await fetchMaterialPpHistory(record.ID);
+                  setHistoryData(response.data);
+                  setHistoryModalVisible(true);
+                } catch (error) {
+                  toast.error('Lỗi khi lấy lịch sử');
+                }
+              }}
+            />
+          </PermissionGuard>
+          <PermissionGuard requiredPermissions={['approve']}>
+            <Popconfirm
+              title="Chọn trạng thái"
+              okText="Approve"
+              cancelText="Cancel"
+              okButtonProps={{
+                icon: <CheckCircleOutlined />,
+                style: { backgroundColor: '#52c41a', borderColor: '#52c41a' }
+              }}
+              cancelButtonProps={{
+                icon: <CloseCircleOutlined />,
+                style: { backgroundColor: '#8c8c8c', borderColor: '#8c8c8c', color: 'white' }
+              }}
+              onConfirm={() => handleStatusChange(record, 'Approve')}
+              onCancel={() => handleStatusChange(record, 'Cancel')}
+            >
+              <Button
+                type={record.STATUS === 'Approve' ? 'primary' : 'default'}
+                style={{
+                  backgroundColor: record.STATUS === 'Approve' ? '#52c41a' :
+                    record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                  borderColor: record.STATUS === 'Approve' ? '#52c41a' :
+                    record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                  color: record.STATUS === 'Cancel' ? 'white' : ''
+                }}
+              >
+                {record.STATUS || 'Pending'}
+              </Button>
+            </Popconfirm>
+          </PermissionGuard>
+          {!hasPermission('approve') && (
+            <Button
+              type="default"
+              disabled
               style={{
                 backgroundColor: record.STATUS === 'Approve' ? '#52c41a' :
-                  record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                  record.STATUS === 'Cancel' ? '#8c8c8c' : '#f0f0f0',
                 borderColor: record.STATUS === 'Approve' ? '#52c41a' :
-                  record.STATUS === 'Cancel' ? '#8c8c8c' : '',
-                color: record.STATUS === 'Cancel' ? 'white' : ''
+                  record.STATUS === 'Cancel' ? '#8c8c8c' : '#d9d9d9',
+                color: record.STATUS === 'Cancel' ? 'white' :
+                  record.STATUS === 'Approve' ? 'white' : '#00000040'
               }}
             >
               {record.STATUS || 'Pending'}
             </Button>
-          </Popconfirm>
-          <Popconfirm
-            title="Xác nhận xóa?"
-            onConfirm={() => handleDelete(record)}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Button type="primary" danger icon={<DeleteOutlined />} />
-          </Popconfirm>
+          )}
+          <PermissionGuard requiredPermissions={['delete']}>
+            <Popconfirm
+              title="Xác nhận xóa?"
+              onConfirm={() => handleDelete(record)}
+              okText="Có"
+              cancelText="Không"
+            >
+              <Button type="primary" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </PermissionGuard>
         </Space>
       ),
     },
@@ -760,34 +791,40 @@ const MaterialProperties = () => {
       <Toaster position="top-right" richColors />
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-          <h1>Material Prepreg</h1>
+          <h1> Prepreg</h1>
           <div>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                setModalMode('create');
-                setEditingRecord(null);
-                setCloneRecord(null);
-                setModalVisible(true);
-              }}
-              style={{ marginRight: 8 }}
-            >
-              Thêm mới
-            </Button>
-            <Button
-              type="default"
-              onClick={handleExport}
-              style={{ marginRight: 8 }}
-            >
-              Xuất Excel
-            </Button>
-            <Button
-              type="default"
-              onClick={() => setImportReviewModalVisible(true)}
-            >
-              Import Excel
-            </Button>
+            <PermissionGuard requiredPermissions={['create']}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  setModalMode('create');
+                  setEditingRecord(null);
+                  setCloneRecord(null);
+                  setModalVisible(true);
+                }}
+                style={{ marginRight: 8 }}
+              >
+                Thêm mới
+              </Button>
+            </PermissionGuard>
+            <PermissionGuard requiredPermissions={['view']}>
+              <Button
+                type="default"
+                onClick={handleExport}
+                style={{ marginRight: 8 }}
+              >
+                Xuất Excel
+              </Button>
+            </PermissionGuard>
+            <PermissionGuard requiredPermissions={['create']}>
+              <Button
+                type="default"
+                onClick={() => setImportReviewModalVisible(true)}
+              >
+                Import Excel
+              </Button>
+            </PermissionGuard>
           </div>
         </div>
 

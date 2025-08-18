@@ -177,14 +177,14 @@ const CreateMaterialNewModal = ({ open, onCancel, onSubmit, editingRecord }) => 
             </Form.Item>
           </Col>
           <Col span={8}>
-            <Form.Item name="FILE_NAME" label="File Name">
+            <Form.Item name="FILE_NAME" label="File Name" rules={[{ required: true, message: 'Nhập File Name' }]}>
               <Input />
             </Form.Item>
           </Col>
         </Row>
         <Row gutter={16}>
           <Col span={8}>
-            <Form.Item name="DATA" label="Data">
+            <Form.Item name="DATA" label="Data" rules={[{ required: true, message: 'Nhập Data' }]}>
               <Input />
             </Form.Item>
           </Col>

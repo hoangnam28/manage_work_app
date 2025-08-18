@@ -205,18 +205,21 @@ const MaterialPPModal = ({
               <Form.Item
                 name="vendor"
                 label="Vendor"
+                rules={[{ required: true, message: 'Vui lòng nhập Vendor' }]}
               >
                 <Input />
               </Form.Item>
               <Form.Item
                 name="family"
                 label="Family"
+                rules={[{ required: true, message: 'Vui lòng nhập Family' }]}
               >
                 <Input />
               </Form.Item>
               <Form.Item
                 name="glass_style"
                 label="GLASS_STYLE"
+                rules={[{ required: true, message: 'Vui lòng nhập GLASS_STYLE' }]}
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
@@ -230,48 +233,56 @@ const MaterialPPModal = ({
               <Form.Item
                 name="preference_class"
                 label="PREFERENCE CLASS"
+                rules={[{ required: true, message: 'Vui lòng nhập PREFERENCE CLASS' }]}
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="use_type"
                 label="USE Type"
+                rules={[{ required: true, message: 'Vui lòng nhập USE Type' }]}
               >
                 <Input />
               </Form.Item>
               <Form.Item
                 name="pp_type"
                 label="PP Type"
+                rules={[{ required: true, message: 'Vui lòng nhập PP Type' }]}
               >
                 <Input style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="tg_min"
                 label="Tg Min"
+                rules={[{ required: true, message: 'Vui lòng nhập Tg Min' }]}
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="tg_max"
                 label="Tg Max"
+                rules={[{ required: true, message: 'Vui lòng nhập Tg Max' }]}
               >
                 <InputNumber style={{ width: '100%' }} />
               </Form.Item>
               <Form.Item
                 name="dk_01g"
-                label="DK @ 0.1GHz"
+                label="DK_01GHz"
+                rules={[{ required: true, message: 'Vui lòng nhập DK_01GHz' }]}
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>
               <Form.Item
                 name="df_01g"
-                label="DF @ 0.1GHz"
+                label="DF_01GHz"
+                rules={[{ required: true, message: 'Vui lòng nhập DF_01GHz' }]}
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>
               <Form.Item
                 name="is_hf"
                 label="IS_HF"
+                rules={[{ required: true, message: 'Vui lòng chọn IS_HF' }]}
               >
                 <Select>
                   <Option value="TRUE">Có</Option>
@@ -281,12 +292,14 @@ const MaterialPPModal = ({
               <Form.Item
                 name="data_source"
                 label="Nguồn dữ liệu"
+                rules={[{ required: true, message: 'Vui lòng nhập nguồn dữ liệu' }]}
               >
                 <Input.TextArea />
               </Form.Item>
               <Form.Item
                 name="filename"
                 label="Tên file"
+                rules={[{ required: true, message: 'Vui lòng nhập tên file' }]}
               >
                 <Input />
               </Form.Item>

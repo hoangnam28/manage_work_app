@@ -30,6 +30,7 @@ import MaterialCoreHistoryModal from '../components/modal/MaterialCoreHistoryMod
 import { toast, Toaster } from 'sonner';
 import './MaterialCore.css';
 import ImportMaterialCoreReviewModal from '../components/modal/ImportMaterialCoreReviewModal';
+import { hasPermission, PermissionGuard } from '../utils/permissions';
 
 const MaterialCore = () => {
   const [data, setData] = useState([]);
@@ -43,6 +44,7 @@ const MaterialCore = () => {
   const [cloneRecord, setCloneRecord] = useState(null);
   const [modalMode, setModalMode] = useState('create'); // 'create', 'edit', 'clone'
   const [searchFilters, setSearchFilters] = useState({});
+
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -90,6 +92,7 @@ const MaterialCore = () => {
     fetchData(1, 20);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  
 
 
   const handleCreate = async (values, mode = 'create') => {
@@ -174,6 +177,10 @@ const MaterialCore = () => {
     }
   };
   const handleStatusChange = async (record, status) => {
+    if (!hasPermission('approve')) {
+      toast.error('Bạn không có quyền thay đổi trạng thái!');
+      return;
+    }
     try {
       const id = record.ID || record.id;
       if (!id) {
@@ -192,7 +199,7 @@ const MaterialCore = () => {
           status,
           handler,
           // Only update complete_date when status is Approve
-          ...(status === 'Approve' ? { complete_date: new Date().toISOString() } : {}),
+          ...(status === 'Approve' || 'Cancel' ? { complete_date: new Date().toISOString() } : {}),
         };
 
         console.log('Sending update data:', updateData);
@@ -409,31 +416,36 @@ const MaterialCore = () => {
 
   const importMenu = (
     <Menu>
-      <Menu.Item
-        key="import"
-        icon={<ImportOutlined />}
-        onClick={() => setImportModalVisible(true)}
-      >
-        Import từ Excel
-      </Menu.Item>
-      <Menu.Divider />
-      <Menu.Item
-        key="export-excel"
-        icon={<FileExcelOutlined />}
-        onClick={handleExport}
-      >
-        Export Excel (.xlsm)
-      </Menu.Item>
-      <Menu.Item
-        key="export-xml"
-        icon={<FileExcelOutlined />}
-        onClick={handleExportXml}
-      >
-        Export XML (Pending Only)
-      </Menu.Item>
+      <PermissionGuard requiredPermissions={['create', 'edit']}>
+        <Menu.Item
+          key="import"
+          icon={<ImportOutlined />}
+          onClick={() => setImportModalVisible(true)}
+        >
+          Import từ Excel
+        </Menu.Item>
+        <Menu.Divider />
+      </PermissionGuard>
+      <PermissionGuard requiredPermissions={['view']}>
+        <Menu.Item
+          key="export-excel"
+          icon={<FileExcelOutlined />}
+          onClick={handleExport}
+        >
+          Export Excel (.xlsm)
+        </Menu.Item>
+      </PermissionGuard>
+      <PermissionGuard requiredPermissions={['view']}>
+        <Menu.Item
+          key="export-xml"
+          icon={<FileExcelOutlined />}
+          onClick={handleExportXml}
+        >
+          Export XML (Pending Only)
+        </Menu.Item>
+      </PermissionGuard>
     </Menu>
   );
-
   const columns = [
     {
       title: 'Vendor',
@@ -937,121 +949,153 @@ const MaterialCore = () => {
       render: (date) => date ? new Date(date).toLocaleDateString() : '',
       align: 'center',
     },
+    // Phần render button trong columns - FIXED VERSION
     {
       title: 'Thao tác',
       key: 'action',
       fixed: 'right',
-      width: 220, // Tăng width để chứa thêm button
+      width: 220,
       align: 'center',
       render: (_, record) => (
         <Space size="middle">
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => {
-              setModalMode('edit');
-              setEditingRecord(record);
-              setCloneRecord(null);
-              setModalVisible(true);
-            }}
-            title="Sửa"
-          />
-          <Button
-            type="default"
-            icon={<CopyOutlined />}
-            onClick={() => handleClone(record)}
-            title="Tạo bản sao"
-            style={{ color: '#52c41a', borderColor: '#52c41a' }}
-          />
-          <Button
-            type="primary"
-            icon={<HistoryOutlined />}
-            onClick={async () => {
-              try {
-                const response = await fetchMaterialCoreHistory(record.ID);
-                setHistoryData(response.data);
-                setHistoryModalVisible(true);
-              } catch (error) {
-                toast.error('Lỗi khi lấy lịch sử');
-              }
-            }}
-            title="Lịch sử"
-          />
-          <Popconfirm
-            title="Chọn trạng thái"
-            okText="Approve"
-            cancelText="Cancel"
-            okButtonProps={{
-              icon: <CheckCircleOutlined />,
-              style: { backgroundColor: '#52c41a', borderColor: '#52c41a' }
-            }}
-            cancelButtonProps={{
-              icon: <CloseCircleOutlined />,
-              style: { backgroundColor: '#8c8c8c', borderColor: '#8c8c8c', color: 'white' }
-            }}
-            onConfirm={() => handleStatusChange(record, 'Approve')}
-            onCancel={() => handleStatusChange(record, 'Cancel')}
-          >
+          <PermissionGuard requiredPermissions={['edit']}>
             <Button
-              type={record.STATUS === 'Approve' ? 'primary' : 'default'}
+              type="primary"
+              icon={<EditOutlined />}
+              onClick={() => {
+                setModalMode('edit');
+                setEditingRecord(record);
+                setCloneRecord(null);
+                setModalVisible(true);
+              }}
+              title="Sửa"
+            />
+          </PermissionGuard>
+          <PermissionGuard requiredPermissions={['create']}>
+            <Button
+              type="default"
+              icon={<CopyOutlined />}
+              onClick={() => handleClone(record)}
+              title="Tạo bản sao"
+              style={{ color: '#52c41a', borderColor: '#52c41a' }}
+            />
+          </PermissionGuard>
+          <PermissionGuard requiredPermissions={['view']}>
+            <Button
+              type="primary"
+              icon={<HistoryOutlined />}
+              onClick={async () => {
+                try {
+                  const response = await fetchMaterialCoreHistory(record.ID);
+                  setHistoryData(response.data);
+                  setHistoryModalVisible(true);
+                } catch (error) {
+                  toast.error('Lỗi khi lấy lịch sử');
+                }
+              }}
+              title="Lịch sử"
+            />
+          </PermissionGuard>
+
+          {/* Button Approve/Cancel - chỉ admin */}
+          <PermissionGuard requiredPermissions={['approve']}>
+            <Popconfirm
+              title="Chọn trạng thái"
+              okText="Approve"
+              cancelText="Cancel"
+              okButtonProps={{
+                icon: <CheckCircleOutlined />,
+                style: { backgroundColor: '#52c41a', borderColor: '#52c41a' }
+              }}
+              cancelButtonProps={{
+                icon: <CloseCircleOutlined />,
+                style: { backgroundColor: '#8c8c8c', borderColor: '#8c8c8c', color: 'white' }
+              }}
+              onConfirm={() => handleStatusChange(record, 'Approve')}
+              onCancel={() => handleStatusChange(record, 'Cancel')}
+            >
+              <Button
+                type={record.STATUS === 'Approve' ? 'primary' : 'default'}
+                style={{
+                  backgroundColor: record.STATUS === 'Approve' ? '#52c41a' :
+                    record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                  borderColor: record.STATUS === 'Approve' ? '#52c41a' :
+                    record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                  color: record.STATUS === 'Cancel' ? 'white' : ''
+                }}
+              >
+                {record.STATUS || 'Pending'}
+              </Button>
+            </Popconfirm>
+          </PermissionGuard>
+
+          {/* Hiển thị status readonly cho user không phải admin */}
+          {!hasPermission('approve') && (
+            <Button
+              type="default"
+              disabled
               style={{
                 backgroundColor: record.STATUS === 'Approve' ? '#52c41a' :
-                  record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                  record.STATUS === 'Cancel' ? '#8c8c8c' : '#f0f0f0',
                 borderColor: record.STATUS === 'Approve' ? '#52c41a' :
-                  record.STATUS === 'Cancel' ? '#8c8c8c' : '',
-                color: record.STATUS === 'Cancel' ? 'white' : ''
+                  record.STATUS === 'Cancel' ? '#8c8c8c' : '#d9d9d9',
+                color: record.STATUS === 'Cancel' ? 'white' :
+                  record.STATUS === 'Approve' ? 'white' : '#00000040'
               }}
             >
               {record.STATUS || 'Pending'}
             </Button>
-          </Popconfirm>
-          <Popconfirm
-            title="Xác nhận xóa?"
-            onConfirm={() => handleDelete(record)}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Button type="primary" danger icon={<DeleteOutlined />} title="Xóa" />
-          </Popconfirm>
+          )}
+
+          {/* Button Xóa - chỉ editor và admin */}
+          <PermissionGuard requiredPermissions={['delete']}>
+            <Popconfirm
+              title="Xác nhận xóa?"
+              onConfirm={() => handleDelete(record)}
+              okText="Có"
+              cancelText="Không"
+            >
+              <Button type="primary" danger icon={<DeleteOutlined />} title="Xóa" />
+            </Popconfirm>
+          </PermissionGuard>
         </Space>
       ),
     }
   ];
+
 
   return (
     <MainLayout>
       <Toaster position="top-right" richColors />
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-          <h1 style={{ color: '#e29a51ff' }}>Core</h1>
+           
+          <h1 style={{ color: '#e29a51ff' }}>
+            Core
+          </h1>
           <div>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={() => {
-                setModalMode('create');
-                setEditingRecord(null);
-                setCloneRecord(null);
-                setModalVisible(true);
-              }}
-              style={{ marginRight: 8 }}
-            >
-              Thêm mới
-            </Button>
-            <Button
-              type="default"
-              icon={<FileExcelOutlined />}
-              onClick={handleExportXml}
-              style={{ marginRight: 8, backgroundColor: '#52c41a', borderColor: '#52c41a', color: 'white' }}
-            >
-              Export XML
-            </Button>
-
-            <Dropdown overlay={importMenu} trigger={['click']}>
-              <Button style={{ marginRight: 8 }}>
-                <FileExcelOutlined /> Import/Export <DownOutlined />
+            <PermissionGuard requiredPermissions={['create']}>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  setModalMode('create');
+                  setEditingRecord(null);
+                  setCloneRecord(null);
+                  setModalVisible(true);
+                }}
+                style={{ marginRight: 8 }}
+              >
+                Thêm mới
               </Button>
-            </Dropdown>
+            </PermissionGuard>
+            <PermissionGuard requiredPermissions={['view']}>
+              <Dropdown overlay={importMenu} trigger={['click']}>
+                <Button style={{ marginRight: 8 }}>
+                  <FileExcelOutlined /> Import/Export <DownOutlined />
+                </Button>
+              </Dropdown>
+            </PermissionGuard>
           </div>
         </div>
         <Table

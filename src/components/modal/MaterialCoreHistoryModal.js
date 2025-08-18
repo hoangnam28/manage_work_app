@@ -417,6 +417,20 @@ const HistoryModal = ({ open, onCancel, data = [] }) => {
       width: 200,
     },
     {
+      title: 'Trạng thái',
+      dataIndex: 'STATUS',
+      key: 'status',
+      width: 120,
+      render: (status) => {
+        let color = 'blue';
+        if (status === 'Pending') color = 'orange';
+        else if (status === 'Approve') color = 'green';
+        else if (status === 'Cancel') color = 'grey';
+
+        return <Tag color={color}>{status}</Tag>;
+      }
+    },
+    {
       title: 'File Name',
       dataIndex: 'FILENAME',
       key: 'filename',
