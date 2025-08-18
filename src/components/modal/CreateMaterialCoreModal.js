@@ -231,7 +231,7 @@ const handleSubmit = async () => {
                 label="Family"
                 rules={[{ required: true, message: "Vui lòng nhập FAMILY" }]}
               >
-                <Input />
+                <Input placeholder={"Nhập một familt ví dụ: EMC_307(Z)"}/>
               </Form.Item>
               <Form.Item
                 name="prepreg_count"

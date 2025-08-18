@@ -378,13 +378,6 @@ const MaterialProperties = () => {
       align: 'center'
     },
     {
-      title: 'CENTER_GLASS',
-      dataIndex: 'CENTER_GLASS',
-      key: 'center_glass',
-      width: 150,
-      align: 'center'
-    },
-    {
       title: 'DK_01G',
       dataIndex: 'DK_01G',
       key: 'dk_01g',

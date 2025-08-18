@@ -51,10 +51,10 @@ const MaterialCore = () => {
     showSizeChanger: true,
     showQuickJumper: true,
     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
-    pageSizeOptions: ['20','50', '100', '200', '500'],
+    pageSizeOptions: ['20', '50', '100', '200', '500'],
   });
 
- const fetchData = async (page = 1, pageSize = 20, filters = {}) => {
+  const fetchData = async (page = 1, pageSize = 20, filters = {}) => {
     setLoading(true);
     try {
       // Xây dựng query params cho tìm kiếm
@@ -64,7 +64,7 @@ const MaterialCore = () => {
           searchQuery[key.toLowerCase()] = value;
         }
       });
-      
+
       const response = await fetchMaterialCoreList({
         page,
         pageSize,
@@ -86,9 +86,9 @@ const MaterialCore = () => {
       setLoading(false);
     }
   };
- useEffect(() => {
-    fetchData(1, 20); 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    fetchData(1, 20);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
 
@@ -173,7 +173,6 @@ const MaterialCore = () => {
       throw new Error('Lỗi khi cập nhật: ' + (error.message || 'Đã có lỗi xảy ra'));
     }
   };
-
   const handleStatusChange = async (record, status) => {
     try {
       const id = record.ID || record.id;
@@ -182,33 +181,34 @@ const MaterialCore = () => {
         return;
       }
 
-      const loadingToast = toast.loading('Đang cập nhật...');
+      const loadingToast = toast.loading('Đang cập nhật trạng thái...');
 
       try {
-        // Lấy thông tin người dùng từ localStorage
+        // Get user info from localStorage
         const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
         const handler = userInfo.username || 'Unknown';
-
-        // Chuẩn bị dữ liệu cập nhật
+        // Prepare update data with proper status change
         const updateData = {
           status,
           handler,
-          // Chỉ cập nhật complete_date khi status là Approve
+          // Only update complete_date when status is Approve
           ...(status === 'Approve' ? { complete_date: new Date().toISOString() } : {}),
-          ...(record.DATA_SOURCE ? {} : { 
-            data_source: `C:\\data_source\\${record.VENDOR || 'unknown'}\\${record.FAMILY || 'unknown'}`
-          })
         };
 
+        console.log('Sending update data:', updateData);
+
         const result = await updateMaterialCore(id, updateData);
+
         toast.dismiss(loadingToast);
+
         if (result && result.success === false) {
           throw new Error(result.message || 'Cập nhật trạng thái thất bại');
         }
 
         toast.success(`Đã cập nhật trạng thái thành công: ${status}`);
+        console.log('✅ Status update successful, email should be sent');
 
-        // Refresh với current pagination
+        // Refresh data after successful update
         setTimeout(() => {
           fetchData(pagination.current, pagination.pageSize);
         }, 500);
@@ -220,7 +220,7 @@ const MaterialCore = () => {
       }
 
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error('Error in handleStatusChange:', error);
       toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
     }
   };
@@ -356,9 +356,9 @@ const MaterialCore = () => {
       );
     }
   });
-const handleSearch = (selectedKeys, confirm, dataIndex) => {
+  const handleSearch = (selectedKeys, confirm, dataIndex) => {
     const searchValue = selectedKeys[0];
-    
+
     // Cập nhật search filters
     const newFilters = { ...searchFilters };
     if (searchValue) {
@@ -372,30 +372,30 @@ const handleSearch = (selectedKeys, confirm, dataIndex) => {
       ...prev,
       current: 1
     }));
-    
+
     confirm();
     fetchData(1, pagination.pageSize, newFilters);
-    
+
   };
   const handleReset = (clearFilters, dataIndex) => {
     // Xóa filter cho column này
     const newFilters = { ...searchFilters };
     delete newFilters[dataIndex];
     setSearchFilters(newFilters);
-    
+
     // Reset pagination về trang 1
     setPagination(prev => ({
       ...prev,
       current: 1
     }));
-    
+
     // Fetch data với filters đã bị xóa
     fetchData(1, pagination.pageSize, newFilters);
-    
+
     clearFilters();
   };
   const handleTableChange = (paginationConfig, filters, sorter) => {
-    
+
     // Cập nhật pagination state
     setPagination(prev => ({
       ...prev,
@@ -1054,7 +1054,7 @@ const handleSearch = (selectedKeys, confirm, dataIndex) => {
             </Dropdown>
           </div>
         </div>
-    <Table
+        <Table
           columns={columns}
           dataSource={data}
           loading={loading}

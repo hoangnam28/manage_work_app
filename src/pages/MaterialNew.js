@@ -548,7 +548,7 @@ const MaterialProperties = () => {
       <Toaster position="top-right" richColors />
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-          <h1>Material New</h1>
+          <h1>New</h1>
           <div>
             <Button
               type="primary"
