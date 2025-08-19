@@ -111,12 +111,12 @@ const CreateMaterialNewModal = ({ open, onCancel, onSubmit, editingRecord }) => 
           </Col>
           <Col span={8}>
             <Form.Item name="FAMILY_CORE" label="Family Core" rules={[{ required: true, message: 'Nhập Family Core' }]}>
-              <Input placeholder={"Nhập một family-core ví dụ: 	NY3176HF"}/>
+              <Input placeholder={"family-core ví dụ:NY3176HF"}/>
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="FAMILY_PP" label="Family PP" rules={[{ required: true, message: 'Nhập Family PP' }]}>
-              <Input placeholder={"Nhập một Family PP ví dụ: 	NY3176HFP"}/>
+              <Input placeholder={"Family PP ví dụ:NY3176HFP"}/>
             </Form.Item>
           </Col>
         </Row>
@@ -131,14 +131,14 @@ const CreateMaterialNewModal = ({ open, onCancel, onSubmit, editingRecord }) => 
           </Col>
           <Col span={8}>
             <Form.Item name="MATERIAL_TYPE" label="Material Type" rules={[{ required: true, message: 'Nhập Material Type' }]}>
-              <Input placeholder={"Nhập một Material Type ví dụ: 	FR-4.1"}/>
+              <Input placeholder={"Material Type ví dụ:FR-4.1"}/>
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="ERP" label="ERP" rules={[{ required: true, message: 'Nhập giá trị ERP' }]}>
               <InputNumber 
                 style={{ width: '100%' }} 
-                placeholder="Nhập giá trị ERP" 
+                placeholder="Nhập ERP ví dụ:NY3176HF" 
                 min={0} 
                 step={1}
               />
@@ -148,7 +148,12 @@ const CreateMaterialNewModal = ({ open, onCancel, onSubmit, editingRecord }) => 
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item name="ERP_VENDOR" label="ERP Vendor" rules={[{ required: true, message: 'Nhập giá trị ERP Vendor' }]}>
-              <Input />
+              <Input placeholder="Nhập ERP_VENDOR ví dụ: Nouya" />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="ERP_PP" label="ERP_PP" rules={[{ required: true, message: 'Nhập giá trị ERP_PP' }]}>
+              <Input placeholder="Nhập giá trị ERP_PP" />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -159,21 +164,23 @@ const CreateMaterialNewModal = ({ open, onCancel, onSubmit, editingRecord }) => 
               </Select>
             </Form.Item>
           </Col>
+        </Row>
+        <Row gutter={16}>
           <Col span={8}>
             <Form.Item name="TG" label="TG" rules={[{ required: true, message: 'Nhập TG' }]}>
-              <Input />
+              <Input placeholder='Nhập TG vd: 150'/>
             </Form.Item>
           </Col>
         </Row>
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item name="BORD_TYPE" label="Bord Type" rules={[{ required: true, message: 'Nhập Bord Type' }]}>
-              <Input />
+              <Input placeholder='Nhập Bord type vd: HDI/MLB'/>
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name="PLASTIC" label="Plastic" rules={[{ required: true, message: 'Nhập Plastic' }]}>
-              <Input />
+              <Input placeholder='Nhập PLASTIC vd: 1.48g/cm3'/>
             </Form.Item>
           </Col>
           <Col span={8}>
