@@ -24,6 +24,7 @@ import { toast, Toaster } from 'sonner';
 import './MaterialCore.css';
 import ImportMaterialNewModal from '../components/modal/ImportMaterialNewModal';
 import * as XLSX from 'xlsx';
+import { hasPermission, PermissionGuard } from '../utils/permissions';
 
 const MaterialProperties = () => {
   const [data, setData] = useState([]);
@@ -151,6 +152,10 @@ const MaterialProperties = () => {
   };
 
   const handleStatusChange = async (record, status) => {
+    if (!hasPermission('approve')) {
+          toast.error('Bạn không có quyền thay đổi trạng thái!');
+          return;
+        }
     try {
       const id = record.ID || record.id;
       if (!id) {
@@ -517,6 +522,7 @@ const MaterialProperties = () => {
               }
             }}
           />
+          <PermissionGuard requiredPermissions={['approve']}>
           <Popconfirm
             title="Chọn trạng thái"
             okText="Approve"
@@ -545,6 +551,7 @@ const MaterialProperties = () => {
               {record.STATUS || 'Pending'}
             </Button>
           </Popconfirm>
+          </PermissionGuard>
           <Popconfirm
             title="Xác nhận xóa?"
             onConfirm={() => handleDelete(record)}

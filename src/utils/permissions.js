@@ -12,8 +12,6 @@ export const getCurrentUserRole = () => {
     const roles = userInfo.role ? userInfo.role.split(',').map(r => r.trim()) : ['viewer'];
     
     // Debug log
-    console.log('getCurrentUserRole - userInfo:', userInfo);
-    console.log('getCurrentUserRole - roles:', roles);
     
     // Trả về tất cả các roles hợp lệ
     const validRoles = roles.filter(role => ROLE_PERMISSIONS[role]);
