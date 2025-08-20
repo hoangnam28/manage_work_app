@@ -238,34 +238,34 @@ const handleSubmit = async () => {
                 label="PREPREG Count"
                 rules={[{ required: true, message: "Vui lòng nhập PREPREG COUNT" }]}
               >
-                <InputNumber style={{ width: '100%' }} />
+                <InputNumber style={{ width: '100%' }} placeholder='Nhập PrepregCount vd: 12' />
               </Form.Item>
               <Form.Item
                 name="nominal_thickness"
                 label="Nominal Thickness"
                 rules={[{ required: true, message: "Vui lòng nhập NOMINAL THICKNESS" }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.001} />
+                <InputNumber style={{ width: '100%' }} step={0.001} placeholder='Nhập NOMINAL THICKNESS vd: 33'/>
               </Form.Item>
               <Form.Item
                 name="spec_thickness"
                 label="Spec Thickness"
                 rules={[{ required: true, message: "Vui lòng nhập SPEC THICKNESS" }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.001} />
+                <InputNumber style={{ width: '100%' }} step={0.001} placeholder='Nhập SPEC THICKNESS vd: 33'/>
               </Form.Item>
               <Form.Item
                 name="preference_class"
                 label="Preference Class"
                 rules={[{ required: true, message: "Vui lòng nhập PREFERENCE CLASS" }]}
               >
-                <InputNumber style={{ width: '100%' }} />
+                <InputNumber style={{ width: '100%' }} placeholder='Nhập PREFERENCE CLASS vd: 33'/>
               </Form.Item>
               <Form.Item
                 name="use_type"
                 label="USE Type"
               >
-                <Input />
+                <Input placeholder='Nhập USE Type vd: HDI/MLB'/>
               </Form.Item>
               <Form.Item
                 name="top_foil_cu_weight"
@@ -330,35 +330,35 @@ const handleSubmit = async () => {
                 label="Tg Min"
                 rules={[{ required: true, message: "Vui lòng nhập TG_MIN" }]}
               >
-                <InputNumber style={{ width: '100%' }} />
+                <InputNumber style={{ width: '100%' }} placeholder='Nhập TG_MIN vd: 180'/>
               </Form.Item>
               <Form.Item
                 name="tg_max"
                 label="Tg Max"
                 rules={[{ required: true, message: "Vui lòng nhập TG_MAX" }]}
               >
-                <InputNumber style={{ width: '100%' }} />
+                <InputNumber style={{ width: '100%' }} placeholder='Nhập TG_MAX vd: 180'/>
               </Form.Item>
               <Form.Item
                 name="center_glass"
                 label="Center Glass"
                 rules={[{ required: true, message: "Vui lòng nhập CENTER_GLASS" }]}
               >
-                <Input />
+                <Input placeholder='Nhập CENTER_GLASS vd: 3'/>
               </Form.Item>
               <Form.Item
                 name="dk_01g"
                 label="DK_0.1GHz"
                 rules={[{ required: true, message: "Vui lòng nhập DK_0.1GHz" }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Nhập DK_0.1GHz vd: 4.24'/>
               </Form.Item>
               <Form.Item
                 name="df_01g"
                 label="DF_0.1GHz"
                 rules={[{ required: true, message: "Vui lòng nhập DF_0.1GHz" }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Nhập DF_0.1GHz vd: 0.013'/>
               </Form.Item>
               <Form.Item
                 name="is_hf"

@@ -207,21 +207,21 @@ const MaterialPPModal = ({
                 label="Vendor"
                 rules={[{ required: true, message: 'Vui lòng nhập Vendor' }]}
               >
-                <Input />
+                <Input placeholder='Nhập Vendor vd: EMC'/>
               </Form.Item>
               <Form.Item
                 name="family"
                 label="Family"
                 rules={[{ required: true, message: 'Vui lòng nhập Family' }]}
               >
-                <Input />
+                <Input placeholder='Nhập Family vd: EM-370(Z)'/>
               </Form.Item>
               <Form.Item
                 name="glass_style"
                 label="GLASS_STYLE"
                 rules={[{ required: true, message: 'Vui lòng nhập GLASS_STYLE' }]}
               >
-                <InputNumber style={{ width: '100%' }} />
+                <InputNumber style={{ width: '100%' }} placeholder='Nhập GLASS_STYLE 1067'/>
               </Form.Item>
               <Form.Item
                 name="resin_percentage"
@@ -235,49 +235,49 @@ const MaterialPPModal = ({
                 label="PREFERENCE CLASS"
                 rules={[{ required: true, message: 'Vui lòng nhập PREFERENCE CLASS' }]}
               >
-                <InputNumber style={{ width: '100%' }} />
+                <InputNumber style={{ width: '100%' }} placeholder='Ví dụ: 1'/>
               </Form.Item>
               <Form.Item
                 name="use_type"
                 label="USE Type"
                 rules={[{ required: true, message: 'Vui lòng nhập USE Type' }]}
               >
-                <Input />
+                <Input placeholder='Ví dụ: HDI/MLB'/>
               </Form.Item>
               <Form.Item
                 name="pp_type"
                 label="PP Type"
                 rules={[{ required: true, message: 'Vui lòng nhập PP Type' }]}
               >
-                <Input style={{ width: '100%' }} />
+                <Input style={{ width: '100%' }}  placeholder='Ví dụ: EM-37B(Z)'/>
               </Form.Item>
               <Form.Item
                 name="tg_min"
                 label="Tg Min"
                 rules={[{ required: true, message: 'Vui lòng nhập Tg Min' }]}
               >
-                <InputNumber style={{ width: '100%' }} />
+                <InputNumber style={{ width: '100%' }} placeholder='Ví du: 180'/>
               </Form.Item>
               <Form.Item
                 name="tg_max"
                 label="Tg Max"
                 rules={[{ required: true, message: 'Vui lòng nhập Tg Max' }]}
               >
-                <InputNumber style={{ width: '100%' }} />
+                <InputNumber style={{ width: '100%' }} placeholder='Ví dụ: 180'/>
               </Form.Item>
               <Form.Item
                 name="dk_01g"
                 label="DK_01GHz"
                 rules={[{ required: true, message: 'Vui lòng nhập DK_01GHz' }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Ví dụ: 3.87'/>
               </Form.Item>
               <Form.Item
                 name="df_01g"
                 label="DF_01GHz"
                 rules={[{ required: true, message: 'Vui lòng nhập DF_01GHz' }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Ví dụ: 0.015'/>
               </Form.Item>
               <Form.Item
                 name="is_hf"
