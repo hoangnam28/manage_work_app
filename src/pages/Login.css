@@ -4,35 +4,145 @@
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background: linear-gradient(135deg, #74ebd5, #acb6e5); 
-    animation: fadeIn 1.5s ease-in-out; 
+    animation: fadeIn 1.5s ease-in-out;
+    perspective: 1000px; /* Thêm perspective cho hiệu ứng 3D */
 }
 
 .login-card {
     width: 400px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+    border-radius: 15px;
     overflow: hidden;
-    background: white;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
     transform: translateY(-50px);
     animation: slideIn 1s ease-out forwards;
+    transition: all 0.5s ease;
+}
+
+.login-card:hover {
+    transform: translateY(-52px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.card-switch {
+    position: relative;
+    min-height: 300px;
+    perspective: 1000px;
+}
+
+.card-switch > * {
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    backface-visibility: hidden;
+    position: absolute;
+    width: 100%;
+}
+
+.card-switch .login-form {
+    opacity: 1;
+    transform: rotateY(0);
+}
+
+.card-switch .forgot-form {
+    opacity: 0;
+    transform: rotateY(-180deg);
+}
+
+.card-switch.forgot .login-form {
+    opacity: 0;
+    transform: rotateY(180deg);
+}
+
+.card-switch.forgot .forgot-form {
+    opacity: 1;
+    transform: rotateY(0);
+}
+
+.card-switch > * {
+    animation: fadeForm 0.35s ease;
+}
+
+@keyframes fadeForm {
+    from { 
+        opacity: 0; 
+        transform: translateY(20px); 
+        filter: blur(5px);
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+@keyframes cardEnter {
+    from {
+        transform: rotateY(-180deg);
+        opacity: 0;
+    }
+    to {
+        transform: rotateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes cardFlip {
+    from {
+        transform: rotateY(0);
+    }
+    to {
+        transform: rotateY(180deg);
+    }
 }
 
 .ant-btn-primary {
     background: linear-gradient(135deg, #6a11cb, #2575fc);
     border: none;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
 }
 
 .ant-btn-primary:hover {
     background: linear-gradient(135deg, #2575fc, #6a11cb);
-    transform: scale(1.05); 
+    transform: scale(1.02);
+    box-shadow: 0 5px 15px rgba(106, 17, 203, 0.4);
 }
 
+.ant-btn-primary::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.2),
+        transparent
+    );
+    transition: 0.5s;
+}
+
+.ant-btn-primary:hover::after {
+    left: 100%;
+}
+
+.ant-input, .ant-input-password {
+    transition: all 0.3s ease;
+    border-radius: 6px;
+}
+
+.ant-input:hover, .ant-input-password:hover {
+    border-color: #6a11cb;
+    transform: translateY(-1px);
+}
 
 .ant-input:focus, .ant-input-password:focus {
     border-color: #6a11cb;
-    box-shadow: 0 0 5px rgba(106, 17, 203, 0.5);
+    box-shadow: 0 0 0 2px rgba(106, 17, 203, 0.2);
+    transform: translateY(-2px);
 }
 
 @keyframes fadeIn {

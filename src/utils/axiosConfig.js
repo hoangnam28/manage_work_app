@@ -145,6 +145,14 @@ axiosInstance.interceptors.response.use(
       }
     }
 
+    // Treat 403 as an auth failure that requires re-login (some backends return 403 on expired/invalid token)
+    if (error.response?.status === 403) {
+      try {
+        onRefreshError(error);
+      } catch (_) {}
+      return Promise.reject(error);
+    }
+
     // Handle other HTTP errors
     switch (error.response?.status) {
       case 400:

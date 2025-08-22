@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Layout, Menu, Button, Avatar } from 'antd';
+import { Layout, Menu, Button, Avatar, Modal, Form, Input } from 'antd';
+import axios from '../../utils/axios';
+import { toast } from 'sonner';
 import {
   UserOutlined,
   LogoutOutlined,
@@ -19,6 +21,8 @@ const { Sider } = Layout;
 const SideBar = ({ onLogout, userId }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [openKeys, setOpenKeys] = useState([]);
+  const [pwOpen, setPwOpen] = useState(false);
+  const [form] = Form.useForm();
   const location = useLocation();
   useEffect(() => {
     if (location.pathname.startsWith('/material')) {
@@ -124,6 +128,8 @@ const SideBar = ({ onLogout, userId }) => {
               size={32}
               icon={<UserOutlined />}
               src={userId ? `http://192.84.105.173:8888/api/auth/avatar/${userId}` : null}
+              onClick={() => setPwOpen(true)}
+              style={{ cursor: 'pointer' }}
             />
             <span style={{ marginLeft: '8px' }}>{user?.username}</span>
           </>
@@ -150,6 +156,44 @@ const SideBar = ({ onLogout, userId }) => {
           onClick={() => setCollapsed(!collapsed)}
         />
       </div>
+      <Modal
+        title="Đổi mật khẩu"
+        open={pwOpen}
+        onCancel={() => setPwOpen(false)}
+        onOk={async () => {
+          try {
+            const values = await form.validateFields();
+            if (values.new_password !== values.confirm_password) {
+              toast.error('Mật khẩu mới và xác nhận không khớp');
+              return;
+            }
+            await axios.post('/auth/change-password', {
+              current_password: values.current_password,
+              new_password: values.new_password
+            });
+            toast.success('Đổi mật khẩu thành công');
+            setPwOpen(false);
+            form.resetFields();
+          } catch (e) {
+            if (e?.errorFields) return; // form error
+            const msg = e?.response?.data?.message || 'Lỗi khi đổi mật khẩu';
+            toast.error(msg);
+          }
+        }}
+        okText="Đổi mật khẩu"
+      >
+        <Form form={form} layout="vertical">
+          <Form.Item name="current_password" label="Mật khẩu hiện tại" rules={[{ required: true, message: 'Nhập mật khẩu hiện tại' }]}>
+            <Input.Password />
+          </Form.Item>
+          <Form.Item name="new_password" label="Mật khẩu mới" rules={[{ required: true, message: 'Nhập mật khẩu mới' }]}>
+            <Input.Password />
+          </Form.Item>
+          <Form.Item name="confirm_password" label="Xác nhận mật khẩu mới" rules={[{ required: true, message: 'Nhập xác nhận mật khẩu' }]}>
+            <Input.Password />
+          </Form.Item>
+        </Form>
+      </Modal>
     </Sider>
   );
 };

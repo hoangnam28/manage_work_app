@@ -1,10 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Modal, Form, Input, Popconfirm, Space, Typography, Select } from 'antd';
 import { EditOutlined, DeleteOutlined, UserAddOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import axios from '../utils/axios';
 import MainLayout from '../components/layout/MainLayout';
 import { Toaster, toast } from 'sonner';
-const BASE_URL = process.env.REACT_APP_BASE_URL;
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -23,12 +22,7 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('accessToken');
-      const response = await axios.get(`${BASE_URL}/user/list`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const response = await axios.get(`/user/list`);
       setUsers(response.data);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -76,11 +70,8 @@ const UserManagement = () => {
 
       if (editingUser) {
         const response = await axios.put(
-          `${BASE_URL}/user/update/${editingUser.USER_ID}`,
-          userData,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+          `/user/update/${editingUser.USER_ID}`,
+          userData
         );
 
         if (response.data?.data) {
@@ -98,11 +89,8 @@ const UserManagement = () => {
         }
       } else {
         const response = await axios.post(
-          `${BASE_URL}/user/create`,
-          userData,
-          {
-            headers: { Authorization: `Bearer ${token}` }
-          }
+          `/user/create`,
+          userData
         );
 
         if (response.data?.data) {
@@ -136,14 +124,8 @@ const UserManagement = () => {
 
   const handleDelete = async (userId) => {
     try {
-      const token = localStorage.getItem('accessToken');
       await axios.delete(
-        `${BASE_URL}/user/delete/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+        `/user/delete/${userId}`
       );
       toast.success('Xóa người dùng thành công');
       fetchUsers();
@@ -311,12 +293,8 @@ const UserManagement = () => {
                       return Promise.resolve();
                     }
                     try {
-                      const token = localStorage.getItem('accessToken');
                       const response = await axios.get(
-                        `${BASE_URL}/user/check-username?username=${value}`,
-                        {
-                          headers: { Authorization: `Bearer ${token}` }
-                        }
+                        `/user/check-username?username=${value}`
                       );
                       if (response.data.exists) {
                         return Promise.reject('Tên người dùng đã tồn tại');
