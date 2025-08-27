@@ -67,15 +67,11 @@ const DecideBoard = () => {
         }
         const onlyViewer = Array.isArray(userRoles) && userRoles.length === 1 && userRoles[0].toLowerCase() === 'viewer';
         setIsViewer(onlyViewer);
-
-        // Check company_id permission
         const allowedCompanyIds = ['000107', '003512', '024287', '026965', '014077', '001748', '030516'];
-        // Ưu tiên lấy từ userInfo nếu có, nếu không lấy từ response.data
         let companyId = userInfo?.company_id || response.data?.company_id;
         if (typeof companyId === 'number') companyId = companyId.toString().padStart(6, '0');
         if (typeof companyId === 'string') companyId = companyId.padStart(6, '0');
         setCanUpdateBo(allowedCompanyIds.includes(companyId));
-        // Các user chỉ được sửa trường request (không được sửa trường khác)
         const onlyRequestIds = ['000107', '003512', '024287', '026965', '014077', '001748', '030516'];
         setOnlyRequestEdit(onlyRequestIds.includes(companyId));
       } catch (error) {
@@ -699,8 +695,9 @@ const handleCancelRequestWithReason = async () => {
           dataSource={data}
           loading={loading}
           rowKey="id"
-          scroll={{ x: 'max-content' }}
+          scroll={{ x: 'max-content', y: 'calc(100vh - 280px)' }}
           size="middle"
+          sticky
           pagination={{
             defaultPageSize: 10,
             showSizeChanger: true,
@@ -888,10 +885,11 @@ const handleCancelRequestWithReason = async () => {
                 </Form.Item>
               </div>
             </div>
-
-            {/* Note field - full width */}
             <Form.Item name="note" label="Note">
-              <Input placeholder="Nhập ghi chú (không bắt buộc)" />
+              <Input.TextArea 
+                placeholder="Nhập ghi chú (không bắt buộc)" 
+                autoSize={{ minRows: 2, maxRows: 6 }} // Tự động co giãn chiều cao
+              />
             </Form.Item>
           </Form>
         </Modal>
@@ -1031,9 +1029,12 @@ const handleCancelRequestWithReason = async () => {
               )}
             </Form.Item>
 
-            <Form.Item name="note" label="Note">
-              <Input placeholder="Nhập ghi chú (không bắt buộc)" disabled={onlyRequestEdit} />
-            </Form.Item>
+              <Form.Item name="note" label="Note">
+                <Input.TextArea 
+                  placeholder="Nhập ghi chú (không bắt buộc)" 
+                  autoSize={{ minRows: 2, maxRows: 6 }} // Tự động co giãn chiều cao
+                />
+              </Form.Item>
           </Form>
         </Modal>
 

@@ -46,6 +46,7 @@
 .card-switch .forgot-form {
     opacity: 0;
     transform: rotateY(-180deg);
+    background-color: antiquewhite;
 }
 
 .card-switch.forgot .login-form {
@@ -127,6 +128,7 @@
 
 .ant-btn-primary:hover::after {
     left: 100%;
+    background-color: antiquewhite;
 }
 
 .ant-input, .ant-input-password {

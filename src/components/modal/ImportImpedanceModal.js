@@ -37,7 +37,7 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
             const transformedRow = {};
             transformedRow['IMP_1'] = null;
 
-            for (let i = 0; i < 136; i++) {
+            for (let i = 0; i < 138; i++) {
               const value = row[i];
               const impKey = `IMP_${i + 2}`;
 
@@ -162,6 +162,12 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
       dataIndex: 'IMP_2',
       key: 'imp_2',
       width: 100,
+      align: 'center',
+    },
+    {
+      title: 'Tổng hợp dữ liệu đo thực tế',
+      dataIndex: 'IMP_137',
+      key: 'imp_137',
       align: 'center',
     },
     {

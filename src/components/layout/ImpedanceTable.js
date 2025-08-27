@@ -139,6 +139,14 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
       render: renderCell,
     },
     {
+      title: renderColumnTitle('Ngày tạo'),
+      dataIndex: 'IMPE_138',
+      key: 'imp_138',
+      align: 'center',
+      fixed: 'left',
+      render: renderCell,
+    },
+    {
       title: renderColumnTitle('Tổng hợp dữ liệu đo thực tế'),
       dataIndex: 'IMP_137',
       key: 'imp_137',
@@ -1364,8 +1372,8 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
                 }
               },
             }}
+            scroll={{ x: 'max-content', y: 'calc(100vh - 280px)' }}
             size="middle"
-            scroll={{ x: 'max-content' }}
             sticky
             style={{
               width: '100%',

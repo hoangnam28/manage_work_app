@@ -80,7 +80,7 @@ const Impedance = () => {
           return;
         }
         
-        setHasEditPermission(['001507', '021253', '000001', '008048', '030783'].includes(decodedToken.company_id));
+        setHasEditPermission(['001507', '021253', '000001', '008048', '030783', '030516'].includes(decodedToken.company_id));
       } catch (error) {
         console.error('Error parsing token:', error);
         handleTokenExpiration();
@@ -200,6 +200,8 @@ const Impedance = () => {
       const mappedData = dataToExport.map(item => ({
         'JobName': item.IMP_1 ?? '-',
         'Mã Hàng': item.IMP_2 ?? '-',
+        'Tổng hợp dữ liệu đo thực tế': item.IMP_137 ?? '-',
+        'Ngày tạo': item.IMP_138 ?? '-',
         'Mã hàng tham khảo': item.IMP_3 ?? '-',
         'Khách hàng': item.IMP_4 ?? '-',
         'Loại khách hàng': item.IMP_5 ?? '-',
