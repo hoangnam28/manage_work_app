@@ -3,6 +3,7 @@ import { Modal, Form, Input, DatePicker, Select, InputNumber, Tabs, Alert } from
 import moment from 'moment';
 import { toast } from 'sonner';
 import { CopyOutlined } from '@ant-design/icons';
+import { hasPermission } from '../../utils/permissions';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
@@ -133,7 +134,7 @@ const MaterialPPModal = ({
       >
 
         <Tabs defaultActiveKey={mode === 'edit' ? "1" : "2"}>
-          {(mode === 'edit' || mode === 'clone') && (
+         { (mode === 'edit' || mode === 'clone') && hasPermission('approve') && (
             <TabPane tab="1. Thông tin yêu cầu" key="1">
               <Alert
                 message="Thông tin yêu cầu"

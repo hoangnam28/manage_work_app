@@ -3,6 +3,7 @@ import { Modal, Form, Input, DatePicker, Select, InputNumber, Tabs, Alert } from
 import moment from 'moment';
 import { toast } from 'sonner';
 import { CopyOutlined } from '@ant-design/icons';
+import { hasPermission } from '../../utils/permissions';
 
 const { Option } = Select;
 const { TabPane } = Tabs;
@@ -149,10 +150,10 @@ const handleSubmit = async () => {
           status: 'Pending',
         }}
       >
-        <Tabs defaultActiveKey={mode === 'edit' ? "1" : "2"}>
+        <Tabs defaultActiveKey={mode === 'edit' ? "1" : "2"} >
           {/* Tab 1: Thông tin yêu cầu - chỉ hiện khi edit hoặc clone */}
-          {(mode === 'edit' || mode === 'clone') && (
-            <TabPane tab="1. Thông tin yêu cầu" key="1">
+          { (mode === 'edit' || mode === 'clone') && hasPermission('approve') && (
+            <TabPane tab="1. Thông tin yêu cầu" key="1" >
               <Alert
                 message="Thông tin yêu cầu"
                 description={
@@ -294,6 +295,7 @@ const handleSubmit = async () => {
                   <Option value="H">H</Option>
                   <Option value="1">1</Option>
                   <Option value="2">2</Option>
+                  <Option value="Z">Z</Option>
                 </Select>
               </Form.Item>
               <Form.Item
@@ -323,6 +325,7 @@ const handleSubmit = async () => {
                   <Option value="H">H</Option>
                   <Option value="1">1</Option>
                   <Option value="2">2</Option>
+                  <Option value="Z">Z</Option>
                 </Select>
               </Form.Item>
               <Form.Item

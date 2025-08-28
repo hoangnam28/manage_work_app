@@ -67,11 +67,15 @@ const DecideBoard = () => {
         }
         const onlyViewer = Array.isArray(userRoles) && userRoles.length === 1 && userRoles[0].toLowerCase() === 'viewer';
         setIsViewer(onlyViewer);
+
+        // Check company_id permission
         const allowedCompanyIds = ['000107', '003512', '024287', '026965', '014077', '001748', '030516'];
+        // Ưu tiên lấy từ userInfo nếu có, nếu không lấy từ response.data
         let companyId = userInfo?.company_id || response.data?.company_id;
         if (typeof companyId === 'number') companyId = companyId.toString().padStart(6, '0');
         if (typeof companyId === 'string') companyId = companyId.padStart(6, '0');
         setCanUpdateBo(allowedCompanyIds.includes(companyId));
+        // Các user chỉ được sửa trường request (không được sửa trường khác)
         const onlyRequestIds = ['000107', '003512', '024287', '026965', '014077', '001748', '030516'];
         setOnlyRequestEdit(onlyRequestIds.includes(companyId));
       } catch (error) {
@@ -171,6 +175,7 @@ const DecideBoard = () => {
       title: "Mã sản phẩm",
       dataIndex: "CUSTOMER_CODE",
       rowSpan: 2,
+      width: 150,
       align: "center",
       fixed: 'left',
       ...getColumnSearchProps('CUSTOMER_CODE'),
@@ -198,12 +203,14 @@ const DecideBoard = () => {
           title: "Kích thước Tối ưu",
           dataIndex: "SIZE_NORMAL",
           align: "center",
+          width: 150,
           ...getColumnSearchProps('SIZE_NORMAL'),
         },
         {
           title: "Tỷ lệ %",
           dataIndex: "RATE_NORMAL",
           align: "center",
+          width: 150,
           ...getColumnSearchProps('RATE_NORMAL'),
         }
       ]
@@ -223,6 +230,7 @@ const DecideBoard = () => {
           ),
           dataIndex: "SIZE_BIG",
           align: "center",
+          width: 150,
           ...getColumnSearchProps('SIZE_BIG'),
           render: (value) => (
             <div style={{ background: '#f6ffed', minWidth: 80 }}>{value}</div>
@@ -236,6 +244,7 @@ const DecideBoard = () => {
           ),
           dataIndex: "RATE_BIG",
           align: "center",
+          width: 150,
           ...getColumnSearchProps('RATE_BIG'),
           render: (value) => (
             <div style={{ background: '#f6ffed', minWidth: 80 }}>{value}</div>
@@ -250,6 +259,7 @@ const DecideBoard = () => {
           title: "Yêu cầu sử dụng bo to",
           dataIndex: "REQUEST",
           align: "center",
+          width: 180,
           render: (value, record) => {
             // Nếu chưa xác nhận thì để trống
             if (!record.CONFIRM_BY) return '';
@@ -269,6 +279,7 @@ const DecideBoard = () => {
           dataIndex: "STATUS",
           align: "center",
           ...getColumnSearchProps('STATUS'),
+          width: 150,
           onFilter: (value, record) => (record.CONFIRM_BY ? 'Đã xác nhận' : 'Chưa xác nhận').toLowerCase().includes((value || '').toLowerCase()),
           render: (_, record) => record.CONFIRM_BY ? <span style={{ color: '#52c41a' }}>Đã xác nhận</span> : <span style={{ color: '#faad14' }}>Chưa xác nhận</span>
         },
@@ -276,6 +287,7 @@ const DecideBoard = () => {
           title: "Người Xác nhận",
           dataIndex: "CONFIRM_BY",
           align: "center",
+          width: 150,
           ...getColumnSearchProps('CONFIRM_BY'),
         },
       ],
@@ -285,7 +297,7 @@ const DecideBoard = () => {
       title: "Trạng thái bản ghi",
       dataIndex: "IS_CANCELED",
       align: "center",
-      width: 120,
+      width: 140,
       render: (value) => {
         if (value === 1) {
           return <Tag color="red">Đã hủy yêu cầu</Tag>;
@@ -301,7 +313,7 @@ const DecideBoard = () => {
     {
     title: "Note",
     dataIndex: "NOTE",
-    align: "center",
+    align: "left",
     render: (value, record) => {
       // Nếu bản ghi bị hủy và có REASON thì hiển thị REASON
       if (record.IS_CANCELED === 1 && record.REASON) {
@@ -1029,12 +1041,12 @@ const handleCancelRequestWithReason = async () => {
               )}
             </Form.Item>
 
-              <Form.Item name="note" label="Note">
-                <Input.TextArea 
-                  placeholder="Nhập ghi chú (không bắt buộc)" 
-                  autoSize={{ minRows: 2, maxRows: 6 }} // Tự động co giãn chiều cao
-                />
-              </Form.Item>
+            <Form.Item name="note" label="Note">
+              <Input.TextArea 
+                placeholder="Nhập ghi chú (không bắt buộc)" 
+                autoSize={{ minRows: 2, maxRows: 6 }} // Tự động co giãn chiều cao
+              />
+            </Form.Item>
           </Form>
         </Modal>
 

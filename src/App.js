@@ -10,6 +10,7 @@ import MaterialProperties from './pages/MaterialProperties';
 import DecideBoard from './pages/DecideBoard';
 import DecideBoardDetail from './pages/DecideBoardDetail';
 import MaterialNew from './pages/MaterialNew';
+import UlMaterial from './pages/UlMaterial';
 
 function App() {
   return (
@@ -72,6 +73,14 @@ function App() {
               <DecideBoardDetail />
             </PrivateRoute>
           } 
+        />
+        <Route 
+          path="/ul-material" 
+          element={
+            <PrivateRoute>
+              <UlMaterial />
+            </PrivateRoute>
+          }
         />
       </Routes>
     </div>

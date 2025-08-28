@@ -1,13 +1,27 @@
 import axios from './axios';
 
-export const fetchMaterialPpList = async () => {
+export const fetchMaterialPpList = async (params = {}) => {
   const token = localStorage.getItem('accessToken');
+  const { page = 1, pageSize = 20, ...searchParams } = params;
+  
+  console.log('API call params:', { page, pageSize, searchParams });
+  
+  // ✅ Trực tiếp sử dụng các tham số search mà không cần prefix
+  const queryParams = {
+    page,
+    pageSize,
+    ...searchParams // Trực tiếp spread các search parameters
+  };
+  
+  console.log('Final query params:', queryParams);
+  
   const response = await axios.get(`/material-pp/list`, {
-    headers: { Authorization: `Bearer ${token}` }
+    headers: { Authorization: `Bearer ${token}` },
+    params: queryParams
   });
+  
   return response.data;
 };
-
 export const createMaterialPp = async (data) => {
   const token = localStorage.getItem('accessToken');
   const response = await axios.post(`/material-pp/create`, data, {

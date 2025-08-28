@@ -25,7 +25,7 @@ const SideBar = ({ onLogout, userId }) => {
   const [form] = Form.useForm();
   const location = useLocation();
   useEffect(() => {
-    if (location.pathname.startsWith('/material')) {
+    if (location.pathname.startsWith('/material') || location.pathname.startsWith('/ul-material')) {
       setOpenKeys(['material']);
     }
   }, [location.pathname]);
@@ -78,6 +78,14 @@ const SideBar = ({ onLogout, userId }) => {
           label: (
             <Link to="/material-new" style={location.pathname === '/material-new' ? { color: '#1890ff', fontWeight: 600 } : {}}>
               New
+            </Link>
+          ),
+        },
+        {
+          key: '/ul-material',
+          label: (
+            <Link to="/ul-material" style={location.pathname === '/ul-material' ? { color: '#1890ff', fontWeight: 600 } : {}}>
+              UL Material
             </Link>
           ),
         },

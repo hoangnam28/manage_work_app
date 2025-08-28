@@ -33,8 +33,7 @@ const MaterialProperties = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
-  const [searchText, setSearchText] = useState('');
-  const [searchedColumn, setSearchedColumn] = useState('');
+  const [searchFilters, setSearchFilters] = useState({});
   const searchInput = useRef(null);
   const [historyData, setHistoryData] = useState([]);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
@@ -42,22 +41,74 @@ const MaterialProperties = () => {
   const [cloneRecord, setCloneRecord] = useState(null);
   const [modalMode, setModalMode] = useState('create');
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const response = await fetchMaterialPpList();
-      setData(response.data || []);
-    } catch (error) {
-      console.error('Error fetching material core data:', error);
-      toast.error('Lỗi khi tải dữ liệu');
-    } finally {
-      setLoading(false);
-    }
-  };
+
+  const [pagination, setPagination] = useState({
+      current: 1,
+      pageSize: 20,
+      total: 0,
+      showSizeChanger: true,
+      showQuickJumper: true,
+      showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
+      pageSizeOptions: ['20', '50', '100', '200', '500'],
+    });
+
+   const fetchData = async (page = null, pageSize = null, filters = null) => {
+      setLoading(true);
+      try {
+        const currentPage = page || pagination.current;
+        const currentPageSize = pageSize || pagination.pageSize;
+        const currentFilters = filters !== null ? filters : searchFilters;
+  
+        console.log('Fetching data with params:', {
+          page: currentPage,
+          pageSize: currentPageSize,
+          filters: currentFilters
+        });
+  
+        const response = await fetchMaterialPpList({
+          page: currentPage,
+          pageSize: currentPageSize,
+          ...currentFilters // ✅ Trực tiếp truyền filters thay vì wrap trong search object
+        });
+  
+        // Kiểm tra và điều chỉnh trang hiện tại nếu vượt quá tổng số trang
+        const totalPages = Math.ceil((response.pagination?.totalRecords || 0) / currentPageSize);
+        const adjustedCurrent = Math.min(currentPage, totalPages || 1);
+  
+        if (adjustedCurrent !== currentPage && totalPages > 0) {
+          // Nếu trang hiện tại đã bị điều chỉnh, gọi lại API với trang đúng
+          return fetchData(adjustedCurrent, currentPageSize, currentFilters);
+        }
+  
+        // Convert all keys to uppercase for consistency
+        const formattedData = (response.data || []).map(item => {
+          const newItem = {};
+          Object.keys(item).forEach(key => {
+            newItem[key.toUpperCase()] = item[key];
+          });
+          return newItem;
+        });
+  
+        setData(formattedData);
+        setPagination(prev => ({
+          ...prev,
+          current: adjustedCurrent,
+          pageSize: currentPageSize,
+          total: response.pagination?.totalRecords || 0
+        }));
+  
+      } catch (error) {
+        console.error('Error fetching material core data:', error);
+        toast.error('Lỗi khi tải dữ liệu');
+      } finally {
+        setLoading(false);
+      }
+    };
 
   useEffect(() => {
-    fetchData();
-  }, []);
+     fetchData();
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+   }, []);
   const handleCreate = async (values, mode = 'create') => {
     try {
       let requesterName = 'Unknown';
@@ -208,6 +259,18 @@ const MaterialProperties = () => {
     setEditingRecord(null);
     setModalVisible(true);
   };
+  const handleTableChange = (paginationConfig, filters, sorter) => {
+
+    // Cập nhật pagination state
+    setPagination(prev => ({
+      ...prev,
+      current: paginationConfig.current,
+      pageSize: paginationConfig.pageSize
+    }));
+
+    // Fetch data với current filters
+    fetchData(paginationConfig.current, paginationConfig.pageSize, searchFilters);
+  };
 
   const getColumnSearchProps = dataIndex => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
@@ -217,13 +280,13 @@ const MaterialProperties = () => {
           placeholder={`Tìm kiếm ${dataIndex}`}
           value={selectedKeys[0]}
           onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-          onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          onPressEnter={() => { handleSearch(selectedKeys, dataIndex); close(); }}
           style={{ marginBottom: 8, display: 'block' }}
         />
         <Space>
           <Button
             type="primary"
-            onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+            onClick={() => { handleSearch(selectedKeys, dataIndex); close(); }}
             icon={<SearchOutlined />}
             size="small"
             style={{ width: 90 }}
@@ -231,7 +294,7 @@ const MaterialProperties = () => {
             Tìm kiếm
           </Button>
           <Button
-            onClick={() => clearFilters && handleReset(clearFilters)}
+            onClick={() => clearFilters && handleReset(clearFilters, dataIndex)}
             size="small"
             style={{ width: 90 }}
           >
@@ -240,9 +303,7 @@ const MaterialProperties = () => {
           <Button
             type="link"
             size="small"
-            onClick={() => {
-              close();
-            }}
+            onClick={() => close()}
           >
             Đóng
           </Button>
@@ -254,48 +315,63 @@ const MaterialProperties = () => {
         style={{ color: filtered ? '#1890ff' : undefined }}
       />
     ),
-    onFilter: (value, record) => {
-      // Fix: Handle null/undefined values safely
-      const fieldValue = record[dataIndex];
-      if (fieldValue === null || fieldValue === undefined) {
-        return false; // or return true if you want to include null values in search
-      }
-      return fieldValue
-        .toString()
-        .toLowerCase()
-        .includes(value.toLowerCase());
-    },
+    filteredValue: searchFilters[dataIndex] ? [searchFilters[dataIndex]] : null,
     onFilterDropdownOpenChange: (visible) => {
       if (visible) {
         setTimeout(() => searchInput.current?.select(), 100);
       }
     },
-    render: (text) =>
-      searchedColumn === dataIndex ? (
+    render: (text) => {
+      const searchValue = searchFilters[dataIndex];
+      return searchValue ? (
         <Highlighter
           highlightStyle={{
             backgroundColor: '#ffc069',
             padding: 0,
           }}
-          searchWords={[searchText]}
+          searchWords={[searchValue]}
           autoEscape
           textToHighlight={text ? text.toString() : ''}
         />
       ) : (
         text
-      ),
+      );
+    }
   });
-
-  const handleSearch = (selectedKeys, confirm, dataIndex) => {
-    confirm();
-    setSearchText(selectedKeys[0]);
-    setSearchedColumn(dataIndex);
+const handleSearch = (selectedKeys, dataIndex) => {
+    const searchValue = selectedKeys[0];
+    
+    // Cập nhật search filters
+    const newFilters = { ...searchFilters };
+    if (searchValue) {
+      newFilters[dataIndex] = searchValue;
+    } else {
+      delete newFilters[dataIndex];
+    }
+    setSearchFilters(newFilters);
+    // Reset về trang 1 và fetch data với search filters mới
+    setPagination(prev => ({
+      ...prev,
+      current: 1
+    }));
+    
+    fetchData(1, pagination.pageSize, newFilters);
+    
   };
 
-  const handleReset = (clearFilters) => {
+
+  const handleReset = (clearFilters, dataIndex) => {
+    const newFilters = { ...searchFilters };
+    delete newFilters[dataIndex];
+    setSearchFilters(newFilters);
+
+    setPagination(prev => ({
+      ...prev,
+      current: 1
+    }));
+
+    fetchData(1, pagination.pageSize, newFilters);
     clearFilters();
-    setSearchText('');
-    fetchData();
   };
 
 
@@ -832,15 +908,22 @@ const MaterialProperties = () => {
           columns={columns}
           dataSource={data}
           loading={loading}
-          rowKey="id"
+          rowKey={(record) => record.ID || record.id}
           scroll={{ x: 'max-content', y: 'calc(100vh - 280px)' }}
           size="middle"
           sticky
           pagination={{
-            defaultPageSize: 10,
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng số ${total} bản ghi`
+            ...pagination,
+            onChange: (page, pageSize) => {
+              console.log('Pagination changed:', page, pageSize);
+              fetchData(page, pageSize, searchFilters); // Truyền searchFilters
+            },
+            onShowSizeChange: (current, size) => {
+              console.log('Page size changed:', current, size);
+              fetchData(1, size, searchFilters); // Reset về trang 1 với search filters
+            }
           }}
+          onChange={handleTableChange} // Thêm onChange handler
           rowClassName={(record) => {
             if (record.STATUS === 'Pending') return 'row-pending';
             if (record.STATUS === 'Cancel') return 'row-cancel';

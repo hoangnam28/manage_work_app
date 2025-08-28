@@ -304,13 +304,13 @@ const MaterialCore = () => {
           placeholder={`Tìm kiếm ${dataIndex}`}
           value={selectedKeys[0]}
           onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-          onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
+          onPressEnter={() => { handleSearch(selectedKeys, dataIndex); close(); }}
           style={{ marginBottom: 8, display: 'block' }}
         />
         <Space>
           <Button
             type="primary"
-            onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
+            onClick={() => { handleSearch(selectedKeys, dataIndex); close(); }}
             icon={<SearchOutlined />}
             size="small"
             style={{ width: 90 }}
@@ -363,7 +363,7 @@ const MaterialCore = () => {
       );
     }
   });
-  const handleSearch = (selectedKeys, confirm, dataIndex) => {
+  const handleSearch = (selectedKeys, dataIndex) => {
     const searchValue = selectedKeys[0];
 
     // Cập nhật search filters
@@ -380,7 +380,6 @@ const MaterialCore = () => {
       current: 1
     }));
 
-    confirm();
     fetchData(1, pagination.pageSize, newFilters);
 
   };
