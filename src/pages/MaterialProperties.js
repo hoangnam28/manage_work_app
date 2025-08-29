@@ -9,7 +9,8 @@ import {
   HistoryOutlined,
   CopyOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -98,7 +99,7 @@ const MaterialProperties = () => {
         }));
   
       } catch (error) {
-        console.error('Error fetching material core data:', error);
+        console.error('Error fetching material pp data:', error);
         toast.error('Lỗi khi tải dữ liệu');
       } finally {
         setLoading(false);
@@ -142,7 +143,7 @@ const MaterialProperties = () => {
       setModalVisible(false);
       fetchData();
     } catch (error) {
-      console.error('Error creating material core:', error);
+      console.error('Error creating material pp:', error);
       toast.error('Lỗi khi thêm mới');
     }
   };
@@ -166,7 +167,7 @@ const MaterialProperties = () => {
       setEditingRecord(null);
       fetchData();
     } catch (error) {
-      console.error('Error updating material core:', error);
+      console.error('Error updating material pp:', error);
       toast.error('Lỗi khi cập nhật: ' + (error.message || 'Đã có lỗi xảy ra'));
     }
   };
@@ -183,7 +184,7 @@ const MaterialProperties = () => {
       toast.success('Xóa thành công');
       fetchData();
     } catch (error) {
-      console.error('Error deleting material core:', error);
+      console.error('Error deleting material pp:', error);
       toast.error('Lỗi khi xóa');
     }
   };
@@ -244,7 +245,7 @@ const MaterialProperties = () => {
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'MaterialCoreExport.xlsm');
+      link.setAttribute('download', 'MaterialPPExport.xlsm');
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -257,6 +258,12 @@ const MaterialProperties = () => {
     setModalMode('clone');
     setCloneRecord(record);
     setEditingRecord(null);
+    setModalVisible(true);
+  };
+  const handleViewDetails = (record) => {
+    setModalMode('view');
+    setEditingRecord(record);
+    setCloneRecord(null);
     setModalVisible(true);
   };
   const handleTableChange = (paginationConfig, filters, sorter) => {
@@ -386,7 +393,7 @@ const handleSearch = (selectedKeys, dataIndex) => {
       render: (text, record) => (
         <Button
           type="link"
-          onClick={() => handleClone(record)}
+          onClick={() => handleViewDetails(record)}
           style={{
             padding: 0,
             height: 'auto',
@@ -883,6 +890,7 @@ const handleSearch = (selectedKeys, dataIndex) => {
               >
                 Thêm mới
               </Button>
+              
             </PermissionGuard>
             <PermissionGuard requiredPermissions={['view']}>
               <Button
@@ -897,10 +905,22 @@ const handleSearch = (selectedKeys, dataIndex) => {
               <Button
                 type="default"
                 onClick={() => setImportReviewModalVisible(true)}
+                style={{ marginRight: 8 }}
               >
                 Import Excel
               </Button>
             </PermissionGuard>
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                setSearchFilters({});
+                fetchData();
+              }}
+              style={{ marginRight: 8 }}
+            >
+              Bỏ lọc
+            </Button>
           </div>
         </div>
 

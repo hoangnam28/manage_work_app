@@ -8,7 +8,8 @@ import {
   SearchOutlined,
   HistoryOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -419,14 +420,14 @@ const MaterialProperties = () => {
       align: 'center'
     },
     {
-      title: 'TG',
+      title: 'Tg (TMA)',
       dataIndex: 'TG',
       key: 'TG',
       width: 100,
       align: 'center'
     },
     {
-      title: 'BORD_TYPE',
+      title: 'BoardType',
       dataIndex: 'BORD_TYPE',
       key: 'BORD_TYPE',
       width: 150,
@@ -440,14 +441,14 @@ const MaterialProperties = () => {
       align: 'center'
     },
     {
-      title: 'FILE_NAME',
+      title: 'DK-DF_FileName',
       dataIndex: 'FILE_NAME',
       key: 'FILE_NAME',
       width: 120,
       align: 'center'
     },
     {
-      title: 'DATA',
+      title: 'DATA_SOURCE_',
       dataIndex: 'DATA',
       key: 'DATA',
       width: 120,
@@ -585,14 +586,26 @@ const MaterialProperties = () => {
             <Button
               type="default"
               onClick={handleExport}
+              style={{ marginRight: 8 }}
             >
               Xuất Excel
             </Button>
             <Button
               type="default"
               onClick={() => setImportReviewModalVisible(true)}
+              style={{ marginRight: 8 }}
             >
               Import Excel
+            </Button>
+            <Button
+              type="primary"
+              icon={<ReloadOutlined />}
+              onClick={() => {
+                setSearchFilters({});
+                fetchData();
+              }}
+            >
+              Bỏ lọc
             </Button>
           </div>
         </div>

@@ -19,7 +19,7 @@ const MaterialCoreModal = ({
 
   useEffect(() => {
     if (open) {
-      if (mode === 'edit' && editingRecord) {
+      if ((mode === 'edit' || mode === 'view') && editingRecord) {
         const formattedRecord = Object.keys(editingRecord).reduce((acc, key) => {
           if (key.toUpperCase() === 'ID') {
             acc.id = editingRecord[key];
@@ -62,54 +62,58 @@ const MaterialCoreModal = ({
       }
     }
   }, [open, editingRecord, cloneRecord, mode, form]);
-const handleSubmit = async () => {
-  try {
-    // Validate form trước
-    const values = await form.validateFields();
+  const handleSubmit = async () => {
+    try {
+      // Validate form trước
+      const values = await form.validateFields();
 
-    // Format dates
-    if (values.request_date) {
-      values.request_date = values.request_date.toDate().toISOString();
-    }
-    if (values.complete_date) {
-      values.complete_date = values.complete_date.toDate().toISOString();
-    }
-
-    // Chỉ set ID khi đang edit
-    if (mode === 'edit' && editingRecord) {
-      const recordId = editingRecord.ID || editingRecord.id;
-      if (!recordId) {
-        throw new Error('Không tìm thấy ID bản ghi');
+      // Format dates
+      if (values.request_date) {
+        values.request_date = values.request_date.toDate().toISOString();
       }
-      values.id = recordId;
+      if (values.complete_date) {
+        values.complete_date = values.complete_date.toDate().toISOString();
+      }
+      if (mode === 'view') {
+        if (onCancel) onCancel();
+        return;
+      }
+      // Chỉ set ID khi đang edit
+      if (mode === 'edit' && editingRecord) {
+        const recordId = editingRecord.ID || editingRecord.id;
+        if (!recordId) {
+          throw new Error('Không tìm thấy ID bản ghi');
+        }
+        values.id = recordId;
+      }
+
+      // Thực hiện submit và đợi kết quả
+      const result = await onSubmit(values, mode);
+
+      // Kiểm tra kết quả trả về
+      if (result && result.success === false) {
+        throw new Error(result.message || 'Có lỗi xảy ra');
+      }
+
+      // Hiển thị toast success với message từ result hoặc default
+      const successMessage = result?.message || (
+        mode === 'edit' ? 'Cập nhật thành công!' :
+          mode === 'clone' ? 'Tạo bản sao thành công!' :
+            mode === 'view' ? '' :
+              'Thêm mới thành công!'
+      );
+
+      toast.success(successMessage);
+
+      // Reset form và đóng modal
+      form.resetFields();
+      if (onCancel) onCancel();
+
+    } catch (error) {
+      console.error('Submit failed:', error);
+      toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu'));
     }
-
-    // Thực hiện submit và đợi kết quả
-    const result = await onSubmit(values, mode);
-    
-    // Kiểm tra kết quả trả về
-    if (result && result.success === false) {
-      throw new Error(result.message || 'Có lỗi xảy ra');
-    }
-
-    // Hiển thị toast success với message từ result hoặc default
-    const successMessage = result?.message || (
-      mode === 'edit' ? 'Cập nhật thành công!' : 
-      mode === 'clone' ? 'Tạo bản sao thành công!' : 
-      'Thêm mới thành công!'
-    );
-    
-    toast.success(successMessage);
-
-    // Reset form và đóng modal
-    form.resetFields();
-    if (onCancel) onCancel();
-
-  } catch (error) {
-    console.error('Submit failed:', error);
-    toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu'));
-  }
-};
+  };
 
   // Generate modal title based on mode
   const getModalTitle = () => {
@@ -118,6 +122,8 @@ const handleSubmit = async () => {
         return 'Sửa Material Core';
       case 'clone':
         return 'Tạo bản sao Material Core';
+      case 'view':
+        return 'Xem chi tiết Material Core';
       default:
         return 'Thêm Material Core';
     }
@@ -141,7 +147,12 @@ const handleSubmit = async () => {
         height: 'calc(100vh - 200px)',
         overflow: 'auto'
       }}
-      okText={mode === 'edit' ? 'Cập nhật' : (mode === 'clone' ? 'Tạo bản sao' : 'Thêm mới')}
+      okText={
+        mode === 'edit' ? 'Cập nhật' :
+          mode === 'clone' ? 'Tạo bản sao' :
+            mode === 'view' ? 'Đóng' :
+              'Thêm mới'
+      }
     >
       <Form
         form={form}
@@ -150,9 +161,9 @@ const handleSubmit = async () => {
           status: 'Pending',
         }}
       >
-        <Tabs defaultActiveKey={mode === 'edit' ? "1" : "2"} >
+        <Tabs defaultActiveKey={mode === 'edit' || mode === 'view' ? "1" : "2"} >
           {/* Tab 1: Thông tin yêu cầu - chỉ hiện khi edit hoặc clone */}
-          { (mode === 'edit' || mode === 'clone') && hasPermission('approve') && (
+          {(mode === 'edit' || mode === 'clone' || mode === 'view') && hasPermission('approve') && (
             <TabPane tab="1. Thông tin yêu cầu" key="1" >
               <Alert
                 message="Thông tin yêu cầu"
@@ -232,7 +243,7 @@ const handleSubmit = async () => {
                 label="Family"
                 rules={[{ required: true, message: "Vui lòng nhập FAMILY" }]}
               >
-                <Input placeholder={"Nhập một familt ví dụ: EMC_307(Z)"}/>
+                <Input placeholder={"Nhập một familt ví dụ: EMC_307(Z)"} />
               </Form.Item>
               <Form.Item
                 name="prepreg_count"
@@ -246,27 +257,27 @@ const handleSubmit = async () => {
                 label="Nominal Thickness"
                 rules={[{ required: true, message: "Vui lòng nhập NOMINAL THICKNESS" }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.001} placeholder='Nhập NOMINAL THICKNESS vd: 33'/>
+                <InputNumber style={{ width: '100%' }} step={0.001} placeholder='Nhập NOMINAL THICKNESS vd: 33' />
               </Form.Item>
               <Form.Item
                 name="spec_thickness"
                 label="Spec Thickness"
                 rules={[{ required: true, message: "Vui lòng nhập SPEC THICKNESS" }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.001} placeholder='Nhập SPEC THICKNESS vd: 33'/>
+                <InputNumber style={{ width: '100%' }} step={0.001} placeholder='Nhập SPEC THICKNESS vd: 33' />
               </Form.Item>
               <Form.Item
                 name="preference_class"
                 label="Preference Class"
                 rules={[{ required: true, message: "Vui lòng nhập PREFERENCE CLASS" }]}
               >
-                <InputNumber style={{ width: '100%' }} placeholder='Nhập PREFERENCE CLASS vd: 33'/>
+                <InputNumber style={{ width: '100%' }} placeholder='Nhập PREFERENCE CLASS vd: 33' />
               </Form.Item>
               <Form.Item
                 name="use_type"
                 label="USE Type"
               >
-                <Input placeholder='Nhập USE Type vd: HDI/MLB'/>
+                <Input placeholder='Nhập USE Type vd: HDI/MLB' />
               </Form.Item>
               <Form.Item
                 name="top_foil_cu_weight"
@@ -288,8 +299,12 @@ const handleSubmit = async () => {
                 ]}
               >
                 <Select
-                  mode={mode === 'edit' ? undefined : "multiple"}
-                  placeholder={mode === 'edit' ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị"}
+                  mode={(mode === 'edit' || mode === 'view') ? undefined : "multiple"}
+                  disabled={mode === 'view'}
+                  placeholder={
+                    mode === 'view' ? "" :
+                      (mode === 'edit' ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị")
+                  }
                 >
                   <Option value="L">L</Option>
                   <Option value="H">H</Option>
@@ -318,8 +333,12 @@ const handleSubmit = async () => {
                 ]}
               >
                 <Select
-                  mode={mode === 'edit' ? undefined : "multiple"}
-                  placeholder={mode === 'edit' ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị"}
+                  mode={(mode === 'edit' || mode === 'view') ? undefined : "multiple"}
+                  disabled={mode === 'view'}
+                  placeholder={
+                    mode === 'view' ? "" :
+                      (mode === 'edit' ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị")
+                  }
                 >
                   <Option value="L">L</Option>
                   <Option value="H">H</Option>
@@ -333,35 +352,35 @@ const handleSubmit = async () => {
                 label="Tg Min"
                 rules={[{ required: true, message: "Vui lòng nhập TG_MIN" }]}
               >
-                <InputNumber style={{ width: '100%' }} placeholder='Nhập TG_MIN vd: 180'/>
+                <InputNumber style={{ width: '100%' }} placeholder='Nhập TG_MIN vd: 180' />
               </Form.Item>
               <Form.Item
                 name="tg_max"
                 label="Tg Max"
                 rules={[{ required: true, message: "Vui lòng nhập TG_MAX" }]}
               >
-                <InputNumber style={{ width: '100%' }} placeholder='Nhập TG_MAX vd: 180'/>
+                <InputNumber style={{ width: '100%' }} placeholder='Nhập TG_MAX vd: 180' />
               </Form.Item>
               <Form.Item
                 name="center_glass"
                 label="Center Glass"
                 rules={[{ required: true, message: "Vui lòng nhập CENTER_GLASS" }]}
               >
-                <Input placeholder='Nhập CENTER_GLASS vd: 3'/>
+                <Input placeholder='Nhập CENTER_GLASS vd: 3' />
               </Form.Item>
               <Form.Item
                 name="dk_01g"
                 label="DK_0.1GHz"
                 rules={[{ required: true, message: "Vui lòng nhập DK_0.1GHz" }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Nhập DK_0.1GHz vd: 4.24'/>
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Nhập DK_0.1GHz vd: 4.24' />
               </Form.Item>
               <Form.Item
                 name="df_01g"
                 label="DF_0.1GHz"
                 rules={[{ required: true, message: "Vui lòng nhập DF_0.1GHz" }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Nhập DF_0.1GHz vd: 0.013'/>
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Nhập DF_0.1GHz vd: 0.013' />
               </Form.Item>
               <Form.Item
                 name="is_hf"

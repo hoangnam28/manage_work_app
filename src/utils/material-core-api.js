@@ -2,24 +2,18 @@ import axios from './axios';
 
 export const fetchMaterialCoreList = async (params = {}) => {
   const token = localStorage.getItem('accessToken');
-  const { page = 1, pageSize = 20, search = {} } = params;
-  const searchParams = {};
-  if (typeof search === 'object') {
-    Object.entries(search).forEach(([key, value]) => {
-      if (value) {
-        searchParams[`search_${key}`] = value;
-      }
-    });
-  }
-  
+  const { page = 1, pageSize = 20, ...searchParams } = params;
+    
+  const queryParams = {
+    page,
+    pageSize,
+    ...searchParams 
+  };
   const response = await axios.get(`/material-core/list`, {
     headers: { Authorization: `Bearer ${token}` },
-    params: {
-      page,
-      pageSize,
-      ...searchParams // Gửi tất cả các tham số tìm kiếm
-    }
+    params: queryParams
   });
+  
   return response.data;
 };
 

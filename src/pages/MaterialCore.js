@@ -12,7 +12,8 @@ import {
   FileExcelOutlined,
   CopyOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined
+  CloseCircleOutlined,
+  ReloadOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -56,44 +57,61 @@ const MaterialCore = () => {
     pageSizeOptions: ['20', '50', '100', '200', '500'],
   });
 
-  const fetchData = async (page = 1, pageSize = 20, filters = {}) => {
+  const fetchData = async (page = null, pageSize = null, filters = null) => {
     setLoading(true);
     try {
-      // Xây dựng query params cho tìm kiếm
-      const searchQuery = {};
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value) {
-          searchQuery[key.toLowerCase()] = value;
-        }
+      const currentPage = page || pagination.current;
+      const currentPageSize = pageSize || pagination.pageSize;
+      const currentFilters = filters !== null ? filters : searchFilters;
+
+      console.log('Fetching data with params:', {
+        page: currentPage,
+        pageSize: currentPageSize,
+        filters: currentFilters
       });
 
       const response = await fetchMaterialCoreList({
-        page,
-        pageSize,
-        search: searchQuery
+        page: currentPage,
+        pageSize: currentPageSize,
+        ...currentFilters // ✅ Trực tiếp truyền filters thay vì wrap trong search object
       });
-      setData(response.data || []);
 
+      // Kiểm tra và điều chỉnh trang hiện tại nếu vượt quá tổng số trang
+      const totalPages = Math.ceil((response.pagination?.totalRecords || 0) / currentPageSize);
+      const adjustedCurrent = Math.min(currentPage, totalPages || 1);
+
+      if (adjustedCurrent !== currentPage && totalPages > 0) {
+        return fetchData(adjustedCurrent, currentPageSize, currentFilters);
+      }
+
+      // Convert all keys to uppercase for consistency
+      const formattedData = (response.data || []).map(item => {
+        const newItem = {};
+        Object.keys(item).forEach(key => {
+          newItem[key.toUpperCase()] = item[key];
+        });
+        return newItem;
+      });
+
+      setData(formattedData);
       setPagination(prev => ({
         ...prev,
-        current: page,
-        pageSize: pageSize,
+        current: adjustedCurrent,
+        pageSize: currentPageSize,
         total: response.pagination?.totalRecords || 0
       }));
 
     } catch (error) {
-      console.error('Error fetching material core data:', error);
+      console.error('Error fetching material pp data:', error);
       toast.error('Lỗi khi tải dữ liệu');
     } finally {
       setLoading(false);
     }
   };
   useEffect(() => {
-    fetchData(1, 20);
+    fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  
-
 
   const handleCreate = async (values, mode = 'create') => {
     try {
@@ -296,6 +314,12 @@ const MaterialCore = () => {
     setEditingRecord(null);
     setModalVisible(true);
   };
+  const handleViewDetails = (record) => {
+    setModalMode('view');
+    setEditingRecord(record);
+    setCloneRecord(null);
+    setModalVisible(true);
+  };
   const getColumnSearchProps = dataIndex => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
       <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
@@ -339,7 +363,6 @@ const MaterialCore = () => {
         style={{ color: filtered ? '#1890ff' : undefined }}
       />
     ),
-    // Bỏ onFilter vì sẽ search trên server
     filteredValue: searchFilters[dataIndex] ? [searchFilters[dataIndex]] : null,
     onFilterDropdownOpenChange: (visible) => {
       if (visible) {
@@ -383,23 +406,22 @@ const MaterialCore = () => {
     fetchData(1, pagination.pageSize, newFilters);
 
   };
+
+
   const handleReset = (clearFilters, dataIndex) => {
-    // Xóa filter cho column này
     const newFilters = { ...searchFilters };
     delete newFilters[dataIndex];
     setSearchFilters(newFilters);
 
-    // Reset pagination về trang 1
     setPagination(prev => ({
       ...prev,
       current: 1
     }));
 
-    // Fetch data với filters đã bị xóa
     fetchData(1, pagination.pageSize, newFilters);
-
     clearFilters();
   };
+
   const handleTableChange = (paginationConfig, filters, sorter) => {
 
     // Cập nhật pagination state
@@ -455,14 +477,14 @@ const MaterialCore = () => {
       render: (text, record) => (
         <Button
           type="link"
-          onClick={() => handleClone(record)}
+          onClick={() => handleViewDetails(record)}
           style={{
             padding: 0,
             height: 'auto',
             color: '#1890ff',
             fontWeight: 'normal'
           }}
-          title="Click để tạo bản sao từ bản ghi này"
+          title="Click để xem chi tiết bản ghi này"
         >
           {text}
         </Button>
@@ -1068,7 +1090,6 @@ const MaterialCore = () => {
       <Toaster position="top-right" richColors />
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
-           
           <h1 style={{ color: '#e29a51ff' }}>
             Core
           </h1>
@@ -1086,6 +1107,20 @@ const MaterialCore = () => {
                 style={{ marginRight: 8 }}
               >
                 Thêm mới
+              </Button>
+              <Button
+                type="primary"
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  setSearchFilters({}); // Clear tất cả filters
+                  setPagination(prev => ({ ...prev, current: 1 })); // Reset về trang 1
+                  setTimeout(() => {
+                    fetchData(1, pagination.pageSize, {}); // Fetch với filters rỗng
+                  }, 100);
+                }}
+                style={{ marginRight: 8 }}
+              >
+                Bỏ lọc
               </Button>
             </PermissionGuard>
             <PermissionGuard requiredPermissions={['view']}>

@@ -19,7 +19,7 @@ const MaterialPPModal = ({
   const [form] = Form.useForm();
   useEffect(() => {
     if (open) {
-      if (mode === 'edit' && editingRecord) {
+      if ((mode === 'edit' || mode === 'view') && editingRecord) {
         const formattedRecord = Object.keys(editingRecord).reduce((acc, key) => {
           if (key.toUpperCase() === 'ID') {
             acc.id = editingRecord[key];
@@ -68,6 +68,10 @@ const MaterialPPModal = ({
       if (values.complete_date) {
         values.complete_date = values.complete_date.toDate().toISOString();
       }
+       if (mode === 'view') {
+        if (onCancel) onCancel();
+        return;
+      }
       if (mode === 'edit' && editingRecord) {
         const recordId = editingRecord.ID || editingRecord.id;
         if (!recordId) {
@@ -99,6 +103,8 @@ const MaterialPPModal = ({
         return 'Sửa Material PP';
       case 'clone':
         return 'Tạo bản sao Material PP';
+      case 'view':
+        return 'Xem chi tiết Material Core';  
       default:
         return 'Thêm Material PP';
     }
@@ -122,7 +128,12 @@ const MaterialPPModal = ({
         height: 'calc(100vh - 200px)',
         overflow: 'auto'
       }}
-      okText={mode === 'edit' ? 'Cập nhật' : (mode === 'clone' ? 'Tạo bản sao' : 'Thêm mới')}
+      okText={
+        mode === 'edit' ? 'Cập nhật' :
+          mode === 'clone' ? 'Tạo bản sao' :
+            mode === 'view' ? '' :
+              'Thêm mới'
+      }
     >
       <Form
         form={form}
@@ -133,8 +144,8 @@ const MaterialPPModal = ({
         }}
       >
 
-        <Tabs defaultActiveKey={mode === 'edit' ? "1" : "2"}>
-         { (mode === 'edit' || mode === 'clone') && hasPermission('approve') && (
+        <Tabs defaultActiveKey={mode === 'edit' || mode === 'view' ? "1" : "2"} >
+         {(mode === 'edit' || mode === 'clone' || mode === 'view') && hasPermission('approve') && (
             <TabPane tab="1. Thông tin yêu cầu" key="1">
               <Alert
                 message="Thông tin yêu cầu"
