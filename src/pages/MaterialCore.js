@@ -1112,10 +1112,10 @@ const MaterialCore = () => {
                 type="primary"
                 icon={<ReloadOutlined />}
                 onClick={() => {
-                  setSearchFilters({}); // Clear tất cả filters
-                  setPagination(prev => ({ ...prev, current: 1 })); // Reset về trang 1
+                  setSearchFilters({}); 
+                  setPagination(prev => ({ ...prev, current: 1 })); 
                   setTimeout(() => {
-                    fetchData(1, pagination.pageSize, {}); // Fetch với filters rỗng
+                    fetchData(1, pagination.pageSize, {}); 
                   }, 100);
                 }}
                 style={{ marginRight: 8 }}

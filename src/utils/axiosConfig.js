@@ -145,11 +145,10 @@ axiosInstance.interceptors.response.use(
       }
     }
 
-    // Treat 403 as an auth failure that requires re-login (some backends return 403 on expired/invalid token)
+    // 403: permission denied. Keep user logged in, just show a message.
     if (error.response?.status === 403) {
-      try {
-        onRefreshError(error);
-      } catch (_) {}
+      const msg = error.response?.data?.message || 'Bạn không có quyền truy cập trang này';
+      toast.error(msg);
       return Promise.reject(error);
     }
 
@@ -158,9 +157,7 @@ axiosInstance.interceptors.response.use(
       case 400:
         toast.error(error.response.data?.message || 'Dữ liệu không hợp lệ');
         break;
-      case 403:
-        toast.error('Bạn không có quyền thực hiện thao tác này');
-        break;
+      // 403 is handled above to avoid duplicate toasts/logout
       case 404:
         toast.error('Không tìm thấy dữ liệu yêu cầu');
         break;

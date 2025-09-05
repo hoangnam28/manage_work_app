@@ -6,10 +6,11 @@ import axios from "axios";
 import moment from 'moment';
 import MainLayout from "../components/layout/MainLayout";
 import { Toaster, toast } from 'sonner';
-import * as XLSX from 'xlsx';
 import './Review.css';
 import ConfirmReviewResetButton from "../components/button/ConfirmReviewResetButton ";
 import UpdateDocumentModal from '../components/modal/UpdateDocumentModal';
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 
 
 
@@ -360,52 +361,85 @@ const Review = () => {
     }
   };
 
-  const handleExportExcel = () => {
-    try {
-      const exportData = data.map(item => ({
-        'STT': item.STT,
-        'Đầu mã': item.MA,
-        'Đối tượng': item.DOI_TUONG,
-        'Khách hàng': item.KHACH_HANG,
-        'Mã tài liệu khách hàng': item.MA_TAI_LIEU,
-        'Rev.': item.REV,
-        'Phụ trách thiết kế': item.PHU_TRACH_THIET_KE,
-        'Ngày thiết kế': item.NGAY_THIET_KE ? moment(item.NGAY_THIET_KE).format('DD/MM/YYYY') : '',
-        'Cong vênh': item.CONG_VENH,
-        'Phụ trách review': item.PHU_TRACH_REVIEW,
-        'Ngày': item.NGAY ? moment(item.NGAY).format('DD/MM/YYYY') : '',
-        'V-Cut': item.V_CUT,
-        'Xử lý bề mặt': item.XU_LY_BE_MAT,
-        'Ghi chú': item.GHI_CHU
-      }));
-      const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(exportData);
+  const handleExportExcel = async () => {
+  try {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Danh sách Review");
 
-      const columnWidths = [
-        { wch: 5 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 25 }, { wch: 8 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 10 }, { wch: 20 }, { wch: 30 }
-      ];
-      ws['!cols'] = columnWidths;
-      const range = XLSX.utils.decode_range(ws['!ref']);
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const address = XLSX.utils.encode_col(C) + "1";
-        if (!ws[address]) continue;
-        ws[address].s = {
-          font: { bold: true },
-          fill: { fgColor: { rgb: "EEEEEE" } },
-          alignment: { horizontal: "center" }
-        };
-      }
+    // Tạo header
+    worksheet.columns = [
+      { header: "STT", key: "STT", width: 5 },
+      { header: "Đầu mã", key: "MA", width: 15 },
+      { header: "Đối tượng", key: "DOI_TUONG", width: 15 },
+      { header: "Khách hàng", key: "KHACH_HANG", width: 20 },
+      { header: "Mã tài liệu KH", key: "MA_TAI_LIEU", width: 25 },
+      { header: "Rev.", key: "REV", width: 8 },
+      { header: "Phụ trách TK", key: "PHU_TRACH_THIET_KE", width: 20 },
+      { header: "Ngày TK", key: "NGAY_THIET_KE", width: 15 },
+      { header: "Cong vênh", key: "CONG_VENH", width: 15 },
+      { header: "Hình ảnh 1", key: "hinh_anh1", width: 25 },
+      { header: "Hình ảnh 2", key: "hinh_anh2", width: 25 },
+      { header: "Hình ảnh 3", key: "hinh_anh3", width: 25 },
+      { header: "Ghi chú", key: "GHI_CHU", width: 30 },
+    ];
 
-      XLSX.utils.book_append_sheet(wb, ws, "Danh sách Review");
+    // Đổ dữ liệu từng dòng
+    for (let i = 0; i < data.length; i++) {
+      const item = data[i];
+      const rowIndex = i + 2; // vì row 1 là header
 
-      const fileName = `Review_Tasks_${moment().format('DDMMYYYY_HHmmss')}.xlsx`;
-      XLSX.writeFile(wb, fileName);
-      toast.success('Xuất Excel thành công');
-    } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Lỗi khi xuất Excel');
+      worksheet.addRow({
+        STT: item.STT,
+        MA: item.MA,
+        DOI_TUONG: item.DOI_TUONG,
+        KHACH_HANG: item.KHACH_HANG,
+        MA_TAI_LIEU: item.MA_TAI_LIEU,
+        REV: item.REV,
+        PHU_TRACH_THIET_KE: item.PHU_TRACH_THIET_KE,
+        NGAY_THIET_KE: item.NGAY_THIET_KE ? moment(item.NGAY_THIET_KE).format('DD/MM/YYYY') : '',
+        CONG_VENH: item.CONG_VENH,
+        GHI_CHU: item.GHI_CHU,
+      });
+
+      // Load ảnh (nếu có) và chèn
+      const addImageToCell = async (imgs, col) => {
+        if (Array.isArray(imgs) && imgs.length > 0) {
+          try {
+            const url = `http://192.84.105.173:5000/uploads/${imgs[0]}`;
+            const res = await fetch(url);
+            const blob = await res.blob();
+            const buffer = await blob.arrayBuffer();
+
+            const imageId = workbook.addImage({
+              buffer: buffer,
+              extension: 'png',
+            });
+
+            worksheet.addImage(imageId, {
+              tl: { col: col - 1, row: rowIndex - 1 }, // tọa độ (bắt đầu từ 0)
+              ext: { width: 100, height: 80 }, // size ảnh
+            });
+          } catch (err) {
+            console.error("Không load được ảnh:", err);
+          }
+        }
+      };
+
+      await addImageToCell(item.hinh_anh1, 10);
+      await addImageToCell(item.hinh_anh2, 11);
+      await addImageToCell(item.hinh_anh3, 12);
     }
-  };
+
+    // Xuất file
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `Review_Tasks_${moment().format('DDMMYYYY_HHmmss')}.xlsx`);
+
+    toast.success("Xuất Excel thành công");
+  } catch (error) {
+    console.error("Export error:", error);
+    toast.error("Lỗi khi xuất Excel");
+  }
+};
 
   const handleDeleteImage = async (columnId, field, imageName) => {
     if (!hasEditPermission) {

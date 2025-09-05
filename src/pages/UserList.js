@@ -1,11 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Table, Button, Modal, Form, Input, Popconfirm, Space, Typography, Select } from 'antd';
+import { Table, Button, Modal, Form, Input, Popconfirm, Space, Select } from 'antd';
 import { EditOutlined, DeleteOutlined, UserAddOutlined } from '@ant-design/icons';
 import axios from '../utils/axios';
 import MainLayout from '../components/layout/MainLayout';
 import { Toaster, toast } from 'sonner';
 
-const { Title } = Typography;
 const { Option } = Select;
 
 
@@ -75,9 +74,9 @@ const UserManagement = () => {
         );
 
         if (response.data?.data) {
-          setUsers(prevUsers => 
-            prevUsers.map(user => 
-              user.USER_ID === editingUser.USER_ID 
+          setUsers(prevUsers =>
+            prevUsers.map(user =>
+              user.USER_ID === editingUser.USER_ID
                 ? { ...user, ...response.data.data }
                 : user
             )
@@ -102,12 +101,12 @@ const UserManagement = () => {
       }
     } catch (error) {
       console.error('Error saving user:', error);
-      
+
       if (error.response?.data?.error?.includes('unique constraint')) {
         toast.error('Tên người dùng đã tồn tại, vui lòng chọn tên khác');
         return;
       }
-      
+
       const errorMessage = error.response?.data?.message || 'Lỗi khi lưu người dùng';
       toast.error(errorMessage);
     }
@@ -139,12 +138,12 @@ const UserManagement = () => {
     let result = users;
     if (searchText) {
       const searchLower = searchText.toLowerCase();
-      result = result.filter(user => 
+      result = result.filter(user =>
         user.USERNAME?.toLowerCase().includes(searchLower) ||
         user.COMPANY_ID?.toLowerCase().includes(searchLower)
       );
     }
-    
+
     return result;
   }, [users, searchText]);
 
@@ -230,8 +229,8 @@ const UserManagement = () => {
     <MainLayout>
       <Toaster position="top-right" richColors />
       <div style={{ padding: '24px' }}>
+        <h1 style={{ color: 'red' }}>User Management</h1>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-          <Title level={2}>Quản lý người dùng</Title>
           <Button
             type="primary"
             icon={<UserAddOutlined />}
@@ -244,7 +243,7 @@ const UserManagement = () => {
             Thêm người dùng
           </Button>
         </div>
-        <div style={{ 
+        <div style={{
           marginBottom: '16px',
           display: 'flex',
           gap: '16px'
@@ -264,7 +263,7 @@ const UserManagement = () => {
           loading={loading}
           pagination={{ pageSize: 10 }}
         />
-        
+
         <Modal
           title={editingUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
           open={isModalVisible}
@@ -291,17 +290,6 @@ const UserManagement = () => {
                   validator: async (_, value) => {
                     if (!value || value === editingUser?.USERNAME) {
                       return Promise.resolve();
-                    }
-                    try {
-                      const response = await axios.get(
-                        `/user/check-username?username=${value}`
-                      );
-                      if (response.data.exists) {
-                        return Promise.reject('Tên người dùng đã tồn tại');
-                      }
-                      return Promise.resolve();
-                    } catch (error) {
-                      return Promise.resolve(); 
                     }
                   }
                 }
@@ -347,7 +335,26 @@ const UserManagement = () => {
             >
               <Input.Password />
             </Form.Item>
-
+            <Form.Item
+              name="email"
+              label="Email"
+              rules={[
+                {
+                  required: true,
+                  message: 'Vui lòng nhập email!',
+                },
+                {
+                  type: 'email',
+                  message: 'Email không hợp lệ!',
+                },
+                {
+                  pattern: /^[A-Za-z0-9._%+-]+@meiko-elec\.com$/,
+                  message: 'Email phải có đuôi @meiko-elec.com',
+                },
+              ]}
+            >
+              <Input />
+            </Form.Item>
             <Form.Item>
               <Button type="primary" htmlType="submit">
                 {editingUser ? 'Cập nhật' : 'Tạo mới'}

@@ -240,13 +240,13 @@ const MaterialProperties = () => {
           placeholder={`Tìm kiếm ${dataIndex}`}
           value={selectedKeys[0]}
           onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-          onPressEnter={() => { handleSearch(selectedKeys, dataIndex); close(); }}
+          onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
           style={{ marginBottom: 8, display: 'block' }}
         />
         <Space>
           <Button
             type="primary"
-            onClick={() => { handleSearch(selectedKeys, dataIndex); close(); }}
+            onClick={() => handleSearch(selectedKeys, confirm, dataIndex)}
             icon={<SearchOutlined />}
             size="small"
             style={{ width: 90 }}
@@ -299,8 +299,8 @@ const MaterialProperties = () => {
     }
   });
 
-  // ✅ SỬA: Đơn giản hóa handleSearch để áp dụng ngay mà không cần confirm lần 2
-  const handleSearch = (selectedKeys, dataIndex) => {
+  // ✅ SỬA: Đơn giản hóa handleSearch
+  const handleSearch = (selectedKeys, confirm, dataIndex) => {
     const searchValue = selectedKeys[0];
     
     // Cập nhật search filters
@@ -317,6 +317,7 @@ const MaterialProperties = () => {
       current: 1
     }));
     
+    confirm();
     fetchData(1, pagination.pageSize, newFilters);
     
   };
@@ -420,14 +421,14 @@ const MaterialProperties = () => {
       align: 'center'
     },
     {
-      title: 'Tg (TMA)',
+      title: 'TG',
       dataIndex: 'TG',
       key: 'TG',
       width: 100,
       align: 'center'
     },
     {
-      title: 'BoardType',
+      title: 'BORD_TYPE',
       dataIndex: 'BORD_TYPE',
       key: 'BORD_TYPE',
       width: 150,
@@ -441,14 +442,14 @@ const MaterialProperties = () => {
       align: 'center'
     },
     {
-      title: 'DK-DF_FileName',
+      title: 'FILE_NAME',
       dataIndex: 'FILE_NAME',
       key: 'FILE_NAME',
       width: 120,
       align: 'center'
     },
     {
-      title: 'DATA_SOURCE_',
+      title: 'DATA',
       dataIndex: 'DATA',
       key: 'DATA',
       width: 120,
@@ -501,6 +502,7 @@ const MaterialProperties = () => {
       align: 'center',
       render: (_, record) => (
         <Space size="middle">
+          <PermissionGuard requiredPermissions={['edit']}>
           <Button
             type="primary"
             icon={<EditOutlined />}
@@ -509,6 +511,7 @@ const MaterialProperties = () => {
               setModalVisible(true);
             }}
           />
+          </PermissionGuard>
           <Button
             type="primary"
             icon={<HistoryOutlined />}
@@ -552,6 +555,7 @@ const MaterialProperties = () => {
             </Button>
           </Popconfirm>
           </PermissionGuard>
+          <PermissionGuard requiredPermissions={['delete']}>
           <Popconfirm
             title="Xác nhận xóa?"
             onConfirm={() => handleDelete(record)}
@@ -560,6 +564,7 @@ const MaterialProperties = () => {
           >
             <Button type="primary" danger icon={<DeleteOutlined />} />
           </Popconfirm>
+          </PermissionGuard>
         </Space>
       ),
     },
@@ -572,6 +577,7 @@ const MaterialProperties = () => {
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <h1>New</h1>
           <div>
+            <PermissionGuard requiredPermissions={['create']}>
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -583,6 +589,7 @@ const MaterialProperties = () => {
             >
               Thêm mới
             </Button>
+            </PermissionGuard>
             <Button
               type="default"
               onClick={handleExport}
@@ -590,6 +597,7 @@ const MaterialProperties = () => {
             >
               Xuất Excel
             </Button>
+            <PermissionGuard requiredPermissions={['create']}>
             <Button
               type="default"
               onClick={() => setImportReviewModalVisible(true)}
@@ -597,16 +605,21 @@ const MaterialProperties = () => {
             >
               Import Excel
             </Button>
-            <Button
-              type="primary"
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                setSearchFilters({});
-                fetchData();
-              }}
-            >
-              Bỏ lọc
-            </Button>
+            </PermissionGuard>
+             <Button
+                type="primary"
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  setSearchFilters({}); 
+                  setPagination(prev => ({ ...prev, current: 1 })); 
+                  setTimeout(() => {
+                    fetchData(1, pagination.pageSize, {}); 
+                  }, 100);
+                }}
+                style={{ marginRight: 8 }}
+              >
+                Bỏ lọc
+              </Button>
           </div>
         </div>
 

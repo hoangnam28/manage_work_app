@@ -39,12 +39,12 @@ const DecideBoard = () => {
   const [onlyRequestEdit, setOnlyRequestEdit] = useState(false);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [selectedRecordForHistory, setSelectedRecordForHistory] = useState(null);
-  
+
   // Thêm state cho modal hủy yêu cầu
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
   const [cancellingRecord, setCancellingRecord] = useState(null);
   const [cancelForm] = Form.useForm();
-  
+
   const navigate = useNavigate();
   const tableRef = useRef();
 
@@ -85,7 +85,7 @@ const DecideBoard = () => {
     };
     fetchUserInfo();
   }, []);
-  
+
   useEffect(() => {
     const fetchCustomers = async () => {
       console.log('Fetching customers...');
@@ -311,28 +311,31 @@ const DecideBoard = () => {
       onFilter: (value, record) => record.IS_CANCELED === value
     },
     {
-    title: "Note",
-    dataIndex: "NOTE",
-    align: "left",
-    render: (value, record) => {
-      // Nếu bản ghi bị hủy và có REASON thì hiển thị REASON
-      if (record.IS_CANCELED === 1 && record.REASON) {
-        return (
-          <div>
-            <div style={{ color: '#ff4d4f', fontStyle: 'italic' }}>
-              Lý do hủy: {record.REASON}
-            </div>
-            {value && (
-              <div style={{ color: '#999', fontSize: '12px' }}>
-                Note cũ: {value}
+      title: "Note",
+      dataIndex: "NOTE",
+      align: "left",
+      render: (value, record) => {
+        if (record.IS_CANCELED === 1 && record.REASON) {
+          return (
+            <div style={{ whiteSpace: "normal", wordWrap: "break-word" }}>
+              <div style={{ color: '#ff4d4f', fontStyle: 'italic' }}>
+                Lý do hủy: {record.REASON}
               </div>
-            )}
+              {value && (
+                <div style={{ color: '#999', fontSize: '12px' }}>
+                  Note cũ: {value}
+                </div>
+              )}
+            </div>
+          );
+        }
+        return (
+          <div style={{ whiteSpace: "normal", wordWrap: "break-word" }}>
+            {value}
           </div>
         );
       }
-      return value;
-    }
-  },
+    },
     {
       title: "Lịch sử",
       key: "history",
@@ -360,7 +363,7 @@ const DecideBoard = () => {
       align: "center",
       fixed: 'right',
       render: (_, record) => {
-      const isDisabled = record.IS_DELETED === 1 || isViewer;
+        const isDisabled = record.IS_DELETED === 1 || isViewer;
         if (record.IS_CANCELED === 1) {
           return (
             <Space size="middle">
@@ -394,10 +397,10 @@ const DecideBoard = () => {
                 handleEdit(record);
               }}
             />
-            <Button 
-              type='primary' 
-              danger 
-              icon={<CloseOutlined />} 
+            <Button
+              type='primary'
+              danger
+              icon={<CloseOutlined />}
               onClick={() => handleShowCancelModal(record)}
               disabled={isDisabled}
             />
@@ -408,10 +411,10 @@ const DecideBoard = () => {
               cancelText="Không"
               disabled={isDisabled || record.CONFIRM_BY}
             >
-              <Button 
-                type="primary" 
-                danger 
-                icon={<DeleteOutlined />} 
+              <Button
+                type="primary"
+                danger
+                icon={<DeleteOutlined />}
                 disabled={isDisabled || record.CONFIRM_BY}
                 title={record.CONFIRM_BY ? "Không thể xóa bản ghi đã xác nhận" : ""}
               />
@@ -512,80 +515,80 @@ const DecideBoard = () => {
     setEditingRecord(null);
   };
 
- const handleDelete = async (record) => {
-  const rowId = record.id !== undefined ? record.id : record.ID;
-  
-  const originalRecord = { ...record };
-  
-  try {
-    // ✅ Loại bỏ record khỏi danh sách ngay lập tức (Optimistic update)
-    setData(prevData => 
-      prevData.filter(item => 
-        (item.id !== undefined ? item.id : item.ID) !== rowId
-      )
-    );
-    const response = await deleteMaterialDecide(rowId);
-    toast.success(response?.message || 'Xóa thành công!');
-  } catch (err) {
-    setData(prevData => {
-      const newData = [...prevData];
-      newData.unshift(originalRecord); 
-      
-      return newData;
+  const handleDelete = async (record) => {
+    const rowId = record.id !== undefined ? record.id : record.ID;
+
+    const originalRecord = { ...record };
+
+    try {
+      // ✅ Loại bỏ record khỏi danh sách ngay lập tức (Optimistic update)
+      setData(prevData =>
+        prevData.filter(item =>
+          (item.id !== undefined ? item.id : item.ID) !== rowId
+        )
+      );
+      const response = await deleteMaterialDecide(rowId);
+      toast.success(response?.message || 'Xóa thành công!');
+    } catch (err) {
+      setData(prevData => {
+        const newData = [...prevData];
+        newData.unshift(originalRecord);
+
+        return newData;
+      });
+
+      console.error('Delete error:', err);
+      const errorMsg = err?.response?.data?.message || err?.message || 'Lỗi xóa!';
+      toast.error(errorMsg);
+    }
+  };
+
+  const handleShowCancelModal = (record) => {
+    setCancellingRecord(record);
+    cancelForm.setFieldsValue({
+      oldNote: record.NOTE || '',
+      cancelReason: ''
     });
-    
-    console.error('Delete error:', err);
-    const errorMsg = err?.response?.data?.message || err?.message || 'Lỗi xóa!';
-    toast.error(errorMsg);
-  }
-};
+    setCancelModalVisible(true);
+  };
 
-const handleShowCancelModal = (record) => {
-  setCancellingRecord(record);
-  cancelForm.setFieldsValue({
-    oldNote: record.NOTE || '', 
-    cancelReason: ''
-  });
-  setCancelModalVisible(true);
-};
+  const handleCancelRequestWithReason = async () => {
+    try {
+      await cancelForm.validateFields();
+      const values = cancelForm.getFieldsValue();
+      const rowId = cancellingRecord.id !== undefined ? cancellingRecord.id : cancellingRecord.ID;
+      const reason = values.cancelReason?.trim() || ''; // Lấy lý do hủy
+      if (!reason) {
+        toast.error('Vui lòng nhập lý do hủy yêu cầu!');
+        return;
+      }
 
-const handleCancelRequestWithReason = async () => {
-  try {
-    await cancelForm.validateFields();
-    const values = cancelForm.getFieldsValue();
-    const rowId = cancellingRecord.id !== undefined ? cancellingRecord.id : cancellingRecord.ID;
-    const reason = values.cancelReason?.trim() || ''; // Lấy lý do hủy
-    if (!reason) {
-      toast.error('Vui lòng nhập lý do hủy yêu cầu!');
-      return;
+      const cancelInfo = {
+        reason: reason,
+      };
+
+
+      const response = await cancelRequestMaterialDecide(rowId, cancelInfo);
+      toast.success(response?.message || 'Hủy yêu cầu thành công!');
+      setCancelModalVisible(false);
+      setCancellingRecord(null);
+      cancelForm.resetFields();
+
+      // Refresh data
+      await fetchData();
+
+    } catch (err) {
+      if (err.name === 'ValidationError' || err.errorFields) {
+        console.log('Form validation errors:', err.errorFields);
+        // Không hiển thị toast error cho validation errors vì Ant Design sẽ hiển thị
+        return;
+      }
+
+      console.error('Cancel request error:', err);
+      const errorMsg = err?.response?.data?.message || err?.message || 'Lỗi hủy yêu cầu!';
+      toast.error(errorMsg);
     }
-
-    const cancelInfo = {
-      reason: reason,
-    };
-
-
-    const response = await cancelRequestMaterialDecide(rowId, cancelInfo);
-    toast.success(response?.message || 'Hủy yêu cầu thành công!');
-    setCancelModalVisible(false);
-    setCancellingRecord(null);
-    cancelForm.resetFields();
-
-    // Refresh data
-    await fetchData();
-
-  } catch (err) {
-    if (err.name === 'ValidationError' || err.errorFields) {
-      console.log('Form validation errors:', err.errorFields);
-      // Không hiển thị toast error cho validation errors vì Ant Design sẽ hiển thị
-      return;
-    }
-    
-    console.error('Cancel request error:', err);
-    const errorMsg = err?.response?.data?.message || err?.message || 'Lỗi hủy yêu cầu!';
-    toast.error(errorMsg);
-  }
-};
+  };
   const handleRestore = async (record) => {
     const rowId = record.id !== undefined ? record.id : record.ID;
     try {
@@ -633,7 +636,7 @@ const handleCancelRequestWithReason = async () => {
     <MainLayout>
       <Toaster position="top-right" richColors />
       <style>
-       {`
+        {`
           .row-canceled {
             background-color: #c2c2c2ff !important;
             color: #999 !important;
@@ -654,7 +657,7 @@ const handleCancelRequestWithReason = async () => {
             background-color: #e9e8e8ff!important;
           }
         `}
-        </style>
+      </style>
       <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <h1>Large Size Board</h1>
@@ -898,8 +901,8 @@ const handleCancelRequestWithReason = async () => {
               </div>
             </div>
             <Form.Item name="note" label="Note">
-              <Input.TextArea 
-                placeholder="Nhập ghi chú (không bắt buộc)" 
+              <Input.TextArea
+                placeholder="Nhập ghi chú (không bắt buộc)"
                 autoSize={{ minRows: 2, maxRows: 6 }} // Tự động co giãn chiều cao
               />
             </Form.Item>
@@ -1042,8 +1045,8 @@ const handleCancelRequestWithReason = async () => {
             </Form.Item>
 
             <Form.Item name="note" label="Note">
-              <Input.TextArea 
-                placeholder="Nhập ghi chú (không bắt buộc)" 
+              <Input.TextArea
+                placeholder="Nhập ghi chú (không bắt buộc)"
                 autoSize={{ minRows: 2, maxRows: 6 }} // Tự động co giãn chiều cao
               />
             </Form.Item>
