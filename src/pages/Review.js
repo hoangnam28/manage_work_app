@@ -366,7 +366,6 @@ const Review = () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Danh sách Review");
 
-    // Tạo header
     worksheet.columns = [
       { header: "STT", key: "STT", width: 5 },
       { header: "Đầu mã", key: "MA", width: 15 },

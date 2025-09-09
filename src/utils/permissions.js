@@ -8,12 +8,7 @@ export const ROLE_PERMISSIONS = {
 export const getCurrentUserRole = () => {
   try {
     const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-    // Xử lý multiple roles
     const roles = userInfo.role ? userInfo.role.split(',').map(r => r.trim()) : ['viewer'];
-    
-    // Debug log
-    
-    // Trả về tất cả các roles hợp lệ
     const validRoles = roles.filter(role => ROLE_PERMISSIONS[role]);
     if (validRoles.length === 0) {
       console.warn(`No valid roles found in: ${roles.join(',')}, defaulting to viewer`);
