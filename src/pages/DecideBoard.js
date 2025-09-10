@@ -293,44 +293,38 @@ const DecideBoard = () => {
       ],
 
     },
-    {
-      title: "Trạng thái bản ghi",
-      dataIndex: "IS_CANCELED",
-      align: "center",
-      width: 140,
-      render: (value) => {
-        if (value === 1) {
-          return <Tag color="red">Đã hủy yêu cầu</Tag>;
-        }
-        return <Tag color="green">Hoạt động</Tag>;
-      },
-      filters: [
-        { text: 'Hoạt động', value: 0 },
-        { text: 'Đã hủy yêu cầu', value: 1 }
-      ],
-      onFilter: (value, record) => record.IS_CANCELED === value
-    },
+    // {
+    //   title: "Trạng thái bản ghi",
+    //   dataIndex: "IS_CANCELED",
+    //   align: "center",
+    //   width: 140,
+    //   render: (value) => {
+    //     if (value === 1) {
+    //       return <Tag color="red">Đã hủy yêu cầu</Tag>;
+    //     }
+    //     return <Tag color="green">Hoạt động</Tag>;
+    //   },
+    //   filters: [
+    //     { text: 'Hoạt động', value: 0 },
+    //     { text: 'Đã hủy yêu cầu', value: 1 }
+    //   ],
+    //   onFilter: (value, record) => record.IS_CANCELED === value
+    // },
     {
       title: "Note",
       dataIndex: "NOTE",
       align: "left",
-      render: (value, record) => {
-        if (record.IS_CANCELED === 1 && record.REASON) {
-          return (
-            <div style={{ whiteSpace: "normal", wordWrap: "break-word" }}>
-              <div style={{ color: '#ff4d4f', fontStyle: 'italic' }}>
-                Lý do hủy: {record.REASON}
-              </div>
-              {value && (
-                <div style={{ color: '#999', fontSize: '12px' }}>
-                  Note cũ: {value}
-                </div>
-              )}
-            </div>
-          );
-        }
+      width: 300, // 👈 chỉnh độ rộng cột (px)
+      render: (value) => {
         return (
-          <div style={{ whiteSpace: "normal", wordWrap: "break-word" }}>
+          <div
+            style={{
+              whiteSpace: "normal",
+              wordWrap: "break-word",
+              minWidth: "250px",   // 👈 để content không quá hẹp
+              maxWidth: "100%",    // 👈 full trong cột
+            }}
+          >
             {value}
           </div>
         );
