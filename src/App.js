@@ -11,6 +11,7 @@ import DecideBoard from './pages/DecideBoard';
 import DecideBoardDetail from './pages/DecideBoardDetail';
 import MaterialNew from './pages/MaterialNew';
 import UlMaterial from './pages/UlMaterial';
+import UlCertification from './pages/UlCertification';
 
 function App() {
   return (
@@ -79,6 +80,14 @@ function App() {
           element={
             <PrivateRoute>
               <UlMaterial />
+            </PrivateRoute>
+          }
+        />
+        <Route 
+          path="/ul-certification" 
+          element={
+            <PrivateRoute>
+              <UlCertification />
             </PrivateRoute>
           }
         />

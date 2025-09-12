@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Table, Input, Upload, Button, Modal, Form, Popconfirm, Image, Space, List, Spin, Checkbox } from "antd";
+import { Table, Input, Upload, Button, Modal, Form, Popconfirm, Image, Space, List, Spin, Checkbox, DatePicker } from "antd";
 import { Typography } from 'antd';
 import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined, DownloadOutlined, UndoOutlined, HistoryOutlined } from "@ant-design/icons";
 import axios from "axios";
@@ -36,6 +36,7 @@ const Review = () => {
   const [updateModalVisible, setUpdateModalVisible] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [showPendingReviewsOnly, setShowPendingReviewsOnly] = useState(false);
   const BASE_URL = process.env.REACT_APP_BASE_URL;
 
   const { Text } = Typography;
@@ -69,7 +70,6 @@ const Review = () => {
     }
   }, [BASE_URL]); // Add BASE_URL as dependency
 
-  // Fix 2: Add missing dependency for fetchUserInfo useEffect
   useEffect(() => {
     fetchUserInfo();
   }, [fetchUserInfo]);
@@ -87,15 +87,31 @@ const Review = () => {
   };
 
   useEffect(() => {
-    if (searchKeyword.trim() === '') {
-      setFilteredData(data);
-    } else {
-      const filtered = data.filter((item) =>
+    let filtered = [...data];
+    filtered = filtered.filter((item) => item.IS_DELETED !== 1);
+    if (searchKeyword.trim() !== '') {
+      filtered = filtered.filter((item) =>
         item.MA?.toLowerCase().includes(searchKeyword.toLowerCase())
       );
-      setFilteredData(filtered);
     }
-  }, [data, searchKeyword]);
+
+    if (showPendingReviewsOnly) {
+      filtered = filtered.filter((item) => {
+        const status = reviewStatus[item.COLUMN_ID] || {};
+        const isEmptyOrNeedsDesignReview = (!item.CONG_VENH || status.DESIGN_REVIEWED);
+        const isEmptyOrNeedsCIReviewVCut = (!item.V_CUT || status.CI_REVIEWED);
+        const isEmptyOrNeedsCIReviewXLBM = (!item.XU_LY_BE_MAT || status.CI_REVIEWED);
+        
+        return (
+          isEmptyOrNeedsDesignReview || 
+          isEmptyOrNeedsCIReviewVCut || 
+          isEmptyOrNeedsCIReviewXLBM 
+        );
+      });
+    }
+
+    setFilteredData(filtered);
+  }, [data, searchKeyword, showPendingReviewsOnly, reviewStatus]);
 
   const fetchReviewStatus = useCallback(async (columnId) => {
     try {
@@ -324,6 +340,7 @@ const Review = () => {
             V_CUT: '',
             XU_LY_BE_MAT: '',
             GHI_CHU: '',
+            KY_HAN: '',
             created_by: currentUser.username,
             created_at: new Date().toISOString(),
           };
@@ -379,6 +396,7 @@ const Review = () => {
       { header: "Hình ảnh 1", key: "hinh_anh1", width: 25 },
       { header: "Hình ảnh 2", key: "hinh_anh2", width: 25 },
       { header: "Hình ảnh 3", key: "hinh_anh3", width: 25 },
+      { header: "Kỳ hạn review", key: "KY_HAN", width: 15 },
       { header: "Ghi chú", key: "GHI_CHU", width: 30 },
     ];
 
@@ -713,6 +731,7 @@ const Review = () => {
       key: "ma",
       width: 150,
       fixed: "left",
+      align: 'left',
       render: (text, record) => renderEditableCell(text, record, "MA"),
     },
     {
@@ -721,6 +740,7 @@ const Review = () => {
       key: "doi_tuong",
       width: 150,
       fixed: "left",
+      align: 'left',
       render: (text, record) => renderEditableCell(text, record, "DOI_TUONG"),
     },
     {
@@ -728,6 +748,7 @@ const Review = () => {
       dataIndex: "KHACH_HANG",
       key: "khach_hang",
       width: 150,
+      align: 'left',
       render: (text, record) => (
         renderEditableCell(text, record, 'KHACH_HANG')
       )
@@ -737,6 +758,7 @@ const Review = () => {
       dataIndex: "MA_TAI_LIEU",
       key: "ma_tai_lieu",
       width: 180,
+      align: 'left',
       render: (text, record) => (
         renderEditableCell(text, record, 'MA_TAI_LIEU')
       )
@@ -746,6 +768,7 @@ const Review = () => {
       dataIndex: "REV",
       key: "rev",
       width: 130,
+      align: 'left',
       render: (text, record) => {
         const isDisabled = !hasEditPermission;
 
@@ -802,6 +825,7 @@ const Review = () => {
       dataIndex: "CONG_VENH",
       key: "cong_venh",
       width: 220,
+      align: 'left',
       render: (text, record) => {
         const status = reviewStatus[record.COLUMN_ID] || {};
         return (
@@ -889,6 +913,7 @@ const Review = () => {
       dataIndex: "V_CUT",
       key: "v_cut",
       width: 250,
+      align: 'left',
       render: (text, record) => {
         const status = reviewStatus[record.COLUMN_ID] || {};
         return (
@@ -903,6 +928,7 @@ const Review = () => {
       title: "Hình ảnh V-Cut",
       key: "hinh_anh2",
       width: 180,
+      align: 'left',
       render: (record) => {
         return (
           <Space direction="vertical" style={{ width: '100%' }}>
@@ -967,6 +993,7 @@ const Review = () => {
       dataIndex: "XU_LY_BE_MAT",
       key: "xu_ly_be_mat",
       width: 400,
+      align: 'left',
       render: (text, record) => {
         const status = reviewStatus[record.COLUMN_ID] || {};
         return (
@@ -1041,10 +1068,18 @@ const Review = () => {
       }
     },
     {
+      title: "Kỳ hạn review",
+      dataIndex: "KY_HAN",
+      key: "ky_han",
+      width: 120,
+      align: 'left',
+    },
+    {
       title: "Ghi chú",
       dataIndex: "GHI_CHU",
       key: "ghi_chu",
       width: 180,
+      align: 'left',
       render: (text, record) => {
         let displayValue = '';
 
@@ -1219,6 +1254,17 @@ const Review = () => {
         >
           <Input />
         </Form.Item>
+        <Form.Item
+          name="ky_han"
+          label="Kỳ hạn review"
+          rules={[{ required: true, message: 'Vui lòng chọn kỳ hạn review!' }]}
+        >
+          <DatePicker
+            style={{ width: '100%' }}
+            format="DD/MM/YYYY"
+            placeholder="Chọn kỳ hạn review"
+          />
+        </Form.Item>
       </Form>
     </Modal>
   );
@@ -1313,6 +1359,13 @@ const Review = () => {
           onChange={(e) => handleSearch(e.target.value)}
           style={{ width: 300 }}
         />
+        <Checkbox
+          checked={showPendingReviewsOnly}
+          onChange={(e) => setShowPendingReviewsOnly(e.target.checked)}
+          style={{ marginLeft: 16 }}
+        >
+          Các mục cần làm 
+        </Checkbox>
       </div>
       <Table
         dataSource={filteredData} // Use filteredData instead of data

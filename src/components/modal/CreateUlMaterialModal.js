@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Form, Input, Select, DatePicker, InputNumber, Button, Space, Row, Col } from 'antd';
+import { Modal, Form, Input, Select, DatePicker, InputNumber, Button, Row, Col } from 'antd';
 import { createUlMaterial, updateUlMaterial } from '../../utils/ul-material-api';
 import { toast } from 'sonner';
 import dayjs from 'dayjs';
@@ -7,7 +7,7 @@ import dayjs from 'dayjs';
 const { Option } = Select;
 const { TextArea } = Input;
 
-const CreateUlMaterialModal = ({ visible, onCancel, onSuccess, editingRecord, mode = 'create' }) => {
+const CreateUlMaterialModal = ({ visible, onCancel, onSuccess, editingRecord, mode = 'create', options = {} }) => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
 
@@ -21,7 +21,7 @@ const CreateUlMaterialModal = ({ visible, onCancel, onSuccess, editingRecord, mo
         type: editingRecord.type,
         structure: editingRecord.structure,
         layer: editingRecord.layer,
-        level_no: editingRecord.level_no,
+        reliability_level_id: editingRecord.reliability_level_id,
         product_code: editingRecord.product_code,
         customer_name: editingRecord.customer_name,
         department: editingRecord.department,
@@ -183,11 +183,17 @@ const CreateUlMaterialModal = ({ visible, onCancel, onSuccess, editingRecord, mo
           </Col>
           <Col span={8}>
             <Form.Item
-              name="level_no"
+              name="reliability_level_id"
               label="Mức độ tin cậy"
-              rules={[{ required: true, message: 'Vui lòng nhập mức độ tin cậy' }]}
+              rules={[{ required: true, message: 'Vui lòng chọn mức độ tin cậy' }]}
             >
-              <InputNumber min={1} max={10} placeholder="Nhập mức độ tin cậy" style={{ width: '100%' }} />
+              <Select placeholder="Chọn mức độ tin cậy">
+                {options?.reliabilityLevel?.map(level => (
+                  <Option key={level.id} value={level.id}>
+                    {level.nameVi} ({level.nameJp})
+                  </Option>
+                ))}
+              </Select>
             </Form.Item>
           </Col>
           <Col span={8}>
