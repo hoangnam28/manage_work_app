@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Table, Input, Upload, Button, Modal, Form, Popconfirm, Image, Space, List, Spin, Checkbox, DatePicker } from "antd";
 import { Typography } from 'antd';
-import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined, DownloadOutlined, UndoOutlined, HistoryOutlined } from "@ant-design/icons";
+import { UploadOutlined, DeleteOutlined, SaveOutlined, EyeOutlined, DownloadOutlined, UndoOutlined, HistoryOutlined, ArrowLeftOutlined } from "@ant-design/icons";
 import axios from "axios";
 import moment from 'moment';
 import MainLayout from "../components/layout/MainLayout";
@@ -19,6 +19,26 @@ const Review = () => {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [isFilteredByStt, setIsFilteredByStt] = useState(false);
+
+  const location = window.location;
+
+  useEffect(() => {
+  const params = new URLSearchParams(location.search);
+  const sttFilter = params.get('stt');
+  if (sttFilter) {
+    const filteredData = data.filter(item => item.STT === parseInt(sttFilter, 10));
+    if (filteredData.length > 0) {
+      setFilteredData(filteredData);
+      setIsFilteredByStt(true); // Set flag
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('stt', sttFilter);
+      window.history.pushState({}, '', newUrl);
+    }
+  } else {
+    setIsFilteredByStt(false);
+  }
+}, [location.search, data]);
   const [imageLoadingStates, setImageLoadingStates] = useState({});
   const [editHistory, setEditHistory] = useState([]);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
@@ -87,8 +107,17 @@ const Review = () => {
   };
 
   useEffect(() => {
-    let filtered = [...data];
-    filtered = filtered.filter((item) => item.IS_DELETED !== 1);
+  const params = new URLSearchParams(location.search);
+  const sttFilter = params.get('stt');
+  
+  let filtered = [...data];
+  filtered = filtered.filter((item) => item.IS_DELETED !== 1);
+  
+  // Nếu có stt filter từ URL, ưu tiên filter theo stt
+  if (sttFilter) {
+    filtered = filtered.filter((item) => item.STT === parseInt(sttFilter, 10));
+  } else {
+    // Chỉ áp dụng các filter khác khi không có stt filter
     if (searchKeyword.trim() !== '') {
       filtered = filtered.filter((item) =>
         item.MA?.toLowerCase().includes(searchKeyword.toLowerCase())
@@ -109,9 +138,10 @@ const Review = () => {
         );
       });
     }
+  }
 
-    setFilteredData(filtered);
-  }, [data, searchKeyword, showPendingReviewsOnly, reviewStatus]);
+  setFilteredData(filtered);
+}, [data, searchKeyword, showPendingReviewsOnly, reviewStatus, location.search]);
 
   const fetchReviewStatus = useCallback(async (columnId) => {
     try {
@@ -205,6 +235,14 @@ const Review = () => {
     fetchData();
   }, [fetchData]);
 
+
+  const handleBackToList = () => {
+  const newUrl = new URL(window.location.href);
+  newUrl.searchParams.delete('stt');
+  window.history.pushState({}, '', newUrl);
+  setIsFilteredByStt(false);
+  setFilteredData(data.filter(item => item.IS_DELETED !== 1));
+};
 
 
   const handleUpload = async (info, record, field) => {
@@ -1071,8 +1109,16 @@ const Review = () => {
       title: "Kỳ hạn review",
       dataIndex: "KY_HAN",
       key: "ky_han",
-      width: 120,
+      width: 150,
       align: 'left',
+      render: (text, record) => {
+        let formattedDate = '';
+        if (text) {
+          const dateObj = moment.utc(text);
+          formattedDate = dateObj.isValid() ? dateObj.local().format('DD/MM/YYYY') : text;
+        }
+        return renderEditableCell(formattedDate, record, 'KY_HAN');
+      },
     },
     {
       title: "Ghi chú",
@@ -1366,6 +1412,27 @@ const Review = () => {
         >
           Các mục cần làm 
         </Checkbox>
+         {isFilteredByStt && (
+      <div style={{ 
+        position: 'fixed', 
+        top: 20, 
+        right: 20, 
+        zIndex: 1000 
+      }}>
+        <Button 
+          type="primary" 
+          icon={<ArrowLeftOutlined />}
+          onClick={handleBackToList}
+          style={{ 
+            background: '#1890ff', 
+            borderColor: '#1890ff',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+          }}
+        >
+          Back to List
+        </Button>
+      </div>
+    )}
       </div>
       <Table
         dataSource={filteredData} // Use filteredData instead of data

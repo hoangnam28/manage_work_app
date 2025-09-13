@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { Modal, Form, Input, Row, Col } from 'antd';
+import { Modal, Form, Input, Row, Col, DatePicker } from 'antd';
+import moment from 'moment';
 
 const UpdateDocumentModal = ({ visible, onCancel, onOk, record }) => {
   const [form] = Form.useForm();
@@ -16,6 +17,7 @@ const UpdateDocumentModal = ({ visible, onCancel, onOk, record }) => {
         v_cut: record.V_CUT,
         xu_ly_be_mat: record.XU_LY_BE_MAT,
         ghi_chu: record.GHI_CHU,
+        ky_han: record.KY_HAN ? moment(record.KY_HAN, 'DD/MM/YYYY') : null,
       });
     }
   }, [visible, record, form]);
@@ -78,6 +80,18 @@ const UpdateDocumentModal = ({ visible, onCancel, onOk, record }) => {
               label="Đối Tượng"
             >
               <Input />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item
+              name="ky_han"
+              label="Kỳ hạn Review"
+            >
+              <DatePicker
+                style={{ width: '100%' }}
+                format="DD/MM/YYYY"
+                placeholder="Chọn kỳ hạn review"
+              />
             </Form.Item>
           </Col>
         </Row>
