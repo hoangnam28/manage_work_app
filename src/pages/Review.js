@@ -367,37 +367,39 @@ const Review = () => {
   };
 
   const handleAddNew = () => {
-    form.validateFields()
-      .then(async (values) => {
-        try {
-          const dataToAdd = {
-            ...values,
-            doi_tuong: values.doi_tuong || '',
-            REV: '',
-            CONG_VENH: '',
-            V_CUT: '',
-            XU_LY_BE_MAT: '',
-            GHI_CHU: '',
-            KY_HAN: '',
-            created_by: currentUser.username,
-            created_at: new Date().toISOString(),
-          };
+  form.validateFields()
+    .then(async (values) => {
+      try {
+        const dataToAdd = {
+          ...values,
+          doi_tuong: values.doi_tuong || '',
+          REV: '',
+          CONG_VENH: '',
+          V_CUT: '',
+          XU_LY_BE_MAT: '',
+          GHI_CHU: '',
+          KY_HAN: values.ky_han 
+            ? moment(values.ky_han).format("YYYY-MM-DD HH:mm:ss") 
+            : null,   // ✅ Format ngày để không bị lệch
+          created_by: currentUser.username,
+          created_at: moment().format("YYYY-MM-DD HH:mm:ss"), // ✅ chuẩn local time
+        };
 
-          await axios.post(`${BASE_URL}/document/add`, dataToAdd);
-          toast.success('Thêm dữ liệu thành công');
-          fetchData();
-          setIsModalVisible(false);
-          form.resetFields();
-        } catch (error) {
-          console.error(error);
-          toast.error('Lỗi khi thêm dữ liệu');
-        }
-      })
-      .catch((errorInfo) => {
-        console.error('Validation Failed:', errorInfo);
-        toast.error('Vui lòng nhập đầy đủ các trường thông tin!');
-      });
-  };
+        await axios.post(`${BASE_URL}/document/add`, dataToAdd);
+        toast.success('Thêm dữ liệu thành công');
+        fetchData();
+        setIsModalVisible(false);
+        form.resetFields();
+      } catch (error) {
+        console.error(error);
+        toast.error('Lỗi khi thêm dữ liệu');
+      }
+    })
+    .catch((errorInfo) => {
+      console.error('Validation Failed:', errorInfo);
+      toast.error('Vui lòng nhập đầy đủ các trường thông tin!');
+    });
+};
   const handleDelete = async (column_id) => {
     if (!hasEditPermission) {
       toast.error('Bạn không có quyền xóa dữ liệu');

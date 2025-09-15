@@ -15,6 +15,7 @@ const UserManagement = () => {
   const [form] = Form.useForm();
   const [editingUser, setEditingUser] = useState(null);
   const [searchText, setSearchText] = useState('');
+  const [selectedRoles, setSelectedRoles] = useState([]);
 
 
 
@@ -136,6 +137,8 @@ const UserManagement = () => {
 
   const filteredUsers = useMemo(() => {
     let result = users;
+    
+    // Lọc theo text tìm kiếm
     if (searchText) {
       const searchLower = searchText.toLowerCase();
       result = result.filter(user =>
@@ -144,8 +147,18 @@ const UserManagement = () => {
       );
     }
 
+    // Lọc theo vai trò được chọn
+    if (selectedRoles.length > 0) {
+      result = result.filter(user => {
+        const userRoles = typeof user.ROLE === 'string' 
+          ? user.ROLE.split(',').map(r => r.trim()) 
+          : Array.isArray(user.ROLE) ? user.ROLE : [];
+        return selectedRoles.some(role => userRoles.includes(role));
+      });
+    }
+
     return result;
-  }, [users, searchText]);
+  }, [users, searchText, selectedRoles]);
 
   const handleSearch = (e) => {
     setSearchText(e.target.value);
@@ -254,6 +267,20 @@ const UserManagement = () => {
             style={{ width: 300 }}
             onChange={handleSearch}
           />
+          <Select
+            mode="multiple"
+            allowClear
+            style={{ width: 300 }}
+            placeholder="Lọc theo vai trò"
+            onChange={setSelectedRoles}
+            value={selectedRoles}
+          >
+            <Option value="admin">Admin</Option>
+            <Option value="editor">Editor</Option>
+            <Option value="viewer">Viewer</Option>
+            <Option value="imp">Imp</Option>
+            <Option value="bo">Bo</Option>
+          </Select>
         </div>
 
         <Table
