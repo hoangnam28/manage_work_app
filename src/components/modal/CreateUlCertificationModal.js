@@ -44,6 +44,8 @@ const CreateUlCertificationModal = ({
           materialCertExpected: editingRecord.MATERIAL_CERT_EXPECTED
             ? dayjs(editingRecord.MATERIAL_CERT_EXPECTED)
             : null,
+          MATERIAL_CLASS_ID: editingRecord.MATERIAL_CLASS_ID || editingRecord.materialClassId,
+          RELIABILITY_LEVEL_ID: editingRecord.RELIABILITY_LEVEL_ID || editingRecord.reliabilityLevelId,
         };
         form.setFieldsValue(formData);
       } else {
@@ -66,6 +68,9 @@ const CreateUlCertificationModal = ({
         materialCertExpected: values.materialCertExpected
           ? values.materialCertExpected.format('YYYY-MM-DD')
           : null,
+        // Đảm bảo chỉ gửi một phiên bản của mỗi trường
+        materialClassId: values.MATERIAL_CLASS_ID,
+        reliabilityLevelId: values.RELIABILITY_LEVEL_ID,
       };
 
       const result = await onSubmit(submitData);
@@ -229,7 +234,7 @@ const CreateUlCertificationModal = ({
 
               <Col span={12}>
                 <Form.Item
-                  name="reliability_level_id"
+                  name="RELIABILITY_LEVEL_ID"
                   label="Mức độ tin cậy"
                   rules={[
                     { required: true, message: 'Vui lòng chọn mức độ tin cậy' },
@@ -356,16 +361,16 @@ const CreateUlCertificationModal = ({
 
               <Col span={12}>
                 <Form.Item
-                  name="materialClass"
+                  name="MATERIAL_CLASS_ID"
                   label="Phân loại vật liệu"
                 >
-                  <Select placeholder="Chọn mức độ tin cậy">
-                {options?.materialClass?.map(materialClassId => (
-                  <Option key={materialClassId.id} value={materialClassId.id}>
-                    {materialClassId.nameVi} ({materialClassId.nameJp})
-                  </Option>
-                ))}
-              </Select>
+                  <Select placeholder="Chọn phân loại vật liệu">
+                    {options?.materialClass?.map(materialClassId => (
+                      <Option key={materialClassId.id} value={materialClassId.id}>
+                        {materialClassId.nameVi} ({materialClassId.nameJp})
+                      </Option>
+                    ))}
+                  </Select>
                 </Form.Item>
               </Col>
               

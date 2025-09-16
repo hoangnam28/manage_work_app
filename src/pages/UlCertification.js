@@ -302,91 +302,6 @@ const UlCertification = () => {
       align: 'center',
     },
     {
-      title: 'Ngày phát hành',
-      dataIndex: 'RELEASE_DATE',
-      key: 'release_date',
-      width: 120,
-      align: 'center',
-      render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : '',
-      ...getColumnSearchProps('RELEASE_DATE')
-    },
-    {
-      title: 'Tên nhà máy',
-      dataIndex: 'FACTORY_NAME',
-      key: 'factory_name',
-      width: 150,
-      ...getColumnSearchProps('FACTORY_NAME')
-    },
-    {
-      title: 'Lý do yêu cầu',
-      dataIndex: 'REQUEST_REASON',
-      key: 'request_reason',
-      width: 200,
-      ellipsis: true,
-      ...getColumnSearchProps('REQUEST_REASON')
-    },
-    {
-      title: 'Cấu tạo lớp',
-      dataIndex: 'LAYER_STRUCTURE',
-      key: 'layer_structure',
-      width: 120,
-      ...getColumnSearchProps('LAYER_STRUCTURE')
-    },
-    {
-      title: 'Ứng dụng',
-      dataIndex: 'USAGE',
-      key: 'usage',
-      width: 200,
-      ellipsis: true,
-      ...getColumnSearchProps('USAGE')
-    },
-    {
-      title: 'Mức độ tin cậy',
-      dataIndex: 'RELIABILITY_LEVEL',
-      key: 'reliability_level',
-      width: 150,
-      ...getColumnSearchProps('RELIABILITY_LEVEL')
-    },
-    {
-      title: 'Sản lượng dự kiến',
-      dataIndex: 'EXPECTED_PRODUCTION_QTY',
-      key: 'expected_production_qty',
-      width: 150,
-      ...getColumnSearchProps('EXPECTED_PRODUCTION_QTY')
-    },
-    {
-      title: 'Ngày sản xuất hàng loạt',
-      dataIndex: 'MASS_PRODUCTION_DATE',
-      key: 'mass_production_date',
-      width: 150,
-      align: 'center',
-      render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : '',
-      ...getColumnSearchProps('MASS_PRODUCTION_DATE')
-    },
-    {
-      title: 'Ngày mong muốn nhận chứng nhận',
-      dataIndex: 'MATERIAL_CERT_EXPECTED',
-      key: 'material_cert_expected',
-      width: 180,
-      align: 'center',
-      render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : '',
-      ...getColumnSearchProps('MATERIAL_CERT_EXPECTED')
-    },
-    {
-      title: 'Tên nhà sản xuất',
-      dataIndex: 'MANUFACTURER_NAME',
-      key: 'manufacturer_name',
-      width: 150,
-      ...getColumnSearchProps('MANUFACTURER_NAME')
-    },
-    {
-      title: 'Nhà máy sản xuất',
-      dataIndex: 'FACTORY_LOCATION',
-      key: 'factory_location',
-      width: 150,
-      ...getColumnSearchProps('FACTORY_LOCATION')
-    },
-    {
       title: 'Tên vật liệu',
       dataIndex: 'MATERIAL_NAME',
       key: 'material_name',
@@ -394,24 +309,14 @@ const UlCertification = () => {
       ...getColumnSearchProps('MATERIAL_NAME')
     },
     {
-      title: 'Phân loại vật liệu',
+      title: 'Loại vật liệu',
       dataIndex: 'MATERIAL_CLASS',
       key: 'material_class',
       width: 150,
       ...getColumnSearchProps('MATERIAL_CLASS')
     },
     {
-      title: 'Trạng thái vật liệu',
-      dataIndex: 'MATERIAL_STATUS',
-      key: 'material_status',
-      width: 150,
-      align: 'center',
-      render: (status) => status ? (
-        <Tag color={getStatusColor(status)}>{status}</Tag>
-      ) : '-'
-    },
-    {
-      title: 'Trạng thái UL',
+      title: 'Cấu trúc',
       dataIndex: 'UL_CERT_STATUS',
       key: 'ul_cert_status',
       width: 120,
@@ -420,22 +325,209 @@ const UlCertification = () => {
         <Tag color={getStatusColor(status)}>{status}</Tag>
       ) : '-'
     },
+     {
+      title: 'Mức độ tin cậy',
+      dataIndex: 'RELIABILITY_LEVEL',
+      key: 'reliability_level',
+      width: 150,
+      ...getColumnSearchProps('RELIABILITY_LEVEL')
+    },
     {
-      title: 'Ghi chú 1',
+      title: 'Bộ phận phụ trách',
+      dataIndex: 'DEPARTMENT_IN_CHARGE',
+      key: 'department_in_charge',
+      width: 150,
+      render: v => v || '-',
+    },
+    {
+      title: 'Người phụ trách',
+      dataIndex: 'PERSON_IN_CHARGE',
+      key: 'person_in_charge',
+      width: 150,
+      render: v => v || '-',
+    },
+    {
+      title: 'Ngày bắt đầu',
+      dataIndex: 'START_DATE',
+      key: 'start_date',
+      width: 120,
+      render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
+    },
+    {
+      title: 'Kỳ hạn gửi báo cáo tới PD5',
+      dataIndex: 'PD5_REPORT_DEADLINE',
+      key: 'pd5_report_deadline',
+      width: 200,
+      render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
+    },
+    {
+      title: 'Kỳ hạn hoàn thành',
+      dataIndex: 'COMPLETION_DEADLINE',
+      key: 'completion_deadline',
+      width: 150,
+      render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
+    },
+    {
+      title: 'Ngày gửi báo cáo tới PD5 thực tế',
+      dataIndex: 'PD5_REPORT_ACTUAL_DATE',
+      key: 'pd5_report_actual_date',
+      width: 250,
+      render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
+    },
+    {
+      title: 'Ngày hoàn thành thực tế',
+      dataIndex: 'ACTUAL_COMPLETION_DATE',
+      key: 'actual_completion_date',
+      width: 190,
+      render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
+    },
+    {
+      title: 'Tiến độ',
+      dataIndex: 'PROGRESS',
+      key: 'progress',
+      width: 120,
+      render: v => v || '-',
+    },
+    {
+      title: 'Ghi chú',
       dataIndex: 'NOTES_1',
       key: 'notes_1',
       width: 200,
-      ellipsis: true,
-      ...getColumnSearchProps('NOTES_1')
     },
     {
-      title: 'Ghi chú 2',
-      dataIndex: 'NOTES_2',
-      key: 'notes_2',
-      width: 200,
-      ellipsis: true,
-      ...getColumnSearchProps('NOTES_2')
+      title: 'Người làm',
+      dataIndex: 'PERSON_DO',
+      key: 'person_do',
+      width: 120,
+      render: v => v || '-',
     },
+    {
+      title: 'Người check',
+      dataIndex: 'PERSON_CHECK',
+      key: 'person_check',
+      width: 120,
+      render: v => v || '-',
+    },
+    {
+      title: 'Thời gian làm (phút)',
+      dataIndex: 'TIME_DO',
+      key: 'time_do',
+      width: 150,
+      render: v => v || '-',
+    },
+    {
+      title: 'Thời gian check (phút)',
+      dataIndex: 'TIME_CHECK',
+      key: 'time_check',
+      width: 170,
+      render: v => v || '-',
+    },
+    {
+      title: 'Tổng thời gian (phút)',
+      dataIndex: 'TOTAL_TIME',
+      key: 'total_time',
+      width: 190,
+      render: v => v || '-',
+    },
+    // {
+    //   title: 'Ngày phát hành',
+    //   dataIndex: 'RELEASE_DATE',
+    //   key: 'release_date',
+    //   width: 120,
+    //   align: 'center',
+    //   render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : '',
+    //   ...getColumnSearchProps('RELEASE_DATE')
+    // },
+    // {
+    //   title: 'Tên nhà máy',
+    //   dataIndex: 'FACTORY_NAME',
+    //   key: 'factory_name',
+    //   width: 150,
+    //   ...getColumnSearchProps('FACTORY_NAME')
+    // },
+    // {
+    //   title: 'Lý do yêu cầu',
+    //   dataIndex: 'REQUEST_REASON',
+    //   key: 'request_reason',
+    //   width: 200,
+    //   ellipsis: true,
+    //   ...getColumnSearchProps('REQUEST_REASON')
+    // },
+    // {
+    //   title: 'Cấu tạo lớp',
+    //   dataIndex: 'LAYER_STRUCTURE',
+    //   key: 'layer_structure',
+    //   width: 120,
+    //   ...getColumnSearchProps('LAYER_STRUCTURE')
+    // },
+    // {
+    //   title: 'Ứng dụng',
+    //   dataIndex: 'USAGE',
+    //   key: 'usage',
+    //   width: 200,
+    //   ellipsis: true,
+    //   ...getColumnSearchProps('USAGE')
+    // },
+    // {
+    //   title: 'Sản lượng dự kiến',
+    //   dataIndex: 'EXPECTED_PRODUCTION_QTY',
+    //   key: 'expected_production_qty',
+    //   width: 150,
+    //   ...getColumnSearchProps('EXPECTED_PRODUCTION_QTY')
+    // },
+    // {
+    //   title: 'Ngày sản xuất hàng loạt',
+    //   dataIndex: 'MASS_PRODUCTION_DATE',
+    //   key: 'mass_production_date',
+    //   width: 150,
+    //   align: 'center',
+    //   render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : '',
+    //   ...getColumnSearchProps('MASS_PRODUCTION_DATE')
+    // },
+    // {
+    //   title: 'Ngày mong muốn nhận chứng nhận',
+    //   dataIndex: 'MATERIAL_CERT_EXPECTED',
+    //   key: 'material_cert_expected',
+    //   width: 180,
+    //   align: 'center',
+    //   render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : '',
+    //   ...getColumnSearchProps('MATERIAL_CERT_EXPECTED')
+    // },
+    // {
+    //   title: 'Tên nhà sản xuất',
+    //   dataIndex: 'MANUFACTURER_NAME',
+    //   key: 'manufacturer_name',
+    //   width: 150,
+    //   ...getColumnSearchProps('MANUFACTURER_NAME')
+    // },
+    // {
+    //   title: 'Nhà máy sản xuất',
+    //   dataIndex: 'FACTORY_LOCATION',
+    //   key: 'factory_location',
+    //   width: 150,
+    //   ...getColumnSearchProps('FACTORY_LOCATION')
+    // },
+    
+    // {
+    //   title: 'Trạng thái vật liệu',
+    //   dataIndex: 'MATERIAL_STATUS',
+    //   key: 'material_status',
+    //   width: 150,
+    //   align: 'center',
+    //   render: (status) => status ? (
+    //     <Tag color={getStatusColor(status)}>{status}</Tag>
+    //   ) : '-'
+    // },
+    
+
+    // {
+    //   title: 'Ghi chú 2',
+    //   dataIndex: 'NOTES_2',
+    //   key: 'notes_2',
+    //   width: 200,
+    //   ellipsis: true,
+    //   ...getColumnSearchProps('NOTES_2')
+    // },
     {
       title: 'Thao tác',
       key: 'action',
@@ -477,7 +569,7 @@ const UlCertification = () => {
           </Popconfirm>
         </Space>
       ),
-    }
+    },  
   ];
 
   // Event handlers
