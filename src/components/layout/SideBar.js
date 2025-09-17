@@ -90,9 +90,9 @@ const SideBar = ({ onLogout, userId }) => {
           ),
         },
         {
-          key: '/ul-certification',
+          key: '/material-certification',
           label: (
-            <Link to="/ul-certification" style={location.pathname === '/ul-certification' ? { color: '#1890ff', fontWeight: 600 } : {}}>
+            <Link to="/material-certification" style={location.pathname === '/material-certification' ? { color: '#1890ff', fontWeight: 600 } : {}}>
               Material Certification
             </Link>
           ),
