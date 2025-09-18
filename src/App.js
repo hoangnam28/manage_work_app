@@ -12,6 +12,7 @@ import DecideBoardDetail from './pages/DecideBoardDetail';
 import MaterialNew from './pages/MaterialNew';
 import UlMaterial from './pages/UlMaterial';
 import MaterialCertification from './pages/Material.Certification';
+import CertificationForm from './pages/CertificationForm';
 
 function App() {
   return (
@@ -88,6 +89,14 @@ function App() {
           element={
             <PrivateRoute>
               <MaterialCertification />
+            </PrivateRoute>
+          }
+        />
+        <Route 
+          path="/certification-form/:id" 
+          element={
+            <PrivateRoute>
+              <CertificationForm />
             </PrivateRoute>
           }
         />

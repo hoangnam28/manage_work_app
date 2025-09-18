@@ -876,6 +876,20 @@ const handleSearch = (selectedKeys, dataIndex) => {
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <h1> Prepreg</h1>
           <div>
+          <select
+              style={{ height: 32, minWidth: 180, marginRight: 8, borderRadius: 4, border: '1px solid #1890ff', color: '#1890ff', fontWeight: 500 }}
+              onChange={e => {
+                const val = e.target.value;
+                if (val) window.open(val, '_blank', 'noopener,noreferrer');
+              }}
+              defaultValue=""
+            >
+              <option value="" disabled hidden>Hướng dẫn sử dụng</option>
+            <option value="/material_pp.pdf">Hướng dẫn sử dụng tổng quan</option>
+            <option value="/flow_systems.pdf">Lưu trình sử dụng</option>
+          </select>
+        </div>
+          <div>
             <PermissionGuard requiredPermissions={['create']}>
               <Button
                 type="primary"

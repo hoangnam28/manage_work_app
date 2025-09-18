@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, Button, Space, Popconfirm, Input, Dropdown, Menu, Tag, Tooltip } from 'antd';
 import Highlighter from 'react-highlight-words';
 import {
@@ -26,6 +27,7 @@ import { toast, Toaster } from 'sonner';
 import './UlCertification.css';
 
 const UlCertification = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
@@ -45,6 +47,11 @@ const UlCertification = () => {
     pageSizeOptions: ['20', '50', '100'],
   });
 
+  const handleViewCertificationForm = (record) => {
+    navigate(`/certification-form/${record.ID}`, { 
+      state: { certificationData: record } 
+    });
+  };
   
   const fetchData = async (page = null, pageSize = null, filters = null) => {
     setLoading(true);
@@ -305,7 +312,23 @@ const UlCertification = () => {
       dataIndex: 'MATERIAL_NAME',
       key: 'material_name',
       width: 150,
-      ...getColumnSearchProps('MATERIAL_NAME')
+      ...getColumnSearchProps('MATERIAL_NAME'),
+      render: (text, record) => (
+        <button 
+          onClick={() => handleViewCertificationForm(record)}
+          style={{ 
+            color: '#1890ff', 
+            cursor: 'pointer',
+            border: 'none',
+            background: 'none',
+            padding: 0,
+            textDecoration: 'underline',
+            font: 'inherit'
+          }}
+        >
+          {text}
+        </button>
+      )
     },
     {
       title: 'Loại vật liệu',
@@ -617,7 +640,7 @@ const UlCertification = () => {
       <Toaster position="top-right" richColors />
       <div className="ul-certification-container">
         <div className="ul-certification-header">
-          <h1 style={{ color: '#e29a51ff' }}>UL Certification</h1>
+          <h1 style={{ color: '#e29a51ff' }}>Material Certification</h1>
           <div className="header-actions">
             <Button
               type="primary"
