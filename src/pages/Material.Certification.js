@@ -15,18 +15,18 @@ import {
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
-  fetchUlCertificationList,
-  createUlCertification,
-  updateUlCertification,
-  deleteUlCertification,
-  exportUlCertification,
-  fetchUlCertificationOptions
-} from '../utils/ul-certification-api';
+  fetchMaterialCertificationList,
+  createMaterialCertification,
+  updateMaterialCertification,
+  deleteMaterialCertification,
+  exportMaterialCertification,
+  fetchMaterialCertificationOptions
+} from '../utils/material-certification-api';
 import CreateUlCertificationModal from '../components/modal/CreateUlCertificationModal';
 import { toast, Toaster } from 'sonner';
 import './UlCertification.css';
 
-const UlCertification = () => {
+const MaterialCertification = () => {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -60,7 +60,7 @@ const UlCertification = () => {
       const currentPageSize = pageSize || pagination.pageSize;
       const currentFilters = filters !== null ? filters : searchFilters;
 
-      const response = await fetchUlCertificationList({
+      const response = await fetchMaterialCertificationList({
         page: currentPage,
         pageSize: currentPageSize,
         ...currentFilters
@@ -85,7 +85,7 @@ const UlCertification = () => {
   // Fetch options for dropdowns
   const fetchOptions = async () => {
     try {
-      const response = await fetchUlCertificationOptions();
+      const response = await fetchMaterialCertificationOptions();
       setOptions(response.data || {});
     } catch (error) {
       console.error('Error fetching options:', error);
@@ -101,7 +101,7 @@ const UlCertification = () => {
   // Handle create
   const handleCreate = async (values) => {
     try {
-      const result = await createUlCertification(values);
+      const result = await createMaterialCertification(values);
       if (result && result.success === false) {
         throw new Error(result.message || 'Tạo mới thất bại');
       }
@@ -127,7 +127,7 @@ const UlCertification = () => {
         throw new Error('ID không hợp lệ');
       }
 
-      const result = await updateUlCertification(recordId, values);
+      const result = await updateMaterialCertification(recordId, values);
       if (result && result.success === false) {
         throw new Error(result.message || 'Cập nhật thất bại');
       }
@@ -152,7 +152,7 @@ const UlCertification = () => {
         toast.error('ID không hợp lệ, không thể xóa!');
         return;
       }
-      await deleteUlCertification(id);
+      await deleteMaterialCertification(id);
       toast.success('Xóa thành công');
       fetchData(pagination.current, pagination.pageSize);
     } catch (error) {
@@ -165,7 +165,7 @@ const UlCertification = () => {
   const handleExport = async () => {
     try {
       const loadingToast = toast.loading('Đang xuất dữ liệu...');
-      const response = await exportUlCertification();
+      const response = await exportMaterialCertification();
 
       const url = window.URL.createObjectURL(new Blob([response]));
       const link = document.createElement('a');
@@ -705,4 +705,4 @@ const UlCertification = () => {
   );
 };
 
-export default UlCertification;
+export default MaterialCertification;
