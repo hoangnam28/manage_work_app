@@ -14,8 +14,6 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
-import './SideBar.css';
-
 const { Sider } = Layout;
 
 const SideBar = ({ onLogout, userId }) => {
@@ -36,7 +34,7 @@ const SideBar = ({ onLogout, userId }) => {
   const menuItems = [
     {
       key: '/review_tasks',
-      icon: <FileSearchOutlined />, 
+      icon: <FileSearchOutlined />,
       label: (
         <Link to="/review_tasks" style={location.pathname === '/review_tasks' ? { color: '#1890ff', fontWeight: 600 } : {}}>
           Review Tasks
@@ -101,7 +99,7 @@ const SideBar = ({ onLogout, userId }) => {
     },
     {
       key: '/user-management',
-      icon: <TeamOutlined />, 
+      icon: <TeamOutlined />,
       label: (
         <Link to="/user-management" style={location.pathname === '/user-management' ? { color: '#1890ff', fontWeight: 600 } : {}}>
           User List
@@ -160,10 +158,16 @@ const SideBar = ({ onLogout, userId }) => {
         items={menuItems}
       />
       <div className="sidebar-footer">
-        <Button type="primary" icon={<LogoutOutlined />} onClick={onLogout}>
+        <Button
+          type="primary"
+          icon={<LogoutOutlined />}
+          onClick={onLogout}
+          title="Bạn sẽ đăng xuất đấy"
+        >
           {!collapsed && 'Logout'}
         </Button>
       </div>
+
       <div className={`sidebar-toggle-container ${collapsed ? 'collapsed' : ''}`}>
         <Button
           type="primary"

@@ -1,4 +1,3 @@
-// CertificationForm.js - Phiên bản cải thiện
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -8,11 +7,12 @@ import {
 import { FileExcelOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import MainLayout from '../components/layout/MainLayout';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import {
   fetchMaterialCertificationDetail,
   updateMaterialCertification,
   exportCertificationForm,
+  fetchMaterialCertificationOptions, // Thêm import này
 } from '../utils/material-certification-api';
 import ImageUploadComponent from '../components/modal/ImageUploadComponent';
 
@@ -29,223 +29,174 @@ const CertificationForm = () => {
   const [exportLoading, setExportLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [images, setImages] = useState([]);
-  const [imagesLoading, setImagesLoading] = useState(false); // Thêm loading state riêng cho images
+  const [imagesLoading, setImagesLoading] = useState(false);
+  const [options, setOptions] = useState({}); // Thêm state cho options
 
   const certificationId = location.state?.certificationData?.ID || location.state?.certificationId;
   
   useEffect(() => {
     if (certificationId) {
       loadCertificationData();
+      loadOptions(); // Load options khi component mount
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [certificationId]);
 
-  // Thêm vào CertificationForm.js để debug
-const loadCertificationData = async () => {
-  try {
-    setLoading(true);
-    setImagesLoading(true);
-    console.log('=== DEBUG: Loading certification data ===');
-    console.log('Certification ID:', certificationId);
+  // Hàm load options từ API
+  const loadOptions = async () => {
+    try {
+      const response = await fetchMaterialCertificationOptions();
+      if (response.success) {
+        setOptions(response.data);
+        console.log('Options loaded:', response.data);
+      }
+    } catch (error) {
+      console.error('Error loading options:', error);
+    }
+  };
 
-    const response = await fetchMaterialCertificationDetail(certificationId);
-    console.log('=== DEBUG: Full API Response ===');
-    console.log('Response:', response);
-    console.log('Success:', response.success);
-    console.log('Data:', response.data);
-    
-    if (response.success && response.data) {
-      const data = response.data;
-      
-      // Debug images data
-      console.log('=== DEBUG: Images Data ===');
-      console.log('data.IMAGES:', data.IMAGES);
-      console.log('data.IMAGE_NAME:', data.IMAGE_NAME);
-      console.log('data.IMAGE_URL:', data.IMAGE_URL);
-      console.log('data.FILENAME:', data.FILENAME);
-      console.log('Array.isArray(data.IMAGES):', Array.isArray(data.IMAGES));
-      console.log('IMAGES length:', data.IMAGES ? data.IMAGES.length : 'N/A');
-
-      // Set form values (existing code)
-      const formValues = {
-        ...data,
-        RELEASE_DATE: data.RELEASE_DATE ? moment(data.RELEASE_DATE) : null,
-        MASS_PRODUCTION_DATE: data.MASS_PRODUCTION_DATE ? moment(data.MASS_PRODUCTION_DATE) : null,
-        MATERIAL_CERT_EXPECTED: data.MATERIAL_CERT_EXPECTED ? moment(data.MATERIAL_CERT_EXPECTED) : null,
-      };
-      form.setFieldsValue(formValues);
-
-      // Enhanced image processing with debug
-      let processedImages = [];
-      
-      if (data.IMAGES && Array.isArray(data.IMAGES) && data.IMAGES.length > 0) {
-        console.log('=== DEBUG: Processing IMAGES array ===');
-        
-        processedImages = data.IMAGES.map((img, index) => {
-          console.log(`Processing image ${index}:`, img);
-          
-          const imageId = img.ID || img.id || img.imageId;
-          const imageName = img.NAME || img.name || img.FILENAME || img.fileName || `image-${index + 1}.jpg`;
-          
-          console.log('Extracted imageId:', imageId);
-          console.log('Extracted imageName:', imageName);
-          
-          if (!imageId) {
-            console.error('No imageId found for image:', img);
-            return null;
-          }
-          
-          let imageUrl;
-          if (img.URL || img.url) {
-            imageUrl = img.URL || img.url;
-            console.log('Using provided URL:', imageUrl);
-          } else if (imageId) {
-            imageUrl = `${process.env.REACT_APP_BASE_URL}/material-certification/image/${certificationId}/${imageId}?t=${Date.now()}`;
-            console.log('Generated URL:', imageUrl);
-          }
-          
-          if (!imageUrl) {
-            console.error('No URL generated for image:', img);
-            return null;
-          }
-          
-          // Test if URL is accessible
-          const testImage = new Image();
-          testImage.onload = () => {
-            console.log(`Image ${imageId} loaded successfully:`, imageUrl);
-          };
-          testImage.onerror = () => {
-            console.error(`Image ${imageId} failed to load:`, imageUrl);
-          };
-          testImage.src = imageUrl;
-          
-          const processedImage = {
-            id: imageId,
-            ID: imageId,
-            url: imageUrl,
-            URL: imageUrl,
-            name: imageName,
-            NAME: imageName,
-            FILENAME: imageName,
-            size: img.SIZE || img.size,
-            SIZE: img.SIZE || img.size,
-            type: img.TYPE || img.type || img.imageType,
-            TYPE: img.TYPE || img.type || img.imageType,
-            createdDate: img.CREATED_DATE || img.createdDate
-          };
-          
-          console.log(`Processed image ${index}:`, processedImage);
-          return processedImage;
-        }).filter(Boolean);
-        
-      } else if (data.IMAGE_NAME || data.IMAGE_URL || data.FILENAME) {
-        console.log('=== DEBUG: Processing single image (legacy) ===');
-        console.log('IMAGE_NAME:', data.IMAGE_NAME);
-        console.log('IMAGE_URL:', data.IMAGE_URL);
-        console.log('FILENAME:', data.FILENAME);
-        
-        const imageId = data.IMAGE_ID || 'legacy-image';
-        let imageUrl;
-        
-        if (data.IMAGE_URL) {
-          imageUrl = data.IMAGE_URL;
-        } else {
-          imageUrl = `${process.env.REACT_APP_BASE_URL}/material-certification/image/${certificationId}?t=${Date.now()}`;
-        }
-        
-        console.log('Legacy image URL:', imageUrl);
-        
-        const singleImage = {
-          id: imageId,
-          ID: imageId,
-          url: imageUrl,
-          URL: imageUrl,
-          name: data.IMAGE_NAME || data.FILENAME || 'image.jpg',
-          NAME: data.IMAGE_NAME || data.FILENAME || 'image.jpg',
-          FILENAME: data.IMAGE_NAME || data.FILENAME || 'image.jpg',
-          size: data.IMAGE_SIZE,
-          SIZE: data.IMAGE_SIZE,
-          type: 'image/jpeg',
-          TYPE: 'image/jpeg'
+  const loadCertificationData = async () => {
+    try {
+      setLoading(true);
+      setImagesLoading(true);
+      const response = await fetchMaterialCertificationDetail(certificationId);
+      if (response.success && response.data) {
+        const data = response.data;
+        const formValues = {
+          RELEASE_DATE: data.RELEASE_DATE ? moment(data.RELEASE_DATE) : null,
+          FACTORY_NAME: data.FACTORY_NAME,
+          REQUEST_REASON: data.REQUEST_REASON,
+          LAYER_STRUCTURE: data.LAYER_STRUCTURE,
+          USAGE: data.USAGE,
+          RELIABILITY_LEVEL_ID: data.RELIABILITY_LEVEL_ID,
+          EXPECTED_PRODUCTION_QTY: data.EXPECTED_PRODUCTION_QTY,
+          MASS_PRODUCTION_DATE: data.MASS_PRODUCTION_DATE ? moment(data.MASS_PRODUCTION_DATE) : null,
+          MATERIAL_CERT_EXPECTED: data.MATERIAL_CERT_EXPECTED ? moment(data.MATERIAL_CERT_EXPECTED) : null,
+          MANUFACTURER_NAME: data.MANUFACTURER_NAME,
+          FACTORY_LOCATION: data.FACTORY_LOCATION,
+          MATERIAL_NAME: data.MATERIAL_NAME,
+          MATERIAL_CLASS_ID: data.MATERIAL_CLASS_ID,
+          MATERIAL_PROPERTY1_ID: data.MATERIAL_PROPERTY1_ID,
+          MATERIAL_PROPERTY2_ID: data.MATERIAL_PROPERTY2_ID,
+          MATERIAL_PROPERTY3_ID: data.MATERIAL_PROPERTY3_ID,
+          MATERIAL_STATUS: data.MATERIAL_STATUS, // Sử dụng đúng tên cột
+          UL_CERT_STATUS: data.UL_CERT_STATUS,   // Sử dụng đúng tên cột
+          NOTES_1: data.NOTES_1,
+          NOTES_2: data.NOTES_2,
         };
         
-        console.log('Processed legacy image:', singleImage);
-        processedImages = [singleImage];
-      } else {
-        console.log('=== DEBUG: No images found ===');
-        console.log('Checking all possible image fields:');
-        Object.keys(data).forEach(key => {
-          if (key.toLowerCase().includes('image') || key.toLowerCase().includes('file')) {
-            console.log(`${key}:`, data[key]);
-          }
+        form.setFieldsValue(formValues);
+
+        let processedImages = [];
+        
+        if (data.IMAGES && Array.isArray(data.IMAGES) && data.IMAGES.length > 0) {
+          
+          processedImages = data.IMAGES.map((img, index) => {
+            const imageId = img.ID || img.id || img.imageId;
+            const imageName = img.NAME || img.name || img.FILENAME || img.fileName || `image-${index + 1}.jpg`;
+            
+            if (!imageId) {
+              console.error('No imageId found for image:', img);
+              return null;
+            }
+            
+            let imageUrl;
+            if (img.URL || img.url) {
+              imageUrl = img.URL || img.url;
+            } else if (imageId) {
+              imageUrl = `${process.env.REACT_APP_BASE_URL}/material-certification/image/${certificationId}/${imageId}?t=${Date.now()}`;
+            }
+            
+            if (!imageUrl) {
+              console.error('No URL generated for image:', img);
+              return null;
+            }
+            
+            const processedImage = {
+              id: imageId,
+              ID: imageId,
+              url: imageUrl,
+              URL: imageUrl,
+              name: imageName,
+              NAME: imageName,
+              FILENAME: imageName,
+              size: img.SIZE || img.size,
+              SIZE: img.SIZE || img.size,
+              type: img.TYPE || img.type || img.imageType,
+              TYPE: img.TYPE || img.type || img.imageType,
+              createdDate: img.CREATED_DATE || img.createdDate
+            };
+            
+            return processedImage;
+          }).filter(Boolean);
+          
+        } else {
+          console.log('=== DEBUG: No images found ===');
+        }
+
+        setImages(processedImages);
+
+        // Set progress form values
+        progressForm.setFieldsValue({
+          PERSON_IN_CHARGE: data.PERSON_IN_CHARGE || undefined,
+          START_DATE: data.START_DATE ? moment(data.START_DATE) : null,
+          PD5_REPORT_DEADLINE: data.PD5_REPORT_DEADLINE ? moment(data.PD5_REPORT_DEADLINE) : null,
+          COMPLETION_DEADLINE: data.COMPLETION_DEADLINE ? moment(data.COMPLETION_DEADLINE) : null,
+          ACTUAL_COMPLETION_DATE: data.ACTUAL_COMPLETION_DATE ? moment(data.ACTUAL_COMPLETION_DATE) : null,
+          PD5_REPORT_ACTUAL_DATE: data.PD5_REPORT_ACTUAL_DATE ? moment(data.PD5_REPORT_ACTUAL_DATE) : null,
+          PROGRESS_ID: data.PROGRESS_ID || undefined,
+          TOTAL_TIME: data.TOTAL_TIME || undefined,
         });
+      } else {
+        console.error('=== DEBUG: API call failed ===');
       }
-
-      console.log('=== DEBUG: Final processed images ===');
-      console.log('Processed images count:', processedImages.length);
-      console.log('Processed images:', processedImages);
-      
-      setImages(processedImages);
-
-      // Set progress form values (existing code)
-      progressForm.setFieldsValue({
-        PERSON_IN_CHARGE: data.PERSON_IN_CHARGE || undefined,
-        START_DATE: data.START_DATE ? moment(data.START_DATE) : null,
-        PD5_REPORT_DEADLINE: data.PD5_REPORT_DEADLINE ? moment(data.PD5_REPORT_DEADLINE) : null,
-        COMPLETION_DEADLINE: data.COMPLETION_DEADLINE ? moment(data.COMPLETION_DEADLINE) : null,
-        ACTUAL_COMPLETION_DATE: data.ACTUAL_COMPLETION_DATE ? moment(data.ACTUAL_COMPLETION_DATE) : null,
-        PD5_REPORT_ACTUAL_DATE: data.PD5_REPORT_ACTUAL_DATE ? moment(data.PD5_REPORT_ACTUAL_DATE) : null,
-        PROGRESS_ID: data.PROGRESS_ID || undefined,
-        TOTAL_TIME: data.TOTAL_TIME || undefined,
-      });
-    } else {
-      console.error('=== DEBUG: API call failed ===');
-      console.log('Response:', response);
+    } catch (error) {
+      console.error('=== DEBUG: Error loading certification data ===');
+      console.error('Error:', error);
+      toast.error('Lỗi khi tải dữ liệu chứng nhận');
+    } finally {
+      setLoading(false);
+      setImagesLoading(false);
     }
-  } catch (error) {
-    console.error('=== DEBUG: Error loading certification data ===');
-    console.error('Error:', error);
-    console.error('Error message:', error.message);
-    console.error('Error response:', error.response);
-    message.error('Lỗi khi tải dữ liệu chứng nhận');
-  } finally {
-    setLoading(false);
-    setImagesLoading(false);
-  }
-};
-
-useEffect(() => {
-  if (certificationId) {
-    loadCertificationData();
-    
-  }
-  //eslint-disable-next-line react-hooks/exhaustive-deps
-}, [certificationId]);
+  };
 
   const onFinish = async (values) => {
     try {
       setLoading(true);
-      console.log('Saving certification form values:', values);
-
-      // Format dates for API
+      // Format dates for API - mapping đúng tên field
       const formattedValues = {
-        ...values,
-        RELEASE_DATE: values.RELEASE_DATE ? values.RELEASE_DATE.format('YYYY-MM-DD') : null,
-        MASS_PRODUCTION_DATE: values.MASS_PRODUCTION_DATE ? values.MASS_PRODUCTION_DATE.format('YYYY-MM-DD') : null,
-        MATERIAL_CERT_EXPECTED: values.MATERIAL_CERT_EXPECTED ? values.MATERIAL_CERT_EXPECTED.format('YYYY-MM-DD') : null,
+        releaseDate: values.RELEASE_DATE ? values.RELEASE_DATE.format('YYYY-MM-DD') : null,
+        factoryName: values.FACTORY_NAME,
+        requestReason: values.REQUEST_REASON,
+        layerStructure: values.LAYER_STRUCTURE,
+        usage: values.USAGE,
+        reliabilityLevelId: values.RELIABILITY_LEVEL_ID,
+        expectedProductionQty: values.EXPECTED_PRODUCTION_QTY,
+        massProductionDate: values.MASS_PRODUCTION_DATE ? values.MASS_PRODUCTION_DATE.format('YYYY-MM-DD') : null,
+        materialCertExpected: values.MATERIAL_CERT_EXPECTED ? values.MATERIAL_CERT_EXPECTED.format('YYYY-MM-DD') : null,
+        manufacturerName: values.MANUFACTURER_NAME,
+        factoryLocation: values.FACTORY_LOCATION,
+        materialName: values.MATERIAL_NAME,
+        materialClassId: values.MATERIAL_CLASS_ID,
+        materialProperty1Id: values.MATERIAL_PROPERTY1_ID,
+        materialProperty2Id: values.MATERIAL_PROPERTY2_ID,
+        materialProperty3Id: values.MATERIAL_PROPERTY3_ID,
+        materialStatusId: values.MATERIAL_STATUS, // Đúng mapping
+        ulStatusId: values.UL_CERT_STATUS,        // Đúng mapping
+        notes1: values.NOTES_1,
+        notes2: values.NOTES_2,
       };
 
       const response = await updateMaterialCertification(certificationId, formattedValues);
 
       if (response.success) {
-        message.success('Lưu thông tin thành công!');
-        // Không cần reload toàn bộ data, chỉ reload khi cần thiết
+        toast.success('Lưu thông tin thành công!');
       } else {
-        message.error(response.message || 'Lưu thất bại');
+        toast.error(response.message || 'Lưu thất bại');
       }
     } catch (error) {
       console.error('Error saving certification:', error);
-      message.error('Lỗi khi lưu thông tin: ' + (error.response?.data?.message || error.message));
+      toast.error('Lỗi khi lưu thông tin: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -254,30 +205,28 @@ useEffect(() => {
   const onProgressFinish = async (values) => {
     try {
       setLoading(true);
-      console.log('Saving progress form values:', values);
-
       // Format dates for API
       const formattedValues = {
-        ...values,
-        START_DATE: values.START_DATE ? values.START_DATE.format('YYYY-MM-DD') : null,
-        PD5_REPORT_DEADLINE: values.PD5_REPORT_DEADLINE ? values.PD5_REPORT_DEADLINE.format('YYYY-MM-DD') : null,
-        COMPLETION_DEADLINE: values.COMPLETION_DEADLINE ? values.COMPLETION_DEADLINE.format('YYYY-MM-DD') : null,
-        ACTUAL_COMPLETION_DATE: values.ACTUAL_COMPLETION_DATE ? values.ACTUAL_COMPLETION_DATE.format('YYYY-MM-DD') : null,
-        PD5_REPORT_ACTUAL_DATE: values.PD5_REPORT_ACTUAL_DATE ? values.PD5_REPORT_ACTUAL_DATE.format('YYYY-MM-DD') : null,
-        PD5_START_DATE: values.PD5_START_DATE ? values.PD5_START_DATE.format('YYYY-MM-DD') : null,
-        PD5_END_DATE: values.PD5_END_DATE ? values.PD5_END_DATE.format('YYYY-MM-DD') : null,
+        personInCharge: values.PERSON_IN_CHARGE,
+        startDate: values.START_DATE ? values.START_DATE.format('YYYY-MM-DD') : null,
+        pd5ReportDeadline: values.PD5_REPORT_DEADLINE ? values.PD5_REPORT_DEADLINE.format('YYYY-MM-DD') : null,
+        completionDeadline: values.COMPLETION_DEADLINE ? values.COMPLETION_DEADLINE.format('YYYY-MM-DD') : null,
+        actualCompletionDate: values.ACTUAL_COMPLETION_DATE ? values.ACTUAL_COMPLETION_DATE.format('YYYY-MM-DD') : null,
+        pd5ReportActualDate: values.PD5_REPORT_ACTUAL_DATE ? values.PD5_REPORT_ACTUAL_DATE.format('YYYY-MM-DD') : null,
+        progress: values.PROGRESS_ID,
+        totalTime: values.TOTAL_TIME,
       };
 
       const response = await updateMaterialCertification(certificationId, formattedValues);
 
       if (response.success) {
-        message.success('Lưu tiến độ thành công!');
+        toast.success('Lưu tiến độ thành công!');
       } else {
-        message.error(response.message || 'Lưu tiến độ thất bại');
+        toast.error(response.message || 'Lưu tiến độ thất bại');
       }
     } catch (error) {
       console.error('Error saving progress:', error);
-      message.error('Lỗi khi lưu tiến độ: ' + (error.response?.data?.message || error.message));
+      toast.error('Lỗi khi lưu tiến độ: ' + (error.response?.data?.message || error.message));
     } finally {
       setLoading(false);
     }
@@ -291,15 +240,14 @@ useEffect(() => {
 
     setExportLoading(true);
     try {
-      console.log('Exporting Excel for certification:', certificationId);
       const response = await exportCertificationForm(certificationId);
 
       if (response.success) {
-        message.success(response.message || 'Xuất file Excel thành công!');
+        toast.success(response.message || 'Xuất file Excel thành công!');
       }
     } catch (error) {
       console.error('Export error:', error);
-      message.error('Lỗi khi xuất file: ' + (error.response?.data?.message || error.message));
+      toast.error('Lỗi khi xuất file: ' + (error.response?.data?.message || error.message));
     } finally {
       setExportLoading(false);
     }
@@ -307,11 +255,8 @@ useEffect(() => {
 
   // Hàm xử lý khi images thay đổi từ ImageUploadComponent
   const handleImagesChange = (newImages) => {
-    console.log('Images updated in parent component:', newImages);
     setImages(newImages);
   };
-
-
 
   return (
     <MainLayout>
@@ -409,10 +354,16 @@ useEffect(() => {
                   </Col>
                   <Col span={8}>
                     <Form.Item
-                      name="RELIABILITY_LEVEL"
+                      name="RELIABILITY_LEVEL_ID"
                       label="Mức độ tin cậy"
                     >
-                      <Input />
+                      <Select placeholder="Chọn mức độ tin cậy" allowClear>
+                        {options.reliabilityLevel?.map(item => (
+                          <Select.Option key={item.id} value={item.id}>
+                            {item.nameVi} ({item.nameJp})
+                          </Select.Option>
+                        ))}
+                      </Select>
                     </Form.Item>
                   </Col>
                 </Row>
@@ -478,9 +429,12 @@ useEffect(() => {
                       name="MATERIAL_CLASS_ID"
                       label="Phân loại vật liệu"
                     >
-                      <Select>
-                        <Select.Option value="type1">Loại 1</Select.Option>
-                        <Select.Option value="type2">Loại 2</Select.Option>
+                      <Select placeholder="Chọn phân loại vật liệu" allowClear>
+                        {options.materialClass?.map(item => (
+                          <Select.Option key={item.id} value={item.id}>
+                            {item.nameVi} ({item.nameJp})
+                          </Select.Option>
+                        ))}
                       </Select>
                     </Form.Item>
                   </Col>
@@ -489,7 +443,13 @@ useEffect(() => {
                       name="MATERIAL_STATUS"
                       label="Trạng thái vật liệu"
                     >
-                      <Input />
+                      <Select placeholder="Chọn trạng thái vật liệu" allowClear>
+                        {options.materialStatus?.map(item => (
+                          <Select.Option key={item.id} value={item.id}>
+                            {item.nameVi} ({item.nameJp})
+                          </Select.Option>
+                        ))}
+                      </Select>
                     </Form.Item>
                   </Col>
                 </Row>
@@ -500,7 +460,13 @@ useEffect(() => {
                       name="MATERIAL_PROPERTY1_ID"
                       label="Thuộc tính 1"
                     >
-                      <Input />
+                      <Select placeholder="Chọn thuộc tính 1" allowClear>
+                        {options.materialProperty1?.map(item => (
+                          <Select.Option key={item.id} value={item.id}>
+                            {item.nameVi} ({item.nameJp})
+                          </Select.Option>
+                        ))}
+                      </Select>
                     </Form.Item>
                   </Col>
                   <Col span={8}>
@@ -508,7 +474,13 @@ useEffect(() => {
                       name="MATERIAL_PROPERTY2_ID"
                       label="Thuộc tính 2"
                     >
-                      <Input />
+                      <Select placeholder="Chọn thuộc tính 2" allowClear>
+                        {options.materialProperty2?.map(item => (
+                          <Select.Option key={item.id} value={item.id}>
+                            {item.nameVi} ({item.nameJp})
+                          </Select.Option>
+                        ))}
+                      </Select>
                     </Form.Item>
                   </Col>
                   <Col span={8}>
@@ -516,7 +488,30 @@ useEffect(() => {
                       name="MATERIAL_PROPERTY3_ID"
                       label="Thuộc tính 3"
                     >
-                      <Input />
+                      <Select placeholder="Chọn thuộc tính 3" allowClear>
+                        {options.materialProperty3?.map(item => (
+                          <Select.Option key={item.id} value={item.id}>
+                            {item.nameVi} ({item.nameJp})
+                          </Select.Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                </Row>
+
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <Form.Item
+                      name="UL_CERT_STATUS"
+                      label="Trạng thái chứng nhận UL"
+                    >
+                      <Select placeholder="Chọn trạng thái UL" allowClear>
+                        {options.ulStatus?.map(item => (
+                          <Select.Option key={item.id} value={item.id}>
+                            {item.nameVi} ({item.nameJp})
+                          </Select.Option>
+                        ))}
+                      </Select>
                     </Form.Item>
                   </Col>
                 </Row>

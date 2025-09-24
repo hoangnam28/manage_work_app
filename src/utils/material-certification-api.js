@@ -43,7 +43,7 @@ export const uploadCertificationImages = async (certificationId, files) => {
       headers: { 
         'Content-Type': 'multipart/form-data' 
       },
-      timeout: 60000 // 60 seconds timeout for large uploads
+      timeout: 60000 
     });
     
     console.log('Upload response:', response.data);
@@ -240,14 +240,17 @@ export const exportCertificationForm = async (certificationId) => {
     if (!certificationId) {
       throw new Error('Không tìm thấy ID certification');
     }
-    const response = await axiosInstance.get(`/material-certification/export-form/${certificationId}`, {
+    
+    const response = await axiosInstance.post(`/material-certification/export/excel`, {
+      ids: [certificationId]
+    }, {
       responseType: 'blob',
     });
 
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `CertificationForm_${certificationId}_${new Date().toISOString().split('T')[0]}.xlsx`);
+    link.setAttribute('download', `CertificationForm_${new Date().toISOString().split('T')[0]}.xlsx`);
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -260,7 +263,6 @@ export const exportCertificationForm = async (certificationId) => {
     throw error;
   }
 };
-
 export const updateCertificationTotalTime = async (certificationId, totalTime) => {
   try {
     if (!certificationId) {
