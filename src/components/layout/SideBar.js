@@ -14,6 +14,7 @@ import {
   CheckCircleOutlined,
 } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
+import './SideBar.css';
 const { Sider } = Layout;
 
 const SideBar = ({ onLogout, userId }) => {

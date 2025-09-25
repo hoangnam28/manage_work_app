@@ -33,7 +33,7 @@ const CertificationForm = () => {
   const [options, setOptions] = useState({}); // Thêm state cho options
 
   const certificationId = location.state?.certificationData?.ID || location.state?.certificationId;
-  
+
   useEffect(() => {
     if (certificationId) {
       loadCertificationData();
@@ -84,34 +84,34 @@ const CertificationForm = () => {
           NOTES_1: data.NOTES_1,
           NOTES_2: data.NOTES_2,
         };
-        
+
         form.setFieldsValue(formValues);
 
         let processedImages = [];
-        
+
         if (data.IMAGES && Array.isArray(data.IMAGES) && data.IMAGES.length > 0) {
-          
+
           processedImages = data.IMAGES.map((img, index) => {
             const imageId = img.ID || img.id || img.imageId;
             const imageName = img.NAME || img.name || img.FILENAME || img.fileName || `image-${index + 1}.jpg`;
-            
+
             if (!imageId) {
               console.error('No imageId found for image:', img);
               return null;
             }
-            
+
             let imageUrl;
             if (img.URL || img.url) {
               imageUrl = img.URL || img.url;
             } else if (imageId) {
               imageUrl = `${process.env.REACT_APP_BASE_URL}/material-certification/image/${certificationId}/${imageId}?t=${Date.now()}`;
             }
-            
+
             if (!imageUrl) {
               console.error('No URL generated for image:', img);
               return null;
             }
-            
+
             const processedImage = {
               id: imageId,
               ID: imageId,
@@ -126,10 +126,10 @@ const CertificationForm = () => {
               TYPE: img.TYPE || img.type || img.imageType,
               createdDate: img.CREATED_DATE || img.createdDate
             };
-            
+
             return processedImage;
           }).filter(Boolean);
-          
+
         } else {
           console.log('=== DEBUG: No images found ===');
         }
@@ -137,7 +137,8 @@ const CertificationForm = () => {
         setImages(processedImages);
 
         // Set progress form values
-        progressForm.setFieldsValue({
+        const progressFormValues = {
+          // Dữ liệu tiến độ
           PERSON_IN_CHARGE: data.PERSON_IN_CHARGE || undefined,
           START_DATE: data.START_DATE ? moment(data.START_DATE) : null,
           PD5_REPORT_DEADLINE: data.PD5_REPORT_DEADLINE ? moment(data.PD5_REPORT_DEADLINE) : null,
@@ -146,7 +147,32 @@ const CertificationForm = () => {
           PD5_REPORT_ACTUAL_DATE: data.PD5_REPORT_ACTUAL_DATE ? moment(data.PD5_REPORT_ACTUAL_DATE) : null,
           PROGRESS_ID: data.PROGRESS_ID || undefined,
           TOTAL_TIME: data.TOTAL_TIME || undefined,
-        });
+          PP_SIMILAR: data.PP_SIMILAR || undefined,
+
+          // Dữ liệu từ certification form
+          MATERIAL_NAME: data.MATERIAL_NAME,
+          MATERIAL_CLASS_ID: data.MATERIAL_CLASS_ID,
+          LAYER_STRUCTURE: data.LAYER_STRUCTURE,
+          RELIABILITY_LEVEL_ID: data.RELIABILITY_LEVEL_ID,
+          USAGE: data.USAGE,
+          MANUFACTURER_NAME: data.MANUFACTURER_NAME,
+          FACTORY_LOCATION: data.FACTORY_LOCATION,
+          MATERIAL_PROPERTY1_ID: data.MATERIAL_PROPERTY1_ID,
+          MATERIAL_PROPERTY2_ID: data.MATERIAL_PROPERTY2_ID,
+          MATERIAL_PROPERTY3_ID: data.MATERIAL_PROPERTY3_ID,
+          MATERIAL_STATUS: data.MATERIAL_STATUS,
+          UL_CERT_STATUS: data.UL_CERT_STATUS,
+          EXPECTED_PRODUCTION_QTY: data.EXPECTED_PRODUCTION_QTY,
+          MASS_PRODUCTION_DATE: data.MASS_PRODUCTION_DATE ? moment(data.MASS_PRODUCTION_DATE) : null,
+          MATERIAL_CERT_EXPECTED: data.MATERIAL_CERT_EXPECTED ? moment(data.MATERIAL_CERT_EXPECTED) : null,
+          RELEASE_DATE: data.RELEASE_DATE ? moment(data.RELEASE_DATE) : null,
+          FACTORY_NAME: data.FACTORY_NAME,
+          REQUEST_REASON: data.REQUEST_REASON,
+          DEPARTMENT_IN_CHARGE: data.DEPT_ID || data.DEPARTMENT_IN_CHARGE || data.DEPT_NAME || undefined, 
+          NOTES_1: data.NOTES_1,
+          NOTES_2: data.NOTES_2,
+        };
+        progressForm.setFieldsValue(progressFormValues);
       } else {
         console.error('=== DEBUG: API call failed ===');
       }
@@ -160,77 +186,142 @@ const CertificationForm = () => {
     }
   };
 
-  const onFinish = async (values) => {
-    try {
-      setLoading(true);
-      // Format dates for API - mapping đúng tên field
-      const formattedValues = {
-        releaseDate: values.RELEASE_DATE ? values.RELEASE_DATE.format('YYYY-MM-DD') : null,
-        factoryName: values.FACTORY_NAME,
-        requestReason: values.REQUEST_REASON,
-        layerStructure: values.LAYER_STRUCTURE,
-        usage: values.USAGE,
-        reliabilityLevelId: values.RELIABILITY_LEVEL_ID,
-        expectedProductionQty: values.EXPECTED_PRODUCTION_QTY,
-        massProductionDate: values.MASS_PRODUCTION_DATE ? values.MASS_PRODUCTION_DATE.format('YYYY-MM-DD') : null,
-        materialCertExpected: values.MATERIAL_CERT_EXPECTED ? values.MATERIAL_CERT_EXPECTED.format('YYYY-MM-DD') : null,
-        manufacturerName: values.MANUFACTURER_NAME,
-        factoryLocation: values.FACTORY_LOCATION,
-        materialName: values.MATERIAL_NAME,
-        materialClassId: values.MATERIAL_CLASS_ID,
-        materialProperty1Id: values.MATERIAL_PROPERTY1_ID,
-        materialProperty2Id: values.MATERIAL_PROPERTY2_ID,
-        materialProperty3Id: values.MATERIAL_PROPERTY3_ID,
-        materialStatusId: values.MATERIAL_STATUS, // Đúng mapping
-        ulStatusId: values.UL_CERT_STATUS,        // Đúng mapping
-        notes1: values.NOTES_1,
-        notes2: values.NOTES_2,
-      };
+// Fixed onFinish function - merge với progress form data
+const onFinish = async (values) => {
+  try {
+    setLoading(true);
+    
+    // Lấy dữ liệu hiện tại từ progress form
+    const progressData = progressForm.getFieldsValue();
+    
+    // Format dates for API - mapping đúng tên field
+    const formattedValues = {
+      // Dữ liệu từ certification form
+      releaseDate: values.RELEASE_DATE ? values.RELEASE_DATE.format('YYYY-MM-DD') : null,
+      factoryName: values.FACTORY_NAME,
+      requestReason: values.REQUEST_REASON,
+      layerStructure: values.LAYER_STRUCTURE,
+      usage: values.USAGE,
+      reliabilityLevelId: values.RELIABILITY_LEVEL_ID,
+      expectedProductionQty: values.EXPECTED_PRODUCTION_QTY,
+      massProductionDate: values.MASS_PRODUCTION_DATE ? values.MASS_PRODUCTION_DATE.format('YYYY-MM-DD') : null,
+      materialCertExpected: values.MATERIAL_CERT_EXPECTED ? values.MATERIAL_CERT_EXPECTED.format('YYYY-MM-DD') : null,
+      manufacturerName: values.MANUFACTURER_NAME,
+      factoryLocation: values.FACTORY_LOCATION,
+      materialName: values.MATERIAL_NAME,
+      materialClassId: values.MATERIAL_CLASS_ID,
+      materialProperty1Id: values.MATERIAL_PROPERTY1_ID,
+      materialProperty2Id: values.MATERIAL_PROPERTY2_ID,
+      materialProperty3Id: values.MATERIAL_PROPERTY3_ID,
+      materialStatusId: values.MATERIAL_STATUS,
+      ulStatusId: values.UL_CERT_STATUS,
+      notes1: values.NOTES_1,
+      notes2: values.NOTES_2,
+      
+      // Merge dữ liệu từ progress form để không bị mất
+      personInCharge: progressData.PERSON_IN_CHARGE,
+      departmentInCharge: progressData.DEPARTMENT_IN_CHARGE,
+      startDate: progressData.START_DATE ? progressData.START_DATE.format('YYYY-MM-DD') : null,
+      pd5ReportDeadline: progressData.PD5_REPORT_DEADLINE ? progressData.PD5_REPORT_DEADLINE.format('YYYY-MM-DD') : null,
+      completionDeadline: progressData.COMPLETION_DEADLINE ? progressData.COMPLETION_DEADLINE.format('YYYY-MM-DD') : null,
+      actualCompletionDate: progressData.ACTUAL_COMPLETION_DATE ? progressData.ACTUAL_COMPLETION_DATE.format('YYYY-MM-DD') : null,
+      pd5ReportActualDate: progressData.PD5_REPORT_ACTUAL_DATE ? progressData.PD5_REPORT_ACTUAL_DATE.format('YYYY-MM-DD') : null,
+      progress: progressData.PROGRESS_ID,
+      totalTime: progressData.TOTAL_TIME,
+    };
 
-      const response = await updateMaterialCertification(certificationId, formattedValues);
+    const response = await updateMaterialCertification(certificationId, formattedValues);
 
-      if (response.success) {
-        toast.success('Lưu thông tin thành công!');
-      } else {
-        toast.error(response.message || 'Lưu thất bại');
-      }
-    } catch (error) {
-      console.error('Error saving certification:', error);
-      toast.error('Lỗi khi lưu thông tin: ' + (error.response?.data?.message || error.message));
-    } finally {
-      setLoading(false);
+    if (response.success) {
+      toast.success('Lưu thông tin thành công!');
+      // Cập nhật progress form với dữ liệu mới từ certification form
+      const currentProgressValues = progressForm.getFieldsValue();
+      progressForm.setFieldsValue({
+        ...currentProgressValues,
+        MATERIAL_NAME: values.MATERIAL_NAME,
+        MATERIAL_CLASS_ID: values.MATERIAL_CLASS_ID,
+        LAYER_STRUCTURE: values.LAYER_STRUCTURE,
+        RELIABILITY_LEVEL_ID: values.RELIABILITY_LEVEL_ID,
+        NOTES_1: values.NOTES_1,
+      });
+    } else {
+      toast.error(response.message || 'Lưu thất bại');
     }
-  };
+  } catch (error) {
+    console.error('Error saving certification:', error);
+    toast.error('Lỗi khi lưu thông tin: ' + (error.response?.data?.message || error.message));
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const onProgressFinish = async (values) => {
-    try {
-      setLoading(true);
-      // Format dates for API
-      const formattedValues = {
-        personInCharge: values.PERSON_IN_CHARGE,
-        startDate: values.START_DATE ? values.START_DATE.format('YYYY-MM-DD') : null,
-        pd5ReportDeadline: values.PD5_REPORT_DEADLINE ? values.PD5_REPORT_DEADLINE.format('YYYY-MM-DD') : null,
-        completionDeadline: values.COMPLETION_DEADLINE ? values.COMPLETION_DEADLINE.format('YYYY-MM-DD') : null,
-        actualCompletionDate: values.ACTUAL_COMPLETION_DATE ? values.ACTUAL_COMPLETION_DATE.format('YYYY-MM-DD') : null,
-        pd5ReportActualDate: values.PD5_REPORT_ACTUAL_DATE ? values.PD5_REPORT_ACTUAL_DATE.format('YYYY-MM-DD') : null,
-        progress: values.PROGRESS_ID,
-        totalTime: values.TOTAL_TIME,
-      };
+// Fixed onProgressFinish function - merge với certification form data  
+const onProgressFinish = async (values) => {
+  try {
+    setLoading(true);
+    
+    // Lấy dữ liệu hiện tại từ certification form
+    const certificationData = form.getFieldsValue();
+    
+    const formattedValues = {
+      // Dữ liệu từ progress form
+      personInCharge: values.PERSON_IN_CHARGE,
+      departmentInCharge: values.DEPARTMENT_IN_CHARGE,
+      startDate: values.START_DATE ? values.START_DATE.format('YYYY-MM-DD') : null,
+      pd5ReportDeadline: values.PD5_REPORT_DEADLINE ? values.PD5_REPORT_DEADLINE.format('YYYY-MM-DD') : null,
+      completionDeadline: values.COMPLETION_DEADLINE ? values.COMPLETION_DEADLINE.format('YYYY-MM-DD') : null,
+      actualCompletionDate: values.ACTUAL_COMPLETION_DATE ? values.ACTUAL_COMPLETION_DATE.format('YYYY-MM-DD') : null,
+      pd5ReportActualDate: values.PD5_REPORT_ACTUAL_DATE ? values.PD5_REPORT_ACTUAL_DATE.format('YYYY-MM-DD') : null,
+      progress: values.PROGRESS_ID,
+      totalTime: values.TOTAL_TIME,
+      materialName: values.MATERIAL_NAME,
+      materialClassId: values.MATERIAL_CLASS_ID,
+      layerStructure: values.LAYER_STRUCTURE,
+      reliabilityLevelId: values.RELIABILITY_LEVEL_ID,
+      notes1: values.NOTES_1,
+      
+      // Merge dữ liệu từ certification form để không bị mất
+      releaseDate: certificationData.RELEASE_DATE ? certificationData.RELEASE_DATE.format('YYYY-MM-DD') : null,
+      factoryName: certificationData.FACTORY_NAME,
+      requestReason: certificationData.REQUEST_REASON,
+      usage: certificationData.USAGE,
+      expectedProductionQty: certificationData.EXPECTED_PRODUCTION_QTY,
+      massProductionDate: certificationData.MASS_PRODUCTION_DATE ? certificationData.MASS_PRODUCTION_DATE.format('YYYY-MM-DD') : null,
+      materialCertExpected: certificationData.MATERIAL_CERT_EXPECTED ? certificationData.MATERIAL_CERT_EXPECTED.format('YYYY-MM-DD') : null,
+      manufacturerName: certificationData.MANUFACTURER_NAME,
+      factoryLocation: certificationData.FACTORY_LOCATION,
+      materialProperty1Id: certificationData.MATERIAL_PROPERTY1_ID,
+      materialProperty2Id: certificationData.MATERIAL_PROPERTY2_ID,
+      materialProperty3Id: certificationData.MATERIAL_PROPERTY3_ID,
+      materialStatusId: certificationData.MATERIAL_STATUS,
+      ulStatusId: certificationData.UL_CERT_STATUS,
+      notes2: certificationData.NOTES_2,
+    };
 
-      const response = await updateMaterialCertification(certificationId, formattedValues);
+    const response = await updateMaterialCertification(certificationId, formattedValues);
 
-      if (response.success) {
-        toast.success('Lưu tiến độ thành công!');
-      } else {
-        toast.error(response.message || 'Lưu tiến độ thất bại');
-      }
-    } catch (error) {
-      console.error('Error saving progress:', error);
-      toast.error('Lỗi khi lưu tiến độ: ' + (error.response?.data?.message || error.message));
-    } finally {
-      setLoading(false);
+    if (response.success) {
+      toast.success('Lưu tiến độ thành công!');
+      // Đồng bộ dữ liệu sang certification form nếu có thay đổi
+      const currentCertValues = form.getFieldsValue();
+      form.setFieldsValue({
+        ...currentCertValues,
+        MATERIAL_NAME: values.MATERIAL_NAME,
+        MATERIAL_CLASS_ID: values.MATERIAL_CLASS_ID,
+        LAYER_STRUCTURE: values.LAYER_STRUCTURE,
+        RELIABILITY_LEVEL_ID: values.RELIABILITY_LEVEL_ID,
+        NOTES_1: values.NOTES_1,
+      });
+    } else {
+      toast.error(response.message || 'Lưu tiến độ thất bại');
     }
-  };
+  } catch (error) {
+    console.error('Error saving progress:', error);
+    toast.error('Lỗi khi lưu tiến độ: ' + (error.response?.data?.message || error.message));
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleExportExcel = async () => {
     if (!certificationId) {
@@ -333,7 +424,7 @@ const CertificationForm = () => {
                     </Form.Item>
                   </Col>
                 </Row>
-                
+
                 <Divider orientation="left">Thông tin vật liệu</Divider>
                 <Row gutter={16}>
                   <Col span={8}>
@@ -541,7 +632,7 @@ const CertificationForm = () => {
                     <span>Hình ảnh chứng nhận ({images.length} ảnh)</span>
                   </div>
                 </Divider>
-                
+
                 <Row justify="center" style={{ marginBottom: '24px' }}>
                   <Col span={24}>
                     <div style={{
@@ -562,13 +653,13 @@ const CertificationForm = () => {
                           onImagesChange={handleImagesChange}
                         />
                       )}
-                      
+
                       {!imagesLoading && images.length === 0 && (
-                        <div style={{ 
-                          textAlign: 'center', 
-                          color: '#999', 
+                        <div style={{
+                          textAlign: 'center',
+                          color: '#999',
                           marginTop: '16px',
-                          fontSize: '14px' 
+                          fontSize: '14px'
                         }}>
                           Chưa có ảnh nào được upload. Nhấn vào nút "Thêm ảnh" để bắt đầu.
                         </div>
@@ -612,15 +703,66 @@ const CertificationForm = () => {
                 {/* Progress Status Section */}
                 <div style={{ backgroundColor: '#f0f8ff', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
                   <Row gutter={16}>
-                    <Col span={12}>
+                    <Col span={8}>
                       <Form.Item
-                        name="PROGRESS_ID"
-                        label="Tiến độ (ID)"
+                        name="MATERIAL_NAME"
+                        label="Tên vật liệu"
                       >
-                        <Input placeholder="Nhập PROGRESS_ID" />
+                        <Input />
                       </Form.Item>
                     </Col>
-                    <Col span={12}>
+                    <Col span={8}>
+                      <Form.Item
+                        name="MATERIAL_CLASS_ID"
+                        label="Phân loại vật liệu"
+                      >
+                        <Select placeholder="Chọn phân loại vật liệu" allowClear>
+                          {options.materialClass?.map(item => (
+                            <Select.Option key={item.id} value={item.id}>
+                              {item.nameVi} ({item.nameJp})
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item
+                        name="LAYER_STRUCTURE"
+                        label="Cấu tạo lớp"
+                      >
+                        <Input />
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
+                      <Form.Item
+                        name="RELIABILITY_LEVEL_ID"
+                        label="Mức độ tin cậy"
+                      >
+                        <Select placeholder="Chọn mức độ tin cậy" allowClear>
+                          {options.reliabilityLevel?.map(item => (
+                            <Select.Option key={item.id} value={item.id}>
+                              {item.nameVi} ({item.nameJp})
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </div>
+                <div style={{ backgroundColor: '#f0f8ff', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
+                  <Row gutter={16}>
+                    <Col span={8}>
+                      <Form.Item name="PROGRESS_ID" label="Tiến độ">
+                        <Select placeholder="Chọn trạng thái tiến độ" allowClear>
+                          {options.progress?.map(item => (
+                            <Select.Option key={item.status_id} value={item.status_id}>
+                              {item.status_name}
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
+                    <Col span={8}>
                       <Form.Item
                         name="PERSON_IN_CHARGE"
                         label="Người phụ trách"
@@ -628,9 +770,25 @@ const CertificationForm = () => {
                         <Input placeholder="hung.nguyencong1" />
                       </Form.Item>
                     </Col>
+                    <Col span={8}>
+                      <Form.Item
+                        name="DEPARTMENT_IN_CHARGE"
+                        label="Bộ phận phụ trách"
+                      >
+                        <Select placeholder="Chọn bộ phận phụ trách" allowClear showSearch
+                          filterOption={(input, option) =>
+                            option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                          }>
+                          {options.department?.map(item => (
+                            <Select.Option key={item.dept_id} value={item.dept_id}>
+                              {item.dept_code} - {item.dept_name}
+                            </Select.Option>
+                          ))}
+                        </Select>
+                      </Form.Item>
+                    </Col>
                   </Row>
                 </div>
-
                 {/* Department and Person Section */}
                 <Divider orientation="left">Phân công thực hiện</Divider>
                 <Row gutter={16} style={{ backgroundColor: '#e6f7ff', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
@@ -681,15 +839,14 @@ const CertificationForm = () => {
                   </Col>
                 </Row>
 
-                {/* Time Management */}
-                <Divider orientation="left">Quản lý thời gian</Divider>
+
                 <Row gutter={16} style={{ backgroundColor: '#fff1f0', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
-                  <Col span={12}>
+                  <Col span={24}>
                     <Form.Item
-                      name="TOTAL_TIME"
-                      label="Tổng thời gian (phút)"
+                      name="NOTES_1"
+                      label="Ghi chú 1"
                     >
-                      <Input type="number" placeholder="Nhập tổng thời gian" />
+                      <TextArea rows={4} />
                     </Form.Item>
                   </Col>
                 </Row>

@@ -1,21 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Table, Button, Space, Popconfirm, Input, Select, DatePicker, Tag, Tooltip } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Space, Popconfirm, Tooltip } from 'antd';
 import {
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
-  SearchOutlined,
   ExportOutlined,
   ReloadOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import { fetchUlMaterialList, deleteUlMaterial, exportUlMaterial } from '../utils/ul-material-api';
 import { toast } from 'sonner';
-import './UlMaterial.css';
 import CreateUlMaterialModal from '../components/modal/CreateUlMaterialModal';
 
-const { Search } = Input;
-const { Option } = Select;
+
 
 const UlMaterial = () => {
   const [data, setData] = useState([]);
@@ -29,11 +26,7 @@ const UlMaterial = () => {
     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
     pageSizeOptions: ['20', '50', '100']
   });
-  const [searchParams, setSearchParams] = useState({
-    supplier: '',
-    material_name: '',
-    customer_name: ''
-  });
+
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [modalMode, setModalMode] = useState('create');
@@ -64,30 +57,30 @@ const UlMaterial = () => {
   };
 
   useEffect(() => {
-    fetchData(1, pagination.pageSize, searchParams);
-  }, []);
+    fetchData(1, pagination.pageSize );
+  }, [pagination]);
 
   const handleTableChange = (paginationInfo, filters, sorter) => {
-    fetchData(paginationInfo.current, paginationInfo.pageSize, searchParams);
+    fetchData(paginationInfo.current, paginationInfo.pageSize );
   };
 
-  const handleSearch = (value, field) => {
-    const newSearchParams = { ...searchParams, [field]: value };
-    setSearchParams(newSearchParams);
-    fetchData(1, pagination.pageSize, newSearchParams);
-  };
+  // const handleSearch = (value, field) => {
+  //   const newSearchParams = { ...searchParams, [field]: value };
+  //   setSearchParams(newSearchParams);
+  //   fetchData(1, pagination.pageSize, newSearchParams);
+  // };
 
-  const handleReset = () => {
-    const resetParams = { supplier: '', material_name: '', customer_name: '' };
-    setSearchParams(resetParams);
-    fetchData(1, pagination.pageSize, resetParams);
-  };
+  // const handleReset = () => {
+  //   const resetParams = { supplier: '', material_name: '', customer_name: '' };
+  //   setSearchParams(resetParams);
+  //   fetchData(1, pagination.pageSize, resetParams);
+  // };
 
   const handleDelete = async (id) => {
     try {
       await deleteUlMaterial(id);
       toast.success('Xóa thành công');
-      fetchData(pagination.current, pagination.pageSize, searchParams);
+      fetchData(pagination.current, pagination.pageSize);
     } catch (error) {
       toast.error('Lỗi khi xóa');
     }
@@ -110,16 +103,16 @@ const UlMaterial = () => {
     }
   };
 
-  const getStatusColor = (date, deadline) => {
-    if (!date || !deadline) return 'default';
-    const dateObj = new Date(date);
-    const deadlineObj = new Date(deadline);
-    const today = new Date();
+  // const getStatusColor = (date, deadline) => {
+  //   if (!date || !deadline) return 'default';
+  //   const dateObj = new Date(date);
+  //   const deadlineObj = new Date(deadline);
+  //   const today = new Date();
     
-    if (dateObj > deadlineObj) return 'red';
-    if (dateObj < deadlineObj && dateObj > today) return 'yellow';
-    return 'green';
-  };
+  //   if (dateObj > deadlineObj) return 'red';
+  //   if (dateObj < deadlineObj && dateObj > today) return 'yellow';
+  //   return 'green';
+  // };
 
   const columns = [
     {
@@ -330,7 +323,7 @@ const UlMaterial = () => {
   };
 
   const handleModalSuccess = () => {
-    fetchData(pagination.current, pagination.pageSize, searchParams);
+    fetchData(pagination.current, pagination.pageSize);
   };
 
   return (
@@ -354,7 +347,7 @@ const UlMaterial = () => {
             </Button>
             <Button
               icon={<ReloadOutlined />}
-              onClick={() => fetchData(pagination.current, pagination.pageSize, searchParams)}
+              onClick={() => fetchData(pagination.current, pagination.pageSize)}
             >
               Làm mới
             </Button>

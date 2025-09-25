@@ -200,8 +200,8 @@ const Impedance = () => {
       const mappedData = dataToExport.map(item => ({
         'JobName': item.IMP_1 ?? '-',
         'Mã Hàng': item.IMP_2 ?? '-',
-        'Tổng hợp dữ liệu đo thực tế': item.IMP_137 ?? '-',
         'Ngày tạo': item.IMP_138 ?? '-',
+        'Tổng hợp dữ liệu đo thực tế': item.IMP_137 ?? '-',
         'Mã hàng tham khảo': item.IMP_3 ?? '-',
         'Khách hàng': item.IMP_4 ?? '-',
         'Loại khách hàng': item.IMP_5 ?? '-',
@@ -235,6 +235,7 @@ const Impedance = () => {
         'Thông tin IMP yêu cầu của khách hàng|L (µm)': item.IMP_33 ?? '-',
         'Thông tin IMP yêu cầu của khách hàng|S (µm)': item.IMP_34 ?? '-',
         'Thông tin IMP yêu cầu của khách hàng|GAP ｺﾌﾟﾚﾅｰ (µm)': item.IMP_35 ?? '-',
+        'Coupon Code': item.IMP_136 ?? '-',
         'Tổng hợp kết quả mô phỏng|Giá trị IMP': item.IMP_36 ?? '-',
         'Tổng hợp kết quả mô phỏng|Phủ sơn|Độ dày phủ sơn trên PP (1)': item.IMP_37 ?? '-',
         'Tổng hợp kết quả mô phỏng|Phủ sơn|Độ dày phủ sơn trên đồng': item.IMP_38 ?? '-',
@@ -335,7 +336,7 @@ const Impedance = () => {
         'So sánh kết quả giữa mô phỏng và thực tế| L (µm)| Chân đường mạch': item.IMP_133 ?? '-',
         'So sánh kết quả giữa mô phỏng và thực tế| S (µm)': item.IMP_134 ?? '-',
         'So sánh kết quả giữa mô phỏng và thực tế| GAP ｺﾌﾟﾚﾅｰ (µm)': item.IMP_135 ?? '-', 
-        'Coupon Code': item.IMP_136 ?? '-',
+        
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(mappedData);

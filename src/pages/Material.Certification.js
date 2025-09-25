@@ -356,8 +356,8 @@ const MaterialCertification = () => {
     },
     {
       title: 'Bộ phận phụ trách',
-      dataIndex: 'DEPARTMENT_IN_CHARGE',
-      key: 'department_in_charge',
+      dataIndex: 'DEPARTMENT_CODE',
+      key: 'department_code',
       width: 150,
       render: v => v || '-',
     },

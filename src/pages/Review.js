@@ -20,25 +20,7 @@ const Review = () => {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [isFilteredByStt, setIsFilteredByStt] = useState(false);
-
   const location = window.location;
-
-  useEffect(() => {
-  const params = new URLSearchParams(location.search);
-  const sttFilter = params.get('stt');
-  if (sttFilter) {
-    const filteredData = data.filter(item => item.STT === parseInt(sttFilter, 10));
-    if (filteredData.length > 0) {
-      setFilteredData(filteredData);
-      setIsFilteredByStt(true); // Set flag
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.set('stt', sttFilter);
-      window.history.pushState({}, '', newUrl);
-    }
-  } else {
-    setIsFilteredByStt(false);
-  }
-}, [location.search, data]);
   const [imageLoadingStates, setImageLoadingStates] = useState({});
   const [editHistory, setEditHistory] = useState([]);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
@@ -100,37 +82,35 @@ const Review = () => {
       setFilteredData(data);
     } else {
       const filtered = data.filter((item) =>
-        item.MA?.toLowerCase().includes(value.toLowerCase())
+        item.MA?.toLowerCase().includes(value.toLowerCase()) ||
+        item.KHACH_HANG?.toLowerCase().includes(value.toLowerCase()) ||
+        item.MA_TAI_LIEU?.toLowerCase().includes(value.toLowerCase())
       );
       setFilteredData(filtered);
     }
   };
 
-  useEffect(() => {
+ useEffect(() => {
   const params = new URLSearchParams(location.search);
   const sttFilter = params.get('stt');
-  
   let filtered = [...data];
   filtered = filtered.filter((item) => item.IS_DELETED !== 1);
-  
-  // Nếu có stt filter từ URL, ưu tiên filter theo stt
   if (sttFilter) {
     filtered = filtered.filter((item) => item.STT === parseInt(sttFilter, 10));
   } else {
-    // Chỉ áp dụng các filter khác khi không có stt filter
     if (searchKeyword.trim() !== '') {
       filtered = filtered.filter((item) =>
-        item.MA?.toLowerCase().includes(searchKeyword.toLowerCase())
+        item.MA?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+        item.KHACH_HANG?.toLowerCase().includes(searchKeyword.toLowerCase()) ||
+        item.MA_TAI_LIEU?.toLowerCase().includes(searchKeyword.toLowerCase())
       );
     }
-
     if (showPendingReviewsOnly) {
       filtered = filtered.filter((item) => {
         const status = reviewStatus[item.COLUMN_ID] || {};
         const isEmptyOrNeedsDesignReview = (!item.CONG_VENH || status.DESIGN_REVIEWED);
         const isEmptyOrNeedsCIReviewVCut = (!item.V_CUT || status.CI_REVIEWED);
         const isEmptyOrNeedsCIReviewXLBM = (!item.XU_LY_BE_MAT || status.CI_REVIEWED);
-        
         return (
           isEmptyOrNeedsDesignReview || 
           isEmptyOrNeedsCIReviewVCut || 
@@ -1402,10 +1382,10 @@ const Review = () => {
           </select>
         </div>
         <Input
-          placeholder="Tìm kiếm theo Đầu mã"
+          placeholder="Tìm kiếm theo Đầu mã, Khách hàng, Mã tài liệu"
           allowClear
           onChange={(e) => handleSearch(e.target.value)}
-          style={{ width: 300 }}
+          style={{ width: 400 }}
         />
         <Checkbox
           checked={showPendingReviewsOnly}
