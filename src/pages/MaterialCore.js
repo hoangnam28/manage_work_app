@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Table, Button, Space, Popconfirm, Input, Dropdown, Menu } from 'antd';
 import Highlighter from 'react-highlight-words';
+import ReasonModal from '../components/modal/ReasonModal';
 import {
   EditOutlined,
   DeleteOutlined,
@@ -45,6 +46,13 @@ const MaterialCore = () => {
   const [cloneRecord, setCloneRecord] = useState(null);
   const [modalMode, setModalMode] = useState('create'); // 'create', 'edit', 'clone'
   const [searchFilters, setSearchFilters] = useState({});
+  const [reasonModal, setReasonModal] = useState({
+  open: false,
+  type: '', // 'update' hoặc 'delete'
+  record: null,
+  values: null,
+  loading: false
+});
 
 
   const [pagination, setPagination] = useState({
@@ -163,37 +171,45 @@ const MaterialCore = () => {
   };
 
   const handleUpdate = async (values) => {
-    try {
-      const recordId = editingRecord.ID || editingRecord.id;
+  try {
+    const recordId = editingRecord.ID || editingRecord.id;
 
-      if (!recordId) {
-        throw new Error('ID không hợp lệ');
-      }
-
-      console.log('Updating record:', {
-        recordId,
-        editingRecord,
-        values
-      });
-
-      const result = await updateMaterialCore(recordId, values);
-      if (result && result.success === false) {
-        throw new Error(result.message || 'Cập nhật thất bại');
-      }
-
-      // Refresh với current pagination
-      fetchData(pagination.current, pagination.pageSize);
-
-      setModalVisible(false);
-      setEditingRecord(null);
-
-      return { success: true, message: 'Cập nhật thành công' };
-
-    } catch (error) {
-      console.error('Error updating material core:', error);
-      throw new Error('Lỗi khi cập nhật: ' + (error.message || 'Đã có lỗi xảy ra'));
+    if (!recordId) {
+      throw new Error('ID không hợp lệ');
     }
-  };
+
+    // Kiểm tra xem có phải status update không
+    const isStatusUpdate = values.status && Object.keys(values).length <= 3;
+    
+    // Nếu không phải status update, yêu cầu lý do
+    if (!isStatusUpdate) {
+      setReasonModal({
+        open: true,
+        type: 'update',
+        record: editingRecord,
+        values: values,
+        loading: false
+      });
+      return;
+    }
+
+    // Thực hiện update ngay nếu là status update
+    const result = await updateMaterialCore(recordId, values);
+    if (result && result.success === false) {
+      throw new Error(result.message || 'Cập nhật thất bại');
+    }
+
+    fetchData(pagination.current, pagination.pageSize);
+    setModalVisible(false);
+    setEditingRecord(null);
+
+    return { success: true, message: 'Cập nhật thành công' };
+
+  } catch (error) {
+    console.error('Error updating material core:', error);
+    throw new Error('Lỗi khi cập nhật: ' + (error.message || 'Đã có lỗi xảy ra'));
+  }
+};
   const handleStatusChange = async (record, status) => {
     if (!hasPermission('approve')) {
       toast.error('Bạn không có quyền thay đổi trạng thái!');
@@ -249,26 +265,71 @@ const MaterialCore = () => {
       toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
     }
   };
-  const handleDelete = async (recordId) => {
-    try {
-      const id = Number(recordId?.id ?? recordId?.ID ?? recordId);
+  const handleDelete = async (record) => {
+  try {
+    const id = Number(record?.id ?? record?.ID ?? record);
+    if (!id || isNaN(id)) {
+      toast.error('ID không hợp lệ, không thể xóa!');
+      return;
+    }
+    
+    // Mở modal nhập lý do thay vì gọi API trực tiếp
+    setReasonModal({
+      open: true,
+      type: 'delete',
+      record: record, // Truyền toàn bộ record thay vì chỉ recordId
+      values: null,
+      loading: false
+    });
+  } catch (error) {
+    console.error('Error in handleDelete:', error);
+    toast.error('Lỗi khi chuẩn bị xóa');
+  }
+};
+  // Frontend: MaterialCore.js - Optimized handleStatusChange
+
+const handleReasonConfirm = async (reason) => {
+  setReasonModal(prev => ({ ...prev, loading: true }));
+
+  try {
+    if (reasonModal.type === 'update') {
+      const recordId = reasonModal.record.ID || reasonModal.record.id;
+      const updateData = { ...reasonModal.values, reason };
+      
+      const result = await updateMaterialCore(recordId, updateData);
+      if (result && result.success === false) {
+        throw new Error(result.message || 'Cập nhật thất bại');
+      }
+
+      fetchData(pagination.current, pagination.pageSize);
+      setModalVisible(false);
+      setEditingRecord(null);
+      toast.success('Cập nhật thành công');
+
+    } else if (reasonModal.type === 'delete') {
+      const id = Number(reasonModal.record?.id ?? reasonModal.record?.ID ?? reasonModal.record);
       if (!id || isNaN(id)) {
         toast.error('ID không hợp lệ, không thể xóa!');
         return;
       }
-      await deleteMaterialCore(id);
+
+      // Gọi API với reason trong body
+      await deleteMaterialCore(id, { reason });
       toast.success('Xóa thành công');
-
-      // Refresh với current pagination
       fetchData(pagination.current, pagination.pageSize);
-    } catch (error) {
-      console.error('Error deleting material core:', error);
-      toast.error('Lỗi khi xóa');
     }
-  };
-  // Frontend: MaterialCore.js - Optimized handleStatusChange
 
+  } catch (error) {
+    console.error('Error:', error);
+    toast.error('Có lỗi xảy ra: ' + error.message);
+  } finally {
+    setReasonModal({ open: false, type: '', record: null, values: null, loading: false });
+  }
+};
 
+const handleReasonCancel = () => {
+  setReasonModal({ open: false, type: '', record: null, values: null, loading: false });
+};
   const handleExport = async () => {
     try {
       const loadingToast = toast.loading('Đang xuất dữ liệu...');
@@ -520,13 +581,6 @@ const MaterialCore = () => {
       width: 150,
       align: 'center',
       ...getColumnSearchProps('SPEC_THICKNESS')
-    },
-    {
-      title: 'Preference_Class',
-      dataIndex: 'PREFERENCE_CLASS',
-      key: 'preference_class',
-      width: 120,
-      align: 'center',
     },
     {
       title: 'USE_TYPE',
@@ -970,14 +1024,46 @@ const MaterialCore = () => {
       render: (date) => date ? new Date(date).toLocaleDateString() : '',
       align: 'center',
     },
-    // Phần render button trong columns - FIXED VERSION
     {
-      title: 'Thao tác',
-      key: 'action',
-      fixed: 'right',
-      width: 220,
+      title: 'Lý do',
+      dataIndex: 'REASON',
+      key: 'reason',
+      width: 120,
       align: 'center',
-      render: (_, record) => (
+    },
+    {
+    title: 'Thao tác',
+    key: 'action',
+    fixed: 'right',
+    width: 220,
+    align: 'center',
+    render: (_, record) => {
+      if (record.IS_DELETED === 1 || record.IS_DELETED === '1') {
+        return (
+          <Space size="middle">
+            <span style={{ color: '#f0e8e8ff', fontStyle: 'italic' }}>
+              Đã xóa
+            </span>
+            <PermissionGuard requiredPermissions={['view']}>
+              <Button
+                type="primary"
+                icon={<HistoryOutlined />}
+                onClick={async () => {
+                  try {
+                    const response = await fetchMaterialCoreHistory(record.ID);
+                    setHistoryData(response.data);
+                    setHistoryModalVisible(true);
+                  } catch (error) {
+                    toast.error('Lỗi khi lấy lịch sử');
+                  }
+                }}
+                title="Lịch sử"
+              />
+            </PermissionGuard>
+          </Space>
+        );
+      }
+      return (
         <Space size="middle">
           <PermissionGuard requiredPermissions={['edit']}>
             <Button
@@ -992,6 +1078,7 @@ const MaterialCore = () => {
               title="Sửa"
             />
           </PermissionGuard>
+
           <PermissionGuard requiredPermissions={['create']}>
             <Button
               type="default"
@@ -1001,6 +1088,7 @@ const MaterialCore = () => {
               style={{ color: '#52c41a', borderColor: '#52c41a' }}
             />
           </PermissionGuard>
+
           <PermissionGuard requiredPermissions={['view']}>
             <Button
               type="primary"
@@ -1018,7 +1106,6 @@ const MaterialCore = () => {
             />
           </PermissionGuard>
 
-          {/* Button Approve/Cancel - chỉ admin */}
           <PermissionGuard requiredPermissions={['approve']}>
             <Popconfirm
               title="Chọn trạng thái"
@@ -1050,7 +1137,6 @@ const MaterialCore = () => {
             </Popconfirm>
           </PermissionGuard>
 
-          {/* Hiển thị status readonly cho user không phải admin */}
           {!hasPermission('approve') && (
             <Button
               type="default"
@@ -1068,7 +1154,6 @@ const MaterialCore = () => {
             </Button>
           )}
 
-          {/* Button Xóa - chỉ editor và admin */}
           <PermissionGuard requiredPermissions={['delete']}>
             <Popconfirm
               title="Xác nhận xóa?"
@@ -1080,8 +1165,9 @@ const MaterialCore = () => {
             </Popconfirm>
           </PermissionGuard>
         </Space>
-      ),
-    }
+      );
+  },
+}
   ];
 
 
@@ -1160,15 +1246,16 @@ const MaterialCore = () => {
             ...pagination,
             onChange: (page, pageSize) => {
               console.log('Pagination changed:', page, pageSize);
-              fetchData(page, pageSize, searchFilters); // Truyền searchFilters
+              fetchData(page, pageSize, searchFilters);
             },
             onShowSizeChange: (current, size) => {
               console.log('Page size changed:', current, size);
-              fetchData(1, size, searchFilters); // Reset về trang 1 với search filters
+              fetchData(1, size, searchFilters);
             }
           }}
-          onChange={handleTableChange} // Thêm onChange handler
+          onChange={handleTableChange}
           rowClassName={(record) => {
+            if (record.IS_DELETED === 1 || record.IS_DELETED === '1') return 'row-deleted';
             if (record.STATUS === 'Pending') return 'row-pending';
             if (record.STATUS === 'Cancel') return 'row-cancel';
             return '';
@@ -1196,6 +1283,14 @@ const MaterialCore = () => {
           open={importModalVisible}
           onCancel={() => setImportModalVisible(false)}
           onSuccess={handleImportSuccess}
+        />
+        <ReasonModal
+          open={reasonModal.open}
+          onCancel={handleReasonCancel}
+          onConfirm={handleReasonConfirm}
+          title={reasonModal.type === 'delete' ? 'Nhập lý do xóa' : 'Nhập lý do cập nhật'}
+          placeholder={reasonModal.type === 'delete' ? 'Vui lòng nhập lý do xóa...' : 'Vui lòng nhập lý do cập nhật...'}
+          loading={reasonModal.loading}
         />
       </div>
     </MainLayout>

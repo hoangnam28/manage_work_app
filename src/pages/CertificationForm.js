@@ -264,7 +264,6 @@ const onProgressFinish = async (values) => {
     const certificationData = form.getFieldsValue();
     
     const formattedValues = {
-      // Dữ liệu từ progress form
       personInCharge: values.PERSON_IN_CHARGE,
       departmentInCharge: values.DEPARTMENT_IN_CHARGE,
       startDate: values.START_DATE ? values.START_DATE.format('YYYY-MM-DD') : null,
@@ -279,8 +278,6 @@ const onProgressFinish = async (values) => {
       layerStructure: values.LAYER_STRUCTURE,
       reliabilityLevelId: values.RELIABILITY_LEVEL_ID,
       notes1: values.NOTES_1,
-      
-      // Merge dữ liệu từ certification form để không bị mất
       releaseDate: certificationData.RELEASE_DATE ? certificationData.RELEASE_DATE.format('YYYY-MM-DD') : null,
       factoryName: certificationData.FACTORY_NAME,
       requestReason: certificationData.REQUEST_REASON,

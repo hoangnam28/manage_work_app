@@ -27,6 +27,7 @@ import { toast, Toaster } from 'sonner';
 import './MaterialCore.css';
 import ImportMaterialPpReviewModal from '../components/modal/ImportMaterialPpReviewModal';
 import { hasPermission, PermissionGuard } from '../utils/permissions';
+import ReasonModal from '../components/modal/ReasonModal';
 
 
 const MaterialProperties = () => {
@@ -41,75 +42,82 @@ const MaterialProperties = () => {
   const [importReviewModalVisible, setImportReviewModalVisible] = useState(false);
   const [cloneRecord, setCloneRecord] = useState(null);
   const [modalMode, setModalMode] = useState('create');
+  const [reasonModal, setReasonModal] = useState({
+    open: false,
+    type: '', // 'update' hoặc 'delete'
+    record: null,
+    values: null,
+    loading: false
+  });
 
 
   const [pagination, setPagination] = useState({
-      current: 1,
-      pageSize: 20,
-      total: 0,
-      showSizeChanger: true,
-      showQuickJumper: true,
-      showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
-      pageSizeOptions: ['20', '50', '100', '200', '500'],
-    });
+    current: 1,
+    pageSize: 20,
+    total: 0,
+    showSizeChanger: true,
+    showQuickJumper: true,
+    showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
+    pageSizeOptions: ['20', '50', '100', '200', '500'],
+  });
 
-   const fetchData = async (page = null, pageSize = null, filters = null) => {
-      setLoading(true);
-      try {
-        const currentPage = page || pagination.current;
-        const currentPageSize = pageSize || pagination.pageSize;
-        const currentFilters = filters !== null ? filters : searchFilters;
-  
-        console.log('Fetching data with params:', {
-          page: currentPage,
-          pageSize: currentPageSize,
-          filters: currentFilters
-        });
-  
-        const response = await fetchMaterialPpList({
-          page: currentPage,
-          pageSize: currentPageSize,
-          ...currentFilters // ✅ Trực tiếp truyền filters thay vì wrap trong search object
-        });
-  
-        // Kiểm tra và điều chỉnh trang hiện tại nếu vượt quá tổng số trang
-        const totalPages = Math.ceil((response.pagination?.totalRecords || 0) / currentPageSize);
-        const adjustedCurrent = Math.min(currentPage, totalPages || 1);
-  
-        if (adjustedCurrent !== currentPage && totalPages > 0) {
-          // Nếu trang hiện tại đã bị điều chỉnh, gọi lại API với trang đúng
-          return fetchData(adjustedCurrent, currentPageSize, currentFilters);
-        }
-  
-        // Convert all keys to uppercase for consistency
-        const formattedData = (response.data || []).map(item => {
-          const newItem = {};
-          Object.keys(item).forEach(key => {
-            newItem[key.toUpperCase()] = item[key];
-          });
-          return newItem;
-        });
-  
-        setData(formattedData);
-        setPagination(prev => ({
-          ...prev,
-          current: adjustedCurrent,
-          pageSize: currentPageSize,
-          total: response.pagination?.totalRecords || 0
-        }));
-  
-      } catch (error) {
-        console.error('Error fetching material pp data:', error);
-        toast.error('Lỗi khi tải dữ liệu');
-      } finally {
-        setLoading(false);
+  const fetchData = async (page = null, pageSize = null, filters = null) => {
+    setLoading(true);
+    try {
+      const currentPage = page || pagination.current;
+      const currentPageSize = pageSize || pagination.pageSize;
+      const currentFilters = filters !== null ? filters : searchFilters;
+
+      console.log('Fetching data with params:', {
+        page: currentPage,
+        pageSize: currentPageSize,
+        filters: currentFilters
+      });
+
+      const response = await fetchMaterialPpList({
+        page: currentPage,
+        pageSize: currentPageSize,
+        ...currentFilters // ✅ Trực tiếp truyền filters thay vì wrap trong search object
+      });
+
+      // Kiểm tra và điều chỉnh trang hiện tại nếu vượt quá tổng số trang
+      const totalPages = Math.ceil((response.pagination?.totalRecords || 0) / currentPageSize);
+      const adjustedCurrent = Math.min(currentPage, totalPages || 1);
+
+      if (adjustedCurrent !== currentPage && totalPages > 0) {
+        // Nếu trang hiện tại đã bị điều chỉnh, gọi lại API với trang đúng
+        return fetchData(adjustedCurrent, currentPageSize, currentFilters);
       }
-    };
+
+      // Convert all keys to uppercase for consistency
+      const formattedData = (response.data || []).map(item => {
+        const newItem = {};
+        Object.keys(item).forEach(key => {
+          newItem[key.toUpperCase()] = item[key];
+        });
+        return newItem;
+      });
+
+      setData(formattedData);
+      setPagination(prev => ({
+        ...prev,
+        current: adjustedCurrent,
+        pageSize: currentPageSize,
+        total: response.pagination?.totalRecords || 0
+      }));
+
+    } catch (error) {
+      console.error('Error fetching material pp data:', error);
+      toast.error('Lỗi khi tải dữ liệu');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-     fetchData();
-     // eslint-disable-next-line react-hooks/exhaustive-deps
-   }, []);
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const handleCreate = async (values, mode = 'create') => {
     try {
       let requesterName = 'Unknown';
@@ -172,22 +180,25 @@ const MaterialProperties = () => {
     }
   };
 
-  const handleDelete = async (recordId) => {
-    try {
-      // Đảm bảo lấy đúng id, ưu tiên id, nếu không có thì lấy ID
-      const id = Number(recordId?.id ?? recordId?.ID ?? recordId);
-      if (!id || isNaN(id)) {
-        toast.error('ID không hợp lệ, không thể xóa!');
-        return;
-      }
-      await deleteMaterialPp(id);
-      toast.success('Xóa thành công');
-      fetchData();
-    } catch (error) {
-      console.error('Error deleting material pp:', error);
-      toast.error('Lỗi khi xóa');
-    }
-  };
+  const handleDelete = async (record) => {
+  try {
+    const id = Number(record?.id ?? record?.ID ?? record);
+    if (!id || isNaN(id)) {
+      toast.error('ID không hợp lệ, không thể xóa!');
+      return;
+    } 
+    setReasonModal({
+      open: true,
+      type: 'delete',
+      record: record,
+      values: null,
+      loading: false
+    });
+  } catch (error) {
+    console.error('Error in handleDelete:', error);
+    toast.error('Lỗi khi chuẩn bị xóa');
+  }
+};
   const handleStatusChange = async (record, status) => {
     if (!hasPermission('approve')) {
       toast.error('Bạn không có quyền thay đổi trạng thái!');
@@ -345,9 +356,9 @@ const MaterialProperties = () => {
       );
     }
   });
-const handleSearch = (selectedKeys, dataIndex) => {
+  const handleSearch = (selectedKeys, dataIndex) => {
     const searchValue = selectedKeys[0];
-    
+
     // Cập nhật search filters
     const newFilters = { ...searchFilters };
     if (searchValue) {
@@ -361,9 +372,9 @@ const handleSearch = (selectedKeys, dataIndex) => {
       ...prev,
       current: 1
     }));
-    
+
     fetchData(1, pagination.pageSize, newFilters);
-    
+
   };
 
 
@@ -380,6 +391,55 @@ const handleSearch = (selectedKeys, dataIndex) => {
     fetchData(1, pagination.pageSize, newFilters);
     clearFilters();
   };
+  const handleReasonConfirm = async (reason) => {
+    setReasonModal(prev => ({ ...prev, loading: true }));
+
+    try {
+      if (reasonModal.type === 'update') {
+        const recordId = reasonModal.record.ID || reasonModal.record.id;
+        const updateData = { ...reasonModal.values, reason };
+
+        const result = await updateMaterialPp(recordId, updateData);
+        if (result && result.success === false) {
+          throw new Error(result.message || 'Cập nhật thất bại');
+        }
+
+        fetchData(pagination.current, pagination.pageSize);
+        setModalVisible(false);
+        setEditingRecord(null);
+        toast.success('Cập nhật thành công');
+
+      } else if (reasonModal.type === 'delete') {
+        const id = Number(reasonModal.record?.id ?? reasonModal.record?.ID ?? reasonModal.record);
+        if (!id || isNaN(id)) {
+          toast.error('ID không hợp lệ, không thể xóa!');
+          return;
+        }
+
+        // Gọi API với reason trong body
+        await deleteMaterialPp(id, { reason });
+        toast.success('Xóa thành công');
+        fetchData(pagination.current, pagination.pageSize);
+      }
+
+    } catch (error) {
+      console.error('Error:', error);
+      toast.error('Có lỗi xảy ra: ' + error.message);
+    } finally {
+      setReasonModal({ open: false, type: '', record: null, values: null, loading: false });
+    }
+  };
+
+  const handleReasonCancel = () => {
+  setReasonModal({ 
+    open: false, 
+    type: '', 
+    record: null, 
+    values: null, 
+    loading: false 
+  });
+};
+
 
 
   const columns = [
@@ -764,109 +824,130 @@ const handleSearch = (selectedKeys, dataIndex) => {
       align: 'center'
     },
     {
+      title: 'Lý do',
+      dataIndex: 'REASON',
+      key: 'reason',
+      width: 120,
+    },
+    {
       title: 'Thao tác',
       key: 'action',
       fixed: 'right',
-      width: 120,
+      width: 220,
       align: 'center',
-      render: (_, record) => (
-        <Space size="middle">
-          <PermissionGuard requiredPermissions={['edit']}>
-            <Button
-              type="primary"
-              icon={<EditOutlined />}
-              onClick={() => {
-                setModalMode('edit');
-                setEditingRecord(record);
-                setCloneRecord(null);
-                setModalVisible(true);
-              }}
-              title="Sửa"
-            />
-          </PermissionGuard>
-          <PermissionGuard requiredPermissions={['create']}>
-            <Button
-              type="default"
-              icon={<CopyOutlined />}
-              onClick={() => handleClone(record)}
-              title="Tạo bản sao"
-              style={{ color: '#52c41a', borderColor: '#52c41a' }}
-            />
-          </PermissionGuard>
-          <PermissionGuard requiredPermissions={['view']}>
-            <Button
-              type="primary"
-              icon={<HistoryOutlined />}
-              onClick={async () => {
-                try {
-                  const response = await fetchMaterialPpHistory(record.ID);
-                  setHistoryData(response.data);
-                  setHistoryModalVisible(true);
-                } catch (error) {
-                  toast.error('Lỗi khi lấy lịch sử');
-                }
-              }}
-            />
-          </PermissionGuard>
-          <PermissionGuard requiredPermissions={['approve']}>
-            <Popconfirm
-              title="Chọn trạng thái"
-              okText="Approve"
-              cancelText="Cancel"
-              okButtonProps={{
-                icon: <CheckCircleOutlined />,
-                style: { backgroundColor: '#52c41a', borderColor: '#52c41a' }
-              }}
-              cancelButtonProps={{
-                icon: <CloseCircleOutlined />,
-                style: { backgroundColor: '#8c8c8c', borderColor: '#8c8c8c', color: 'white' }
-              }}
-              onConfirm={() => handleStatusChange(record, 'Approve')}
-              onCancel={() => handleStatusChange(record, 'Cancel')}
-            >
+      render: (_, record) => {
+        if (record.IS_DELETED === 1 || record.IS_DELETED === '1') {
+          return (
+            <Space size="middle">
+              <span style={{ color: '#f0e8e8ff', fontStyle: 'italic' }}>
+                Đã xóa
+              </span>
+              <PermissionGuard requiredPermissions={['view']}>
+                <Button
+                  type="primary"
+                  icon={<HistoryOutlined />}
+                  onClick={async () => {
+                    try {
+                      const response = await fetchMaterialPpHistory(record.ID);
+                      setHistoryData(response.data);
+                      setHistoryModalVisible(true);
+                    } catch (error) {
+                      toast.error('Lỗi khi lấy lịch sử');
+                    }
+                  }}
+                  title="Lịch sử"
+                />
+              </PermissionGuard>
+            </Space>
+          );
+        }
+        return (
+          <Space size="middle">
+            <PermissionGuard requiredPermissions={['edit']}>
               <Button
-                type={record.STATUS === 'Approve' ? 'primary' : 'default'}
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={() => {
+                  setModalMode('edit');
+                  setEditingRecord(record);
+                  setCloneRecord(null);
+                  setModalVisible(true);
+                }}
+                title="Sửa"
+              />
+            </PermissionGuard>
+
+            <PermissionGuard requiredPermissions={['create']}>
+              <Button
+                type="default"
+                icon={<CopyOutlined />}
+                onClick={() => handleClone(record)}
+                title="Tạo bản sao"
+                style={{ color: '#52c41a', borderColor: '#52c41a' }}
+              />
+            </PermissionGuard>
+            <PermissionGuard requiredPermissions={['approve']}>
+              <Popconfirm
+                title="Chọn trạng thái"
+                okText="Approve"
+                cancelText="Cancel"
+                okButtonProps={{
+                  icon: <CheckCircleOutlined />,
+                  style: { backgroundColor: '#52c41a', borderColor: '#52c41a' }
+                }}
+                cancelButtonProps={{
+                  icon: <CloseCircleOutlined />,
+                  style: { backgroundColor: '#8c8c8c', borderColor: '#8c8c8c', color: 'white' }
+                }}
+                onConfirm={() => handleStatusChange(record, 'Approve')}
+                onCancel={() => handleStatusChange(record, 'Cancel')}
+              >
+                <Button
+                  type={record.STATUS === 'Approve' ? 'primary' : 'default'}
+                  style={{
+                    backgroundColor: record.STATUS === 'Approve' ? '#52c41a' :
+                      record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                    borderColor: record.STATUS === 'Approve' ? '#52c41a' :
+                      record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                    color: record.STATUS === 'Cancel' ? 'white' : ''
+                  }}
+                >
+                  {record.STATUS || 'Pending'}
+                </Button>
+              </Popconfirm>
+            </PermissionGuard>
+
+            {/* Hiển thị status readonly cho user không phải admin */}
+            {!hasPermission('approve') && (
+              <Button
+                type="default"
+                disabled
                 style={{
                   backgroundColor: record.STATUS === 'Approve' ? '#52c41a' :
-                    record.STATUS === 'Cancel' ? '#8c8c8c' : '',
+                    record.STATUS === 'Cancel' ? '#8c8c8c' : '#f0f0f0',
                   borderColor: record.STATUS === 'Approve' ? '#52c41a' :
-                    record.STATUS === 'Cancel' ? '#8c8c8c' : '',
-                  color: record.STATUS === 'Cancel' ? 'white' : ''
+                    record.STATUS === 'Cancel' ? '#8c8c8c' : '#d9d9d9',
+                  color: record.STATUS === 'Cancel' ? 'white' :
+                    record.STATUS === 'Approve' ? 'white' : '#00000040'
                 }}
               >
                 {record.STATUS || 'Pending'}
               </Button>
-            </Popconfirm>
-          </PermissionGuard>
-          {!hasPermission('approve') && (
-            <Button
-              type="default"
-              disabled
-              style={{
-                backgroundColor: record.STATUS === 'Approve' ? '#52c41a' :
-                  record.STATUS === 'Cancel' ? '#8c8c8c' : '#f0f0f0',
-                borderColor: record.STATUS === 'Approve' ? '#52c41a' :
-                  record.STATUS === 'Cancel' ? '#8c8c8c' : '#d9d9d9',
-                color: record.STATUS === 'Cancel' ? 'white' :
-                  record.STATUS === 'Approve' ? 'white' : '#00000040'
-              }}
-            >
-              {record.STATUS || 'Pending'}
-            </Button>
-          )}
-          <PermissionGuard requiredPermissions={['delete']}>
-            <Popconfirm
-              title="Xác nhận xóa?"
-              onConfirm={() => handleDelete(record)}
-              okText="Có"
-              cancelText="Không"
-            >
-              <Button type="primary" danger icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </PermissionGuard>
-        </Space>
-      ),
-    },
+            )}
+            <PermissionGuard requiredPermissions={['delete']}>
+              <Popconfirm
+                title="Xác nhận xóa?"
+                onConfirm={() => handleDelete(record)}
+                okText="Có"
+                cancelText="Không"
+              >
+                <Button type="primary" danger icon={<DeleteOutlined />} title="Xóa" />
+              </Popconfirm>
+            </PermissionGuard>
+          </Space>
+        );
+      },
+    }
   ];
 
   return (
@@ -876,7 +957,7 @@ const handleSearch = (selectedKeys, dataIndex) => {
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <h1> Prepreg</h1>
           <div>
-          <select
+            <select
               style={{ height: 32, minWidth: 180, marginRight: 8, borderRadius: 4, border: '1px solid #1890ff', color: '#1890ff', fontWeight: 500 }}
               onChange={e => {
                 const val = e.target.value;
@@ -885,10 +966,10 @@ const handleSearch = (selectedKeys, dataIndex) => {
               defaultValue=""
             >
               <option value="" disabled hidden>Hướng dẫn sử dụng</option>
-            <option value="/material_pp.pdf">Hướng dẫn sử dụng tổng quan</option>
-            <option value="/flow_systems.pdf">Lưu trình sử dụng</option>
-          </select>
-        </div>
+              <option value="/material_pp.pdf">Hướng dẫn sử dụng tổng quan</option>
+              <option value="/flow_systems.pdf">Lưu trình sử dụng</option>
+            </select>
+          </div>
           <div>
             <PermissionGuard requiredPermissions={['create']}>
               <Button
@@ -904,7 +985,7 @@ const handleSearch = (selectedKeys, dataIndex) => {
               >
                 Thêm mới
               </Button>
-              
+
             </PermissionGuard>
             <PermissionGuard requiredPermissions={['view']}>
               <Button
@@ -950,15 +1031,16 @@ const handleSearch = (selectedKeys, dataIndex) => {
             ...pagination,
             onChange: (page, pageSize) => {
               console.log('Pagination changed:', page, pageSize);
-              fetchData(page, pageSize, searchFilters); // Truyền searchFilters
+              fetchData(page, pageSize, searchFilters); 
             },
             onShowSizeChange: (current, size) => {
               console.log('Page size changed:', current, size);
-              fetchData(1, size, searchFilters); // Reset về trang 1 với search filters
+              fetchData(1, size, searchFilters); 
             }
           }}
-          onChange={handleTableChange} // Thêm onChange handler
+          onChange={handleTableChange} 
           rowClassName={(record) => {
+            if (record.IS_DELETED === 1 || record.IS_DELETED === '1') return 'row-deleted';
             if (record.STATUS === 'Pending') return 'row-pending';
             if (record.STATUS === 'Cancel') return 'row-cancel';
             return '';
@@ -988,6 +1070,14 @@ const handleSearch = (selectedKeys, dataIndex) => {
           onCancel={() => setImportReviewModalVisible(false)}
           onSuccess={fetchData}
           loadData={fetchData}
+        />
+        <ReasonModal
+          open={reasonModal.open}
+          onCancel={handleReasonCancel}
+          onConfirm={handleReasonConfirm}
+          title={reasonModal.type === 'delete' ? 'Nhập lý do xóa' : 'Nhập lý do cập nhật'}
+          placeholder={reasonModal.type === 'delete' ? 'Vui lòng nhập lý do xóa...' : 'Vui lòng nhập lý do cập nhật...'}
+          loading={reasonModal.loading}
         />
       </div>
     </MainLayout>

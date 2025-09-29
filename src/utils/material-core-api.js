@@ -43,9 +43,10 @@ export const updateMaterialCore = async (id, data) => {
   return response.data;
 };
 
-export const deleteMaterialCore = async (id) => {
+export const deleteMaterialCore = async (id, data = {}) => {
   const token = localStorage.getItem('accessToken');
   const response = await axios.delete(`/material-core/delete/${id}`, {
+    data: data,
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;

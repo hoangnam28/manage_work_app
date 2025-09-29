@@ -383,6 +383,15 @@ const UserManagement = () => {
               <Input />
             </Form.Item>
             <Form.Item>
+              name="department"
+              label="Phòng ban"
+              rules={[
+                { max: 100, message: 'Phòng ban không được vượt quá 100 ký tự' }
+              ]}
+          
+              <Input />
+            </Form.Item>
+            <Form.Item>
               <Button type="primary" htmlType="submit">
                 {editingUser ? 'Cập nhật' : 'Tạo mới'}
               </Button>

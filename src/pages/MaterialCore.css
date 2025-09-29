@@ -24,6 +24,61 @@ h1 {
 .row-pending {
   background-color: rgb(241, 241, 98) !important; 
 }
+
 .row-cancel {
-  background-color: rgb(253, 242, 242) !important; 
+  background-color: #f5f5f5;
+  color: #8c8c8c;
+}
+
+/* CSS với specificity cao hơn cho row deleted */
+.ant-table-tbody > tr.row-deleted {
+  background-color: rgb(128,128,128) !important;
+}
+
+.ant-table-tbody > tr.row-deleted > td {
+  background-color: rgb(128,128,128) !important;
+  color: #ffffff !important;
+  border-bottom: 1px solid rgb(128,128,128) !important;
+}
+
+.ant-table-tbody > tr.row-deleted:hover > td {
+  background-color: #504949 !important;
+  color: #ffffff !important;
+}
+
+/* Button styling cho row deleted */
+.ant-table-tbody > tr.row-deleted .ant-btn {
+  background-color: #333333 !important;
+  border-color: #555555 !important;
+  color: #ffffff !important;
+}
+
+.ant-table-tbody > tr.row-deleted .ant-btn:hover {
+  background-color: #555555 !important;
+  border-color: #777777 !important;
+  color: #ffffff !important;
+}
+
+.ant-table-tbody > tr.row-deleted .ant-btn-primary {
+  background-color: #444444 !important;
+  border-color: #666666 !important;
+}
+
+.ant-table-tbody > tr.row-deleted .ant-btn-primary:hover {
+  background-color: #666666 !important;
+  border-color: #888888 !important;
+}
+
+.ant-table-tbody > tr.row-deleted .ant-btn-link {
+  color: #ffffff !important;
+}
+
+.ant-table-tbody > tr.row-deleted .ant-btn-link:hover {
+  color: #cccccc !important;
+}
+
+/* Danger button trong row deleted */
+.ant-table-tbody > tr.row-deleted .ant-btn-dangerous {
+  background-color: #4a1a1a !important;
+  border-color: #6a2a2a !important;
 }

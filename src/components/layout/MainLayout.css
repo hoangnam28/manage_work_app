@@ -337,3 +337,18 @@
     border-color: #64b5f6;
     box-shadow: 0 0 0 3px rgba(100, 181, 246, 0.1);
 }
+
+/* Ẩn thanh trượt trong submenu */
+.ant-menu-sub {
+  overflow: hidden !important;
+}
+
+/* Nếu muốn submenu vẫn có scroll nhưng ẩn thanh trượt */
+.ant-menu-sub::-webkit-scrollbar {
+  display: none !important;
+}
+
+.ant-menu-sub {
+  -ms-overflow-style: none;  /* IE và Edge */
+  scrollbar-width: none;     /* Firefox */
+}

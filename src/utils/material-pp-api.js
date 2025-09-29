@@ -38,14 +38,14 @@ export const updateMaterialPp = async (id, data) => {
   return response.data;
 };
 
-export const deleteMaterialPp = async (id) => {
+export const deleteMaterialPp = async (id, data = {}) => {
   const token = localStorage.getItem('accessToken');
   const response = await axios.delete(`/material-pp/delete/${id}`, {
+   data: data,
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;
 };
-
 export const exportMaterialPp = async (data) => {
   const token = localStorage.getItem('accessToken');
   const normalizeKeys = (obj) => {

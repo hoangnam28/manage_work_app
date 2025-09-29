@@ -257,21 +257,14 @@ const MaterialCoreModal = ({
                 label="Nominal Thickness"
                 rules={[{ required: true, message: "Vui lòng nhập NOMINAL THICKNESS" }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.001} placeholder='Nhập NOMINAL THICKNESS vd: 33' />
+                <InputNumber style={{ width: '100%' }} step={0.001} placeholder='Nhập NOMINAL THICKNESS vd: 0.209' />
               </Form.Item>
               <Form.Item
                 name="spec_thickness"
                 label="Spec Thickness"
                 rules={[{ required: true, message: "Vui lòng nhập SPEC THICKNESS" }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.001} placeholder='Nhập SPEC THICKNESS vd: 33' />
-              </Form.Item>
-              <Form.Item
-                name="preference_class"
-                label="Preference Class"
-                rules={[{ required: true, message: "Vui lòng nhập PREFERENCE CLASS" }]}
-              >
-                <InputNumber style={{ width: '100%' }} placeholder='Nhập PREFERENCE CLASS vd: 33' />
+                <InputNumber style={{ width: '100%' }} step={0.001} placeholder='Nhập SPEC THICKNESS vd: 0.203' />
               </Form.Item>
               <Form.Item
                 name="use_type"
