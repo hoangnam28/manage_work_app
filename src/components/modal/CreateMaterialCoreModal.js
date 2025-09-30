@@ -31,7 +31,8 @@ const MaterialCoreModal = ({
           ...formattedRecord,
           request_date: formattedRecord.request_date ? moment(formattedRecord.request_date) : null,
           complete_date: formattedRecord.complete_date ? moment(formattedRecord.complete_date) : null,
-          top_foil_cu_weight: formattedRecord.top_foil_cu_weight || null
+          top_foil_cu_weight: formattedRecord.top_foil_cu_weight || null,
+          reason: '' // Reset reason field for new update
         });
       } else if (mode === 'clone' && cloneRecord) {
         const formattedRecord = Object.keys(cloneRecord).reduce((acc, key) => {
@@ -62,33 +63,59 @@ const MaterialCoreModal = ({
       }
     }
   }, [open, editingRecord, cloneRecord, mode, form]);
-  const handleSubmit = async () => {
-    try {
-      // Validate form trước
-      const values = await form.validateFields();
 
-      // Format dates
-      if (values.request_date) {
-        values.request_date = values.request_date.toDate().toISOString();
+const handleSubmit = async () => {
+  try {
+    const values = await form.validateFields();
+
+    // Format dates
+    if (values.request_date) {
+      values.request_date = values.request_date.toDate().toISOString();
+    }
+    if (values.complete_date) {
+      values.complete_date = values.complete_date.toDate().toISOString();
+    }
+    
+    if (mode === 'view') {
+      if (onCancel) onCancel();
+      return;
+    }
+
+    // Chỉ set ID khi đang edit
+    if (mode === 'edit' && editingRecord) {
+      const recordId = editingRecord.ID || editingRecord.id;
+      if (!recordId) {
+        throw new Error('Không tìm thấy ID bản ghi');
       }
-      if (values.complete_date) {
-        values.complete_date = values.complete_date.toDate().toISOString();
-      }
-      if (mode === 'view') {
-        if (onCancel) onCancel();
-        return;
-      }
-      // Chỉ set ID khi đang edit
-      if (mode === 'edit' && editingRecord) {
-        const recordId = editingRecord.ID || editingRecord.id;
-        if (!recordId) {
-          throw new Error('Không tìm thấy ID bản ghi');
+      values.id = recordId;
+
+      const changedValues = { id: recordId, reason: values.reason };
+      const formattedRecord = Object.keys(editingRecord).reduce((acc, key) => {
+        acc[key.toLowerCase()] = editingRecord[key];
+        return acc;
+      }, {});
+
+      Object.keys(values).forEach(key => {
+        if (key === 'id' || key === 'reason') return;
+        
+        // So sánh giá trị (xử lý date riêng)
+        let oldValue = formattedRecord[key];
+        let newValue = values[key];
+        
+        if (key === 'request_date' || key === 'complete_date') {
+          // So sánh date dạng ISO string
+          oldValue = oldValue ? new Date(oldValue).toISOString() : null;
+          newValue = newValue ? newValue : null;
         }
-        values.id = recordId;
-      }
+        
+        // Chỉ thêm vào nếu giá trị thực sự thay đổi
+        if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+          changedValues[key] = newValue;
+        }
+      });
 
-      // Thực hiện submit và đợi kết quả
-      const result = await onSubmit(values, mode);
+      // Thực hiện submit với chỉ các giá trị đã thay đổi
+      const result = await onSubmit(changedValues, mode);
 
       // Kiểm tra kết quả trả về
       if (result && result.success === false) {
@@ -108,7 +135,7 @@ const MaterialCoreModal = ({
       // Reset form và đóng modal
       form.resetFields();
       if (onCancel) onCancel();
-
+    }
     } catch (error) {
       console.error('Submit failed:', error);
       toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu'));
@@ -128,6 +155,7 @@ const MaterialCoreModal = ({
         return 'Thêm Material Core';
     }
   };
+
   return (
     <Modal
       title={
@@ -215,8 +243,24 @@ const MaterialCoreModal = ({
                   <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
               </div>
+              
+              {/* Add reason field for edit mode */}
+              {mode === 'edit' && (
+                <Form.Item
+                  name="reason"
+                  label="Lý do cập nhật"
+                  rules={[{ required: true, message: 'Vui lòng nhập lý do cập nhật' }]}
+                >
+                  <Input.TextArea 
+                    rows={3} 
+                    placeholder="Nhập lý do cập nhật bản ghi này..."
+                    disabled={mode === 'view'}
+                  />
+                </Form.Item>
+              )}
             </TabPane>
           )}
+          
           <TabPane tab="2. Thông số kỹ thuật" key="2">
             <Alert
               message="Thông số kỹ thuật"
@@ -229,6 +273,23 @@ const MaterialCoreModal = ({
               showIcon
               style={{ marginBottom: 16 }}
             />
+            
+            {/* Add reason field for edit mode if not shown in tab 1 */}
+            {mode === 'edit' && !hasPermission('approve') && (
+              <Form.Item
+                name="reason"
+                label="Lý do cập nhật"
+                rules={[{ required: true, message: 'Vui lòng nhập lý do cập nhật' }]}
+                style={{ marginBottom: 16 }}
+              >
+                <Input.TextArea 
+                  rows={3} 
+                  placeholder="Nhập lý do cập nhật bản ghi này..."
+                  disabled={mode === 'view'}
+                />
+              </Form.Item>
+            )}
+            
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
               <Form.Item
                 name="vendor"

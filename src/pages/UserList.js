@@ -288,7 +288,9 @@ const UserManagement = () => {
           dataSource={filteredUsers}
           rowKey="USER_ID"
           loading={loading}
-          pagination={{ pageSize: 10 }}
+          pagination={{ pageSize: 10,
+            pageSizeOptions: ['5', '10', '20', '50'],
+          }}
         />
 
         <Modal

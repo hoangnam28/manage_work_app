@@ -178,21 +178,6 @@ const MaterialCore = () => {
       throw new Error('ID không hợp lệ');
     }
 
-    // Kiểm tra xem có phải status update không
-    const isStatusUpdate = values.status && Object.keys(values).length <= 3;
-    
-    // Nếu không phải status update, yêu cầu lý do
-    if (!isStatusUpdate) {
-      setReasonModal({
-        open: true,
-        type: 'update',
-        record: editingRecord,
-        values: values,
-        loading: false
-      });
-      return;
-    }
-
     // Thực hiện update ngay nếu là status update
     const result = await updateMaterialCore(recordId, values);
     if (result && result.success === false) {

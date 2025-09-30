@@ -701,63 +701,63 @@ const MaterialProperties = () => {
       align: 'center'
     },
     {
-      title: 'Df @ 10GHz',
+      title: 'DF_10GHz',
       dataIndex: 'DF_10GHZ',
       key: 'df_10ghz',
       width: 120,
       align: 'center'
     },
     {
-      title: 'Dk @ 15GHz',
+      title: 'DK_15GHz',
       dataIndex: 'DK_15GHZ',
       key: 'dk_15ghz',
       width: 120,
       align: 'center'
     },
     {
-      title: 'Df @ 15GHz',
+      title: 'DF_15GHz',
       dataIndex: 'DF_15GHZ',
       key: 'df_15ghz',
       width: 120,
       align: 'center'
     },
     {
-      title: 'Dk @ 16GHz',
+      title: 'DK_16GHz',
       dataIndex: 'DK_16GHZ',
       key: 'dk_16ghz',
       width: 120,
       align: 'center'
     },
     {
-      title: 'Df @ 16GHz',
+      title: 'DF_16GHz',
       dataIndex: 'DF_16GHZ',
       key: 'df_16ghz',
       width: 120,
       align: 'center'
     },
     {
-      title: 'Dk @ 20GHz',
+      title: 'DK_20GHz',
       dataIndex: 'DK_20GHZ',
       key: 'dk_20ghz',
       width: 120,
       align: 'center'
     },
     {
-      title: 'Df @ 20GHz',
+      title: 'DF_20GHz',
       dataIndex: 'DF_20GHZ',
       key: 'df_20ghz',
       width: 120,
       align: 'center'
     },
     {
-      title: 'Dk @ 25GHz',
+      title: 'DK_25GHz',
       dataIndex: 'DK_25GHZ',
       key: 'dk_25ghz',
       width: 120,
       align: 'center'
     },
     {
-      title: 'Df @ 25GHz',
+      title: 'DF_25GHz',
       dataIndex: 'DF_25GHZ',
       key: 'df_25ghz',
       width: 120,

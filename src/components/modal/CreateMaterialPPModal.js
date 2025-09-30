@@ -72,14 +72,55 @@ const MaterialPPModal = ({
         if (onCancel) onCancel();
         return;
       }
-      if (mode === 'edit' && editingRecord) {
-        const recordId = editingRecord.ID || editingRecord.id;
-        if (!recordId) {
-          throw new Error('Không tìm thấy ID bản ghi');
-        }
-        values.id = recordId;
-      }
-
+     if (mode === 'edit' && editingRecord) {
+           const recordId = editingRecord.ID || editingRecord.id;
+           if (!recordId) {
+             throw new Error('Không tìm thấy ID bản ghi');
+           }
+           values.id = recordId;
+     
+           const changedValues = { id: recordId, reason: values.reason };
+           const formattedRecord = Object.keys(editingRecord).reduce((acc, key) => {
+             acc[key.toLowerCase()] = editingRecord[key];
+             return acc;
+           }, {});
+     
+           Object.keys(values).forEach(key => {
+             if (key === 'id' || key === 'reason') return;
+             
+             let oldValue = formattedRecord[key];
+             let newValue = values[key];
+             
+             if (key === 'request_date' || key === 'complete_date') {
+               oldValue = oldValue ? new Date(oldValue).toISOString() : null;
+               newValue = newValue ? newValue : null;
+             }
+             
+             if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+               changedValues[key] = newValue;
+             }
+           });
+     
+           const result = await onSubmit(changedValues, mode);
+     
+           if (result && result.success === false) {
+             throw new Error(result.message || 'Có lỗi xảy ra');
+           }
+     
+           // Hiển thị toast success với message từ result hoặc default
+           const successMessage = result?.message || (
+             mode === 'edit' ? 'Cập nhật thành công!' :
+               mode === 'clone' ? 'Tạo bản sao thành công!' :
+                 mode === 'view' ? '' :
+                   'Thêm mới thành công!'
+           );
+     
+           toast.success(successMessage);
+     
+           // Reset form và đóng modal
+           form.resetFields();
+           if (onCancel) onCancel();
+         }
       await onSubmit(values, mode);
 
       if (mode === 'edit') {
@@ -198,6 +239,19 @@ const MaterialPPModal = ({
                   <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
               </div>
+              {mode === 'edit' && (
+                  <Form.Item
+                        name="reason"
+                                label="Lý do cập nhật"
+                                rules={[{ required: true, message: 'Vui lòng nhập lý do cập nhật' }]}
+                              >
+                                <Input.TextArea 
+                                  rows={3} 
+                                  placeholder="Nhập lý do cập nhật bản ghi này..."
+                                  disabled={mode === 'view'}
+                                />
+                              </Form.Item>
+                            )}
             </TabPane>
           )},
 
@@ -213,6 +267,20 @@ const MaterialPPModal = ({
               showIcon
               style={{ marginBottom: 16 }}
             />
+            {mode === 'edit' && !hasPermission('approve') && (
+                          <Form.Item
+                            name="reason"
+                            label="Lý do cập nhật"
+                            rules={[{ required: true, message: 'Vui lòng nhập lý do cập nhật' }]}
+                            style={{ marginBottom: 16 }}
+                          >
+                            <Input.TextArea 
+                              rows={3} 
+                              placeholder="Nhập lý do cập nhật bản ghi này..."
+                              disabled={mode === 'view'}
+                            />
+                          </Form.Item>
+                        )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
               <Form.Item
                 name="vendor"
