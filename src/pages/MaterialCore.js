@@ -568,6 +568,13 @@ const handleReasonCancel = () => {
       ...getColumnSearchProps('SPEC_THICKNESS')
     },
     {
+      title: 'PREFERENCE_CLASS',
+      dataIndex: 'PREFERENCE_CLASS',
+      key: 'preference_class',
+      width: 150,
+      align: 'center'
+    },
+    {
       title: 'USE_TYPE',
       dataIndex: 'USE_TYPE',
       key: 'use_type',

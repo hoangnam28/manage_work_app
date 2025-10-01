@@ -81,8 +81,9 @@ const handleSubmit = async () => {
       return;
     }
 
-    // Chỉ set ID khi đang edit
+    // Xử lý theo từng mode
     if (mode === 'edit' && editingRecord) {
+      // Logic cho Edit mode
       const recordId = editingRecord.ID || editingRecord.id;
       if (!recordId) {
         throw new Error('Không tìm thấy ID bản ghi');
@@ -98,49 +99,57 @@ const handleSubmit = async () => {
       Object.keys(values).forEach(key => {
         if (key === 'id' || key === 'reason') return;
         
-        // So sánh giá trị (xử lý date riêng)
         let oldValue = formattedRecord[key];
         let newValue = values[key];
         
         if (key === 'request_date' || key === 'complete_date') {
-          // So sánh date dạng ISO string
           oldValue = oldValue ? new Date(oldValue).toISOString() : null;
           newValue = newValue ? newValue : null;
         }
         
-        // Chỉ thêm vào nếu giá trị thực sự thay đổi
         if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
           changedValues[key] = newValue;
         }
       });
 
-      // Thực hiện submit với chỉ các giá trị đã thay đổi
       const result = await onSubmit(changedValues, mode);
 
-      // Kiểm tra kết quả trả về
       if (result && result.success === false) {
         throw new Error(result.message || 'Có lỗi xảy ra');
       }
 
-      // Hiển thị toast success với message từ result hoặc default
-      const successMessage = result?.message || (
-        mode === 'edit' ? 'Cập nhật thành công!' :
-          mode === 'clone' ? 'Tạo bản sao thành công!' :
-            mode === 'view' ? '' :
-              'Thêm mới thành công!'
-      );
+      toast.success(result?.message || 'Cập nhật thành công!');
+    } 
+    else if (mode === 'clone') {
+      // Logic cho Clone mode
+      const result = await onSubmit(values, mode);
 
-      toast.success(successMessage);
+      if (result && result.success === false) {
+        throw new Error(result.message || 'Có lỗi xảy ra');
+      }
 
-      // Reset form và đóng modal
-      form.resetFields();
-      if (onCancel) onCancel();
+      toast.success(result?.message || 'Tạo bản sao thành công!');
+    } 
+    else {
+      // Logic cho Create mode (mode === 'create' hoặc không xác định)
+      const result = await onSubmit(values, mode);
+
+      if (result && result.success === false) {
+        throw new Error(result.message || 'Có lỗi xảy ra');
+      }
+
+      toast.success(result?.message || 'Thêm mới thành công!');
     }
-    } catch (error) {
-      console.error('Submit failed:', error);
-      toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu'));
-    }
-  };
+
+    // Reset form và đóng modal sau khi thành công
+    form.resetFields();
+    if (onCancel) onCancel();
+
+  } catch (error) {
+    console.error('Submit failed:', error);
+    toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu'));
+  }
+};
 
   // Generate modal title based on mode
   const getModalTitle = () => {
@@ -325,7 +334,19 @@ const handleSubmit = async () => {
                 label="Spec Thickness"
                 rules={[{ required: true, message: "Vui lòng nhập SPEC THICKNESS" }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.001} placeholder='Nhập SPEC THICKNESS vd: 0.203' />
+                <InputNumber style={{ width: '100%' }} step={0.001} placeholder='Nhập SPEC THICKNESS vd: 0.203' title='Độ dày danh nghĩa
+                (Lấy từ hệ thống mua hàng) sẽ ghép trong tên VL'/>
+              </Form.Item>
+              <Form.Item
+                name="preference_class"
+                label="PREFERENCE_CLASS"
+                rules={[{ required: true, message: "Vui lòng nhập PREFERENCE_CLASS" }]}
+              >
+                <InputNumber style={{ width: '100%' }} step={0.001} placeholder='Nhập PREFERENCE_CLASS vd: 1' title='0
+                  1
+                  2
+                  3
+                  Độ thông dụng, 3 là cao nhất'/>
               </Form.Item>
               <Form.Item
                 name="use_type"
@@ -359,6 +380,7 @@ const handleSubmit = async () => {
                     mode === 'view' ? "" :
                       (mode === 'edit' ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị")
                   }
+                  title='Độ dày lá đồng lớp trên. Trước khi chạy macro, đảm bảo thiết định đúng đơn vị trong sheet "Units translation"'
                 >
                   <Option value="L">L</Option>
                   <Option value="H">H</Option>
@@ -393,6 +415,7 @@ const handleSubmit = async () => {
                     mode === 'view' ? "" :
                       (mode === 'edit' ? "Chọn một giá trị" : "Chọn một hoặc nhiều giá trị")
                   }
+                  title='Độ dày lá đồng lớp dưới'
                 >
                   <Option value="L">L</Option>
                   <Option value="H">H</Option>
@@ -406,14 +429,14 @@ const handleSubmit = async () => {
                 label="Tg Min"
                 rules={[{ required: true, message: "Vui lòng nhập TG_MIN" }]}
               >
-                <InputNumber style={{ width: '100%' }} placeholder='Nhập TG_MIN vd: 180' />
+                <InputNumber style={{ width: '100%' }} placeholder='Nhập TG_MIN vd: 180' title='Lấy theo phương pháp đo(TMA)'/>
               </Form.Item>
               <Form.Item
                 name="tg_max"
                 label="Tg Max"
                 rules={[{ required: true, message: "Vui lòng nhập TG_MAX" }]}
               >
-                <InputNumber style={{ width: '100%' }} placeholder='Nhập TG_MAX vd: 180' />
+                <InputNumber style={{ width: '100%' }} placeholder='Nhập TG_MAX vd: 180' title='Lấy theo phương pháp đo(TMA)'/>
               </Form.Item>
               <Form.Item
                 name="center_glass"

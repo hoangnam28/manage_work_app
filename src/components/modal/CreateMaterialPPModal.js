@@ -59,85 +59,93 @@ const MaterialPPModal = ({
     }
   }, [open, editingRecord, cloneRecord, mode, form]);
 
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      if (values.request_date) {
-        values.request_date = values.request_date.toDate().toISOString();
-      }
-      if (values.complete_date) {
-        values.complete_date = values.complete_date.toDate().toISOString();
-      }
-       if (mode === 'view') {
-        if (onCancel) onCancel();
-        return;
-      }
-     if (mode === 'edit' && editingRecord) {
-           const recordId = editingRecord.ID || editingRecord.id;
-           if (!recordId) {
-             throw new Error('Không tìm thấy ID bản ghi');
-           }
-           values.id = recordId;
-     
-           const changedValues = { id: recordId, reason: values.reason };
-           const formattedRecord = Object.keys(editingRecord).reduce((acc, key) => {
-             acc[key.toLowerCase()] = editingRecord[key];
-             return acc;
-           }, {});
-     
-           Object.keys(values).forEach(key => {
-             if (key === 'id' || key === 'reason') return;
-             
-             let oldValue = formattedRecord[key];
-             let newValue = values[key];
-             
-             if (key === 'request_date' || key === 'complete_date') {
-               oldValue = oldValue ? new Date(oldValue).toISOString() : null;
-               newValue = newValue ? newValue : null;
-             }
-             
-             if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
-               changedValues[key] = newValue;
-             }
-           });
-     
-           const result = await onSubmit(changedValues, mode);
-     
-           if (result && result.success === false) {
-             throw new Error(result.message || 'Có lỗi xảy ra');
-           }
-     
-           // Hiển thị toast success với message từ result hoặc default
-           const successMessage = result?.message || (
-             mode === 'edit' ? 'Cập nhật thành công!' :
-               mode === 'clone' ? 'Tạo bản sao thành công!' :
-                 mode === 'view' ? '' :
-                   'Thêm mới thành công!'
-           );
-     
-           toast.success(successMessage);
-     
-           // Reset form và đóng modal
-           form.resetFields();
-           if (onCancel) onCancel();
-         }
-      await onSubmit(values, mode);
-
-      if (mode === 'edit') {
-        toast.success('Cập nhật thành công!');
-      } else if (mode === 'clone') {
-        toast.success('Tạo bản sao thành công!');
-      } else {
-        toast.success('Thêm mới thành công!');
-      }
-      form.resetFields();
-      onCancel();
-
-    } catch (error) {
-      console.error('Validation failed:', error);
-      toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu'));
+ const handleSubmit = async () => {
+  try {
+    const values = await form.validateFields();
+    
+    // Format dates
+    if (values.request_date) {
+      values.request_date = values.request_date.toDate().toISOString();
     }
-  };
+    if (values.complete_date) {
+      values.complete_date = values.complete_date.toDate().toISOString();
+    }
+    
+    // Mode view - chỉ đóng modal
+    if (mode === 'view') {
+      if (onCancel) onCancel();
+      return;
+    }
+
+    // Xử lý theo từng mode
+    if (mode === 'edit' && editingRecord) {
+      // Logic cho Edit mode
+      const recordId = editingRecord.ID || editingRecord.id;
+      if (!recordId) {
+        throw new Error('Không tìm thấy ID bản ghi');
+      }
+      values.id = recordId;
+
+      const changedValues = { id: recordId, reason: values.reason };
+      const formattedRecord = Object.keys(editingRecord).reduce((acc, key) => {
+        acc[key.toLowerCase()] = editingRecord[key];
+        return acc;
+      }, {});
+
+      Object.keys(values).forEach(key => {
+        if (key === 'id' || key === 'reason') return;
+        
+        let oldValue = formattedRecord[key];
+        let newValue = values[key];
+        
+        if (key === 'request_date' || key === 'complete_date') {
+          oldValue = oldValue ? new Date(oldValue).toISOString() : null;
+          newValue = newValue ? newValue : null;
+        }
+        
+        if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+          changedValues[key] = newValue;
+        }
+      });
+
+      const result = await onSubmit(changedValues, mode);
+
+      if (result && result.success === false) {
+        throw new Error(result.message || 'Có lỗi xảy ra');
+      }
+
+      toast.success(result?.message || 'Cập nhật thành công!');
+    } 
+    else if (mode === 'clone') {
+      // Logic cho Clone mode
+      const result = await onSubmit(values, mode);
+
+      if (result && result.success === false) {
+        throw new Error(result.message || 'Có lỗi xảy ra');
+      }
+
+      toast.success(result?.message || 'Tạo bản sao thành công!');
+    } 
+    else {
+      // Logic cho Create mode (mode === 'create' hoặc không xác định)
+      const result = await onSubmit(values, mode);
+
+      if (result && result.success === false) {
+        throw new Error(result.message || 'Có lỗi xảy ra');
+      }
+
+      toast.success(result?.message || 'Thêm mới thành công!');
+    }
+
+    // Reset form và đóng modal sau khi thành công
+    form.resetFields();
+    if (onCancel) onCancel();
+
+  } catch (error) {
+    console.error('Validation failed:', error);
+    toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu'));
+  }
+};
   const getModalTitle = () => {
     switch (mode) {
       case 'edit':
@@ -268,18 +276,18 @@ const MaterialPPModal = ({
               style={{ marginBottom: 16 }}
             />
             {mode === 'edit' && !hasPermission('approve') && (
-                          <Form.Item
-                            name="reason"
-                            label="Lý do cập nhật"
-                            rules={[{ required: true, message: 'Vui lòng nhập lý do cập nhật' }]}
-                            style={{ marginBottom: 16 }}
-                          >
-                            <Input.TextArea 
-                              rows={3} 
-                              placeholder="Nhập lý do cập nhật bản ghi này..."
-                              disabled={mode === 'view'}
-                            />
-                          </Form.Item>
+             <Form.Item
+              name="reason"
+              label="Lý do cập nhật"
+              rules={[{ required: true, message: 'Vui lòng nhập lý do cập nhật' }]}
+              style={{ marginBottom: 16 }}
+              >
+              <Input.TextArea 
+                  rows={3} 
+                  placeholder="Nhập lý do cập nhật bản ghi này..."
+                  disabled={mode === 'view'}
+              />
+                </Form.Item>
                         )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
               <Form.Item
@@ -322,7 +330,10 @@ const MaterialPPModal = ({
                 label="USE Type"
                 rules={[{ required: true, message: 'Vui lòng nhập USE Type' }]}
               >
-                <Input placeholder='Ví dụ: HDI/MLB'/>
+                <Input placeholder='Ví dụ: HDI/MLB' title='MLB
+                HDI
+                HDI/MLB
+                ANY'/>
               </Form.Item>
               <Form.Item
                 name="pp_type"
