@@ -31,6 +31,22 @@ const SideBar = ({ onLogout, userId }) => {
 
   const storedUser = localStorage.getItem("userInfo");
   const user = storedUser ? JSON.parse(storedUser) : null;
+   const getAvatarSrc = () => {
+    if (!user?.avatar) return null;
+    
+    // Nếu avatar đã là URL đầy đủ
+    if (user.avatar.startsWith('http://') || user.avatar.startsWith('https://')) {
+      return user.avatar;
+    }
+    
+    // Nếu là đường dẫn tương đối
+    if (user.avatar.startsWith('/uploads/')) {
+      return `http://192.84.105.173:5000${user.avatar}`;
+    }
+    
+    return user.avatar;
+  };
+
 
   const menuItems = [
     {
@@ -140,9 +156,9 @@ const SideBar = ({ onLogout, userId }) => {
         {!collapsed && (
           <>
             <Avatar
-              size={32}
+              size={42}
               icon={<UserOutlined />}
-              src={userId ? `http://192.84.105.173:8888/api/auth/avatar/${userId}` : null}
+              src={getAvatarSrc()} // ✅ Thay đổi chỗ này
               onClick={() => setPwOpen(true)}
               style={{ cursor: 'pointer' }}
             />
