@@ -454,10 +454,10 @@ const handleSubmit = async () => {
               </Form.Item>
               <Form.Item
                 name="df_01g"
-                label="DF_0.1GHz"
-                rules={[{ required: true, message: "Vui lòng nhập DF_0.1GHz" }]}
+                label="DF_1GHz"
+                rules={[{ required: true, message: "Vui lòng nhập DF_1GHz" }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Nhập DF_0.1GHz vd: 0.013' />
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Nhập DF_1GHz vd: 0.013' />
               </Form.Item>
               <Form.Item
                 name="is_hf"

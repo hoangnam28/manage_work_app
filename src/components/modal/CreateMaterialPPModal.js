@@ -358,15 +358,15 @@ const MaterialPPModal = ({
               </Form.Item>
               <Form.Item
                 name="dk_01g"
-                label="DK_01GHz"
-                rules={[{ required: true, message: 'Vui lòng nhập DK_01GHz' }]}
+                label="DK_1GHz"
+                rules={[{ required: true, message: 'Vui lòng nhập DK_1GHz' }]}
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Ví dụ: 3.87'/>
               </Form.Item>
               <Form.Item
                 name="df_01g"
-                label="DF_01GHz"
-                rules={[{ required: true, message: 'Vui lòng nhập DF_01GHz' }]}
+                label="DF_1GHz"
+                rules={[{ required: true, message: 'Vui lòng nhập DF_1GHz' }]}
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Ví dụ: 0.015'/>
               </Form.Item>

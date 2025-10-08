@@ -886,6 +886,22 @@ const MaterialProperties = () => {
                 style={{ color: '#52c41a', borderColor: '#52c41a' }}
               />
             </PermissionGuard>
+            <PermissionGuard requiredPermissions={['view']}>
+                <Button
+                  type="primary"
+                  icon={<HistoryOutlined />}
+                  onClick={async () => {
+                    try {
+                      const response = await fetchMaterialPpHistory(record.ID);
+                      setHistoryData(response.data);
+                      setHistoryModalVisible(true);
+                    } catch (error) {
+                      toast.error('Lỗi khi lấy lịch sử');
+                    }
+                  }}
+                  title="Lịch sử"
+                />
+              </PermissionGuard>
             <PermissionGuard requiredPermissions={['approve']}>
               <Popconfirm
                 title="Chọn trạng thái"

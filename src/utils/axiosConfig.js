@@ -147,7 +147,7 @@ axiosInstance.interceptors.response.use(
 
     // 403: permission denied. Keep user logged in, just show a message.
     if (error.response?.status === 403) {
-      const msg = error.response?.data?.message || 'Bạn không có quyền truy cập trang này';
+      const msg = error.response?.data?.message || 'Bạn không có quyền truy cập';
       toast.error(msg);
       return Promise.reject(error);
     }

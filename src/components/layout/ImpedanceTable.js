@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Table, Button, Space, Popconfirm, Spin, Tooltip, Modal, message } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { bulkDeleteImpedancesByProduct } from '../../utils/api';
-import './ImpedanceTable.css';
 
 const renderColumnTitle = (text) => (
   <div className="column-title">
@@ -1375,12 +1374,6 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
             scroll={{ x: 'max-content', y: 'calc(100vh - 280px)' }}
             size="middle"
             sticky
-            style={{
-              width: '100%',
-              border: '1px solid #f0f0f0',
-              borderRadius: '8px'
-            }}
-            className="impedance-table"
           />
         </Spin>
       </div>

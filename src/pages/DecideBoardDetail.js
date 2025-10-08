@@ -6,7 +6,6 @@ import axios from '../utils/axios';
 import MainLayout from '../components/layout/MainLayout';
 import { toast, Toaster } from 'sonner';
 
-const allowedCompanyIds = ['000107', '003512', '024287', '026965', '014077', '001748', '030516'];
 
 const DecideBoardDetail = () => {
   const { id } = useParams();
@@ -15,6 +14,28 @@ const DecideBoardDetail = () => {
   const [loading, setLoading] = useState(true);
   const [validId, setValidId] = useState(null);
   const originalId = useRef(id);
+  const [canConfirm, setCanConfirm] = useState(false);
+
+
+  useEffect(() => {
+  const fetchUserInfo = async () => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        setCanConfirm(false);
+        return;
+      }
+      const response = await axios.get('/auth/profile', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const department = response.data?.department;
+      setCanConfirm(department === 'PC');
+    } catch (error) {
+      setCanConfirm(false);
+    }
+  };
+  fetchUserInfo();
+}, []);
 
   // Validate ID đơn giản
   const validateId = (idParam) => {
@@ -99,11 +120,6 @@ const DecideBoardDetail = () => {
       toast.error('Lỗi xác nhận!');
     }
   };
-
-  // Lấy company_id của user
-  const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-  const companyId = userInfo.company_id ? userInfo.company_id.toString().padStart(6, '0') : '';
-  const canConfirm = allowedCompanyIds.includes(companyId);
 
   if (loading) return <Spin size="large" style={{ display: 'block', margin: '50px auto' }} />;
 

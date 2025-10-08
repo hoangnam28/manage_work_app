@@ -123,7 +123,7 @@ const HistoryModal = ({ open, onCancel, data = [] }) => {
     },
     {
       title: 'DF 0.1GHz',
-      dataIndex: 'DF_01GHZ',
+      dataIndex: 'DF_1GHZ',
       key: 'df_01ghz',
       width: 100,
     },

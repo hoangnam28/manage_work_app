@@ -12,6 +12,8 @@ import {
   TeamOutlined,
   CopyOutlined,
   CheckCircleOutlined,
+  SafetyCertificateOutlined,
+  HomeOutlined
 } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
 import './SideBar.css';
@@ -33,13 +35,9 @@ const SideBar = ({ onLogout, userId }) => {
   const user = storedUser ? JSON.parse(storedUser) : null;
    const getAvatarSrc = () => {
     if (!user?.avatar) return null;
-    
-    // Nếu avatar đã là URL đầy đủ
     if (user.avatar.startsWith('http://') || user.avatar.startsWith('https://')) {
       return user.avatar;
-    }
-    
-    // Nếu là đường dẫn tương đối
+    } 
     if (user.avatar.startsWith('/uploads/')) {
       return `http://192.84.105.173:5000${user.avatar}`;
     }
@@ -49,6 +47,18 @@ const SideBar = ({ onLogout, userId }) => {
 
 
   const menuItems = [
+    {
+      key: '/home',
+      icon: <HomeOutlined />,
+      label: (
+        <Link
+          to="/home"
+          style={location.pathname === '/home' ? { color: '#1890ff', fontWeight: 600 } : {}}
+        >
+          Home
+        </Link>
+      ),
+    },
     {
       key: '/review_tasks',
       icon: <FileSearchOutlined />,
@@ -96,22 +106,15 @@ const SideBar = ({ onLogout, userId }) => {
             </Link>
           ),
         },
-        {
-          key: '/ul-material',
-          label: (
-            <Link to="/ul-material" style={location.pathname === '/ul-material' ? { color: '#1890ff', fontWeight: 600 } : {}}>
-              UL Material
-            </Link>
-          ),
-        },
-        {
-          key: '/material-certification',
-          label: (
-            <Link to="/material-certification" style={location.pathname === '/material-certification' ? { color: '#1890ff', fontWeight: 600 } : {}}>
-              Material Certification
-            </Link>
-          ),
-        },
+        // {
+        //   key: '/ul-material',
+        //   label: (
+        //     <Link to="/ul-material" style={location.pathname === '/ul-material' ? { color: '#1890ff', fontWeight: 600 } : {}}>
+        //       UL Material
+        //     </Link>
+        //   ),
+        // },
+       
       ]
     },
     {
@@ -141,6 +144,23 @@ const SideBar = ({ onLogout, userId }) => {
         </a>
       ),
     },
+     {
+          key: '/material-certification',
+          icon: <SafetyCertificateOutlined />,
+          label: (
+            <Link to="/material-certification" style={location.pathname === '/material-certification' ? { color: '#1890ff', fontWeight: 600 } : {}}>
+              Material Certification
+            </Link>
+          ),
+        },
+        { key: '/ink-management',
+          icon: <SafetyCertificateOutlined />,
+          label: (
+            <Link to="/ink-management" style={location.pathname === '/ink-management' ? { color: '#1890ff', fontWeight: 600 } : {}}>
+              Ink Management
+            </Link>
+          ),
+        },
   ];
   return (
     <Sider

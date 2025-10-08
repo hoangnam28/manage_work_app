@@ -68,16 +68,13 @@ const DecideBoard = () => {
         const onlyViewer = Array.isArray(userRoles) && userRoles.length === 1 && userRoles[0].toLowerCase() === 'viewer';
         setIsViewer(onlyViewer);
 
-        // Check company_id permission
-        const allowedCompanyIds = ['000107', '003512', '024287', '026965', '014077', '001748', '030516'];
-        // Ưu tiên lấy từ userInfo nếu có, nếu không lấy từ response.data
-        let companyId = userInfo?.company_id || response.data?.company_id;
-        if (typeof companyId === 'number') companyId = companyId.toString().padStart(6, '0');
-        if (typeof companyId === 'string') companyId = companyId.padStart(6, '0');
-        setCanUpdateBo(allowedCompanyIds.includes(companyId));
-        // Các user chỉ được sửa trường request (không được sửa trường khác)
-        const onlyRequestIds = ['000107', '003512', '024287', '026965', '014077', '001748', '030516'];
-        setOnlyRequestEdit(onlyRequestIds.includes(companyId));
+        // Kiểm tra department
+        const department = userInfo?.department || response.data?.department;
+        const isPCDepartment = department === 'PC';
+        
+        // Chỉ cho phép nếu thuộc department PC
+        setCanUpdateBo(isPCDepartment);
+        setOnlyRequestEdit(isPCDepartment);
       } catch (error) {
         setIsViewer(true);
         setCanUpdateBo(false);

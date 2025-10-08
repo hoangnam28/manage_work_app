@@ -424,7 +424,6 @@ const getAvatarSrc = (avatar) => {
 
         <Card>
           <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            {/* Action Bar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
               <Button
                 type="primary"

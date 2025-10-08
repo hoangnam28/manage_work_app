@@ -13,12 +13,22 @@ import MaterialNew from './pages/MaterialNew';
 import UlMaterial from './pages/UlMaterial';
 import MaterialCertification from './pages/Material.Certification';
 import CertificationForm from './pages/CertificationForm';
+import Home from './pages/Home';
+import InkPage from './pages/InkPage'
 
 function App() {
   return (
     <div className="App">
       <Routes>
         <Route path="/" element={<Login />} />
+        <Route 
+          path="/home" 
+          element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          } 
+        />
         <Route 
           path="/review_tasks" 
           element={
@@ -97,6 +107,22 @@ function App() {
           element={
             <PrivateRoute>
               <CertificationForm />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/home"
+          element={
+            <PrivateRoute>
+              <Home />
+            </PrivateRoute>
+          }
+        />
+        <Route 
+          path="/ink-management"
+          element={
+            <PrivateRoute>
+              <InkPage />
             </PrivateRoute>
           }
         />

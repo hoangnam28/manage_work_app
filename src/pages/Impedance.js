@@ -29,66 +29,62 @@ const Impedance = () => {
   const [searchValue, setSearchValue] = useState('');
   const [shouldRefresh, setShouldRefresh] = useState(false);
 
-  // Hàm xử lý khi token hết hạn
-  const handleTokenExpiration = () => {
-    // Xóa token khỏi localStorage
-    localStorage.removeItem('accessToken');
-    localStorage.removeItem('refreshToken'); // Nếu có refresh token
-    
-    // Hiển thị thông báo
-    toast.error('Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.');
-    
-    // Chuyển hướng về trang login sau 2 giây
-    setTimeout(() => {
-      window.location.href = 'http://192.84.105.173:8888/';
-    }, 2000);
-  };
+
 
   const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetchImpedanceData();
-      // Đảm bảo dữ liệu là mảng
-      const data = Array.isArray(response) ? response :
-        (response && Array.isArray(response.data) ? response.data : []);
-      setImpedanceData(data);
-      setFilteredData(data);
-    } catch (error) {
-      console.error('Error fetching impedance data:', error);
-      if (error.response?.status === 403 || error.response?.status === 401) {
-        handleTokenExpiration();
-      } else {
-        toast.error('Lỗi khi tải dữ liệu');
-        setImpedanceData([]);
-        setFilteredData([]);
-      }
-    } finally {
-      setLoading(false);
+  setLoading(true);
+  try {
+    const response = await fetchImpedanceData();
+    const data = Array.isArray(response) ? response :
+      (response && Array.isArray(response.data) ? response.data : []);
+    setImpedanceData(data);
+    setFilteredData(data);
+  } catch (error) {
+    console.error('Error fetching impedance data:', error);
+    
+    // KHÔNG xóa token ở đây, để axios interceptor xử lý
+    if (error.response?.status === 403) {
+      toast.error('Bạn không có quyền truy cập dữ liệu này');
+    } else if (error.response?.status === 401) {
+      // Axios interceptor sẽ tự động refresh token
+      console.log('Token hết hạn, axios interceptor đang xử lý');
+    } else {
+      toast.error('Lỗi khi tải dữ liệu');
     }
-  }, []);
+    
+    setImpedanceData([]);
+    setFilteredData([]);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      try {
-        const decodedToken = JSON.parse(atob(token.split('.')[1]));
-        
-        // Kiểm tra thời gian hết hạn của token
-        const currentTime = Date.now() / 1000;
-        if (decodedToken.exp && decodedToken.exp < currentTime) {
-          handleTokenExpiration();
-          return;
-        }
-        
-        setHasEditPermission(['001507', '021253', '000001', '008048', '030783', '030516'].includes(decodedToken.company_id));
-      } catch (error) {
-        console.error('Error parsing token:', error);
-        handleTokenExpiration();
-        return;
+  const token = localStorage.getItem('accessToken');
+  
+  // KHÔNG xóa token ở đây, chỉ check và set permission
+  if (token) {
+    try {
+      const decodedToken = JSON.parse(atob(token.split('.')[1]));
+      
+      // Chỉ log để debug, KHÔNG xóa token
+      const currentTime = Date.now() / 1000;
+      if (decodedToken.exp && decodedToken.exp < currentTime) {
+        console.log('Token đã hết hạn, để axios interceptor xử lý');
       }
+      
+      // Chỉ set permission, KHÔNG xóa token
+      const editableCompanies = ['001507', '021253', '000001', '008048', '030783', '030516'];
+      setHasEditPermission(editableCompanies.includes(decodedToken.company_id));
+
+    } catch (error) {
+      console.error('Error parsing token:', error);
+      // KHÔNG gọi handleTokenExpiration ở đây
     }
-    loadData();
-  }, [shouldRefresh, loadData]);
+  }
+  
+  loadData();
+}, [shouldRefresh, loadData]);
   const handleCreate = async (values) => {
     try {
       if (!values.imp_1 || !values.imp_2 || !values.imp_3 || !values.imp_4) {
@@ -508,6 +504,9 @@ const Impedance = () => {
         ) : (
           <div className="impedance-table-container">
             <ImpedanceTable
+             scroll={{ x: 'max-content', y: 'calc(100vh - 280px)' }}
+              size="middle"
+              sticky
               data={filteredData}
               onDataChange={handleDataChange}
               onEdit={hasEditPermission ? handleEdit : null}

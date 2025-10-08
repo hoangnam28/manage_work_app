@@ -28,7 +28,7 @@ const Login = () => {
 
         toast.success('Đăng nhập thành công');
         setTimeout(() => {
-          navigate('/review_tasks', { replace: true });
+          navigate('/home', { replace: true });
         }, 1000);
       }
     } catch (error) {
