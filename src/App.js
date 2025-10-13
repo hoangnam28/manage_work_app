@@ -119,7 +119,7 @@ function App() {
           }
         />
         <Route 
-          path="/ink-management"
+          path="/material-ink"
           element={
             <PrivateRoute>
               <InkPage />

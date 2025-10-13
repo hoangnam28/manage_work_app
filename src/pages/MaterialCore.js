@@ -71,17 +71,12 @@ const MaterialCore = () => {
       const currentPage = page || pagination.current;
       const currentPageSize = pageSize || pagination.pageSize;
       const currentFilters = filters !== null ? filters : searchFilters;
-
-      console.log('Fetching data with params:', {
-        page: currentPage,
-        pageSize: currentPageSize,
-        filters: currentFilters
-      });
-
       const response = await fetchMaterialCoreList({
         page: currentPage,
         pageSize: currentPageSize,
-        ...currentFilters // ✅ Trực tiếp truyền filters thay vì wrap trong search object
+        ...currentFilters, // ✅ Trực tiếp truyền filters thay vì wrap trong search object
+        sortBy: 'status', // Hoặc tên field bạn định nghĩa ở backend
+      sortOrder: 'asc'
       });
 
       // Kiểm tra và điều chỉnh trang hiện tại nếu vượt quá tổng số trang

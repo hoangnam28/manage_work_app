@@ -659,9 +659,23 @@ const MaterialProperties = () => {
       align: 'center'
     },
     {
+      title: 'DF_6GHz',
+      dataIndex: 'DF_6GHz',
+      key: 'df_6ghz',
+      width: 120,
+      align: 'center'
+    },
+    {
+      title: 'DK_7GHz',
+      dataIndex: 'DK_7GHz',
+      key: 'dk_7ghz',
+      width: 120,
+      align: 'center'
+    },
+    {
       title: 'DF_7GHz',
       dataIndex: 'DF_7GHZ',
-      key: 'df_5ghz',
+      key: 'df_7ghz',
       width: 120,
       align: 'center'
     },

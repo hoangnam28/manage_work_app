@@ -13,7 +13,8 @@ import {
   CopyOutlined,
   CheckCircleOutlined,
   SafetyCertificateOutlined,
-  HomeOutlined
+  HomeOutlined,
+  BgColorsOutlined
 } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
 import './SideBar.css';
@@ -114,6 +115,14 @@ const SideBar = ({ onLogout, userId }) => {
         //     </Link>
         //   ),
         // },
+         { key: '/material-ink',
+          icon: <BgColorsOutlined />,
+          label: (
+            <Link to="/material-ink" style={location.pathname === '/material-ink' ? { color: '#1890ff', fontWeight: 600 } : {}}>
+              Ink
+            </Link>
+          ),
+        },
        
       ]
     },
@@ -150,14 +159,6 @@ const SideBar = ({ onLogout, userId }) => {
           label: (
             <Link to="/material-certification" style={location.pathname === '/material-certification' ? { color: '#1890ff', fontWeight: 600 } : {}}>
               Material Certification
-            </Link>
-          ),
-        },
-        { key: '/ink-management',
-          icon: <SafetyCertificateOutlined />,
-          label: (
-            <Link to="/ink-management" style={location.pathname === '/ink-management' ? { color: '#1890ff', fontWeight: 600 } : {}}>
-              Ink Management
             </Link>
           ),
         },

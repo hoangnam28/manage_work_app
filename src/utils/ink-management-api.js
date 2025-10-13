@@ -10,7 +10,6 @@ export const fetchInkList = async () => {
 
 };
 
-// Tạo yêu cầu màu mực mới
 export const createInkRequest = async (data) => {
      const token = localStorage.getItem('accessToken');
     const response = await axios.post(`/ink-management/create`, data,{
@@ -19,10 +18,25 @@ export const createInkRequest = async (data) => {
     return response.data;
 };
 
-// Phê duyệt yêu cầu màu mực
+export const updateInkRequest = async (id, data) => {
+  const token = localStorage.getItem('accessToken');
+  const response = await axios.put(`/ink-management/update/${id}`, data, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
 export const approveInkRequest = async (id) => {
   const token = localStorage.getItem('accessToken');
   const response = await axios.put(`/ink-management/approve/${id}`, {}, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
+export const deleteInkRequest = async (id) => {
+  const token = localStorage.getItem('accessToken');
+  const response = await axios.put(`/ink-management/delete/${id}`, {}, {
     headers: { Authorization: `Bearer ${token}` }
   });
   return response.data;

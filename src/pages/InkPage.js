@@ -6,14 +6,18 @@ import {
   Modal,
   Form,
   Input,
-  Select,
-  message,
+  Select, 
   Space,
-  Typography
+  Typography,
+  Tag,
+  Popconfirm,
+  Tooltip
 } from 'antd';
-import { PlusOutlined, CheckCircleOutlined } from '@ant-design/icons';
-import { fetchInkList, createInkRequest, approveInkRequest } from '../utils/ink-management-api';
+import { PlusOutlined, CheckCircleOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
+import { fetchInkList, createInkRequest, approveInkRequest, updateInkRequest, deleteInkRequest } from '../utils/ink-management-api';
 import MainLayout from '../components/layout/MainLayout';
+import { toast, Toaster } from 'sonner';
+import ExcelJS from 'exceljs';
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -23,14 +27,28 @@ const InkPage = () => {
   const [data, setData] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
+  const [editingRecord, setEditingRecord] = useState(null);
+
+  const handleEdit = (record) => {
+    setEditingRecord(record);
+    form.setFieldsValue({
+      type: record.TYPE,
+      color: record.COLOR,
+      color_name: record.COLOR_NAME,
+      method: record.METHOD,
+      vendor: record.VENDOR
+    });
+    setModalVisible(true);
+  };
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const response = await fetchInkList();
+      console.log('Response from API:', response.data);
       setData(response.data || []);
     } catch (error) {
-      message.error('Lỗi khi tải dữ liệu: ' + error.message);
+      toast.error('Lỗi khi tải dữ liệu: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -43,22 +61,96 @@ const InkPage = () => {
   const handleApprove = async (id) => {
     try {
       await approveInkRequest(id);
-      message.success('Phê duyệt yêu cầu thành công');
+      toast.success('Cập nhật thành công');
       fetchData();
     } catch (error) {
-      message.error('Lỗi khi phê duyệt yêu cầu: ' + error.message);
+      toast.error('Lỗi khi phê duyệt yêu cầu: ' + error.message);
     }
   };
 
   const handleSubmit = async (values) => {
     try {
-      await createInkRequest(values);
-      message.success('Tạo yêu cầu thành công');
+      if (editingRecord) {
+        await updateInkRequest(editingRecord.ID, values);
+        toast.success('Cập nhật yêu cầu thành công');
+      } else {
+        await createInkRequest(values);
+        toast.success('Tạo yêu cầu thành công');
+      }
       setModalVisible(false);
+      setEditingRecord(null);
       form.resetFields();
       fetchData();
     } catch (error) {
-      message.error('Lỗi khi tạo yêu cầu: ' + error.message);
+      toast.error(editingRecord ? 'Lỗi khi cập nhật yêu cầu: ' : 'Lỗi khi tạo yêu cầu: ' + error.message);
+    }
+  };
+  const handleDelete = async (id) => {
+    try {
+      await deleteInkRequest(id);
+      toast.success('Xóa yêu cầu thành công');
+      fetchData();
+    } catch (error) {
+      toast.error('Lỗi khi xóa yêu cầu: ' + error.message);
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Ink Requests');
+
+      // Định nghĩa cột
+      worksheet.columns = [
+        { header: 'STT', key: 'index', width: 5 },
+        { header: 'Loại mực', key: 'type', width: 20 },
+        { header: 'Màu mực', key: 'color', width: 20 },
+        { header: 'Tên mực', key: 'color_name', width: 20 },
+        { header: 'Method', key: 'method', width: 15 },
+        { header: 'Vendor', key: 'vendor', width: 15 },
+        { header: 'Người tạo', key: 'created_by', width: 20 },
+        { header: 'Ngày tạo', key: 'created_at', width: 20 },
+        { header: 'Trạng thái', key: 'status', width: 15 }
+      ];
+
+      // Format header
+      worksheet.getRow(1).font = { bold: true };
+      worksheet.getRow(1).alignment = { vertical: 'middle', horizontal: 'center' };
+
+      // Thêm dữ liệu
+      const rows = data.map((item, index) => ({
+        index: index + 1,
+        type: item.TYPE === 'SOLDERMASK_INK' ? 'Mực hàn' : 
+              item.TYPE === 'SILKSCREEN_INK' ? 'Mực phủ sơn' : 
+              item.TYPE === 'SR_PLUG_INK' ? 'Mực lấp lỗ' : item.TYPE,
+        color: item.COLOR,
+        color_name: item.COLOR_NAME,
+        method: item.METHOD,
+        vendor: item.VENDOR,
+        created_by: item.CREATED_BY,
+        created_at: item.CREATED_AT,
+        status: item.STATUS === 'PENDING' ? 'Đang xử lý' : 'Đã cập nhật'
+      }));
+
+      worksheet.addRows(rows);
+
+      // Auto-fit columns
+      worksheet.columns.forEach(column => {
+        column.alignment = { vertical: 'middle', horizontal: 'left' };
+      });
+
+      // Tạo file Excel và download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Danh_sach_muc_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      toast.error('Lỗi khi xuất file Excel: ' + error.message);
     }
   };
 
@@ -71,17 +163,39 @@ const InkPage = () => {
       render: (_, __, index) => index + 1,
     },
     {
+      title: 'Loại mực',
+      dataIndex: 'TYPE',
+      key: 'type',
+      render: (type) => {
+        switch (type) {
+          case 'SOLDERMASK_INK':
+            return 'Mực hàn';
+          case 'SILKSCREEN_INK':
+            return 'Mực phủ sơn';
+          case 'SR_PLUG_INK':
+            return 'Mực lấp lỗ';
+          default:
+            return type;
+        }
+      }
+    },
+    {
       title: 'Màu mực',
       dataIndex: 'COLOR',
       key: 'color',
     },
     {
-      title: 'Phương pháp',
+      title: 'Tên mực',
+      dataIndex: 'COLOR_NAME',
+      key: 'color_name',
+    },
+    {
+      title: 'METHOD',
       dataIndex: 'METHOD',
       key: 'method',
     },
     {
-      title: 'Nhà cung cấp',
+      title: 'VENDOR',
       dataIndex: 'VENDOR',
       key: 'vendor',
     },
@@ -106,20 +220,60 @@ const InkPage = () => {
       key: 'updated_at',
     },
     {
+      title: 'Trạng thái',
+      dataIndex: 'STATUS',
+      key: 'status',
+      render: (status) => {
+        const statusConfig = {
+          PENDING: { color: '#faad14', text: 'Đang xử lý' },
+          APPROVED: { color: '#52c41a', text: 'Đã cập nhật' }
+        };
+        return (
+          <Tag color={statusConfig[status]?.color || 'default'}>
+            {statusConfig[status]?.text || status}
+          </Tag>
+        );
+      }
+    },
+    {
       title: 'Thao tác',
       key: 'action',
-      width: 120,
+      width: 200,
       fixed: 'right',
       render: (_, record) => (
         <Space>
+          {record.STATUS === 'PENDING' && (
+            <Button
+              type="primary"
+              icon={<CheckCircleOutlined />}
+              onClick={() => handleApprove(record.ID)}
+              style={{ backgroundColor: '#52c41a' }}
+            >
+              Approve
+            </Button>
+          )}
           <Button
             type="primary"
-            icon={<CheckCircleOutlined />}
-            onClick={() => handleApprove(record.ID)}
-            style={{ backgroundColor: '#52c41a' }}
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
           >
-            Approve
+            Edit
           </Button>
+          <Popconfirm
+            title="Xác nhận xóa?"
+            onConfirm={() => handleDelete(record.ID)}
+            okText="Có"
+            cancelText="Không"
+          >
+            <Tooltip title="Xóa">
+              <Button
+                type="primary"
+                danger
+                icon={<DeleteOutlined />}
+                size="small"
+              />
+            </Tooltip>
+          </Popconfirm>
         </Space>
       )
     }
@@ -128,16 +282,25 @@ const InkPage = () => {
   return (
     <MainLayout>
     <div style={{ padding: '24px' }}>
+        <Toaster position="top-right" richColors />
       <Card>
         <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
-          <Title level={3}>Quản lý yêu cầu màu mực</Title>
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setModalVisible(true)}
-          >
-            Tạo yêu cầu mới
-          </Button>
+          <Title level={2} style={{ color: '#7593c0ff' }}>Quản lý màu mực</Title>
+          <Space>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setModalVisible(true)}
+            >
+              Tạo yêu cầu mới
+            </Button>
+            <Button
+              icon={<DownloadOutlined />}
+              onClick={handleExportExcel}
+            >
+              Xuất Excel
+            </Button>
+          </Space>
         </Space>
 
         <Table
@@ -154,7 +317,7 @@ const InkPage = () => {
         />
 
         <Modal
-          title="Tạo yêu cầu màu mực mới"
+          title={editingRecord ? "Cập nhật yêu cầu màu mực" : "Tạo yêu cầu màu mực mới"}
           open={modalVisible}
           onOk={() => form.submit()}
           onCancel={() => {
@@ -169,19 +332,38 @@ const InkPage = () => {
             onFinish={handleSubmit}
           >
             <Form.Item
+              name="type"
+              label="Loại mực"
+              rules={[{ required: true, message: 'Vui lòng chọn loại mực' }]}
+            >
+              <Select placeholder="Chọn loại mực">
+                <Option value="SOLDERMASK_INK">SOLDERMASK_INK_</Option>
+                <Option value="SILKSCREEN_INK">SILKSCREEN_INK_</Option>
+                <Option value="SR_PLUG_INK">SR_PLUG_INK_</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
               name="color"
               label="Màu mực"
               rules={[{ required: true, message: 'Vui lòng nhập màu mực' }]}
             >
               <Input placeholder="Nhập màu mực" />
             </Form.Item>
+            <Form.Item
+              name="color_name"
+              label="Tên mực"
+              rules={[{ required: true, message: 'Vui lòng nhập tên mực' }]}
+            >
+              <Input placeholder="Nhập tên mực" />
+            </Form.Item>
 
             <Form.Item
               name="method"
-              label="Phương pháp"
-              rules={[{ required: true, message: 'Vui lòng chọn phương pháp' }]}
+              label="Method"
+              rules={[{ required: true, message: 'Vui lòng chọn Method' }]}
             >
-              <Select placeholder="Chọn phương pháp">
+              <Select placeholder="Chọn Method">
                 <Option value="Screen">Screen</Option>
                 <Option value="Resin Plug">Resin Plug</Option>
                 <Option value="Soldermask Plug">Soldermask Plug</Option>
@@ -192,10 +374,10 @@ const InkPage = () => {
 
             <Form.Item
               name="vendor"
-              label="Nhà cung cấp"
-              rules={[{ required: true, message: 'Vui lòng chọn nhà cung cấp' }]}
+              label="Vendor"
+              rules={[{ required: true, message: 'Vui lòng chọn Vendor' }]}
             >
-              <Select placeholder="Chọn nhà cung cấp">
+              <Select placeholder="Chọn Vendor">
                 <Option value="GOO_AMC">GOO_AMC</Option>
                 <Option value="Onstatic">Onstatic</Option>
                 <Option value="Taiyo">Taiyo</Option>
@@ -208,7 +390,9 @@ const InkPage = () => {
           </Form>
         </Modal>
       </Card>
+          <Toaster/>
     </div>
+
     </MainLayout>
   );
 };
