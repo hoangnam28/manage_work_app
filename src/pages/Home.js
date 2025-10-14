@@ -7,7 +7,8 @@ import {
   TeamOutlined,
   CheckCircleOutlined,
   SafetyCertificateOutlined,
-  CopyOutlined
+  CopyOutlined,
+  BgColorsOutlined
 } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -70,6 +71,12 @@ const Home = () => {
       title: 'Material New',
       path: '/material-new',
       description: 'Thêm vật liệu mới'
+    },
+    {
+      icon: <BgColorsOutlined />,
+      title: 'Material Ink',
+      path: '/material-ink',
+      description: 'Quản lý vật liệu mực'
     },
     {
       icon: <TeamOutlined />,

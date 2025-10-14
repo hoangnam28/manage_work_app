@@ -1,6 +1,4 @@
 import axios from './axios';
-import { data } from 'react-router-dom';
-
 
 export const fetchImpedanceData = async () => {
   try {
@@ -12,12 +10,9 @@ export const fetchImpedanceData = async () => {
   }
 };
 
-
 export const createImpedance = async (data) => {
   try {
-    const response = await axios.post(`/impedance/create-impedance`, 
-      data
-    );
+    const response = await axios.post(`/impedance/create-impedance`, data);
     return response.data;
   } catch (error) {
     console.error('Error creating impedance:', error);
@@ -31,10 +26,7 @@ export const updateImpedance = async (impId, data) => {
   }
   
   try {
-    const response = await axios.put(
-      `/impedance/update-impedance/${impId}`,
-      data
-    );
+    const response = await axios.put(`/impedance/update-impedance/${impId}`, data);
     return response.data;
   } catch (error) {
     console.error('Error updating impedance:', error);
@@ -49,9 +41,7 @@ export const softDeleteImpedance = async (impId) => {
     throw new Error('ID không hợp lệ');
   }
   try {
-    const response = await axios.put(`/impedance/soft-delete-impedance/${idStr}`,
-     data
-    );
+    const response = await axios.put(`/impedance/soft-delete-impedance/${idStr}`, {}); // Gửi object rỗng
     return response.data;
   } catch (error) {
     console.error('Error soft deleting impedance:', error);
@@ -61,10 +51,7 @@ export const softDeleteImpedance = async (impId) => {
 
 export const importImpedance = async (data) => {
   try {
-    const response = await axios.post(
-      `/impedance/import-impedance`,
-      { data }
-    );
+    const response = await axios.post(`/impedance/import-impedance`, { data });
     return response.data;
   } catch (error) {
     console.error('Error importing impedance:', error);
@@ -74,13 +61,12 @@ export const importImpedance = async (data) => {
 
 export const bulkDeleteImpedancesByProduct = async (productCode) => {
   try {
-    const response = await axios.put(
-      `/impedance/bulk-delete-by-product/${productCode}`,
-      null
-    );
+    // Axios tự động gửi token từ interceptor, không cần thêm headers thủ công
+    const response = await axios.put(`/impedance/bulk-delete-by-product/${productCode}`, {}); // Gửi object rỗng
     return response.data;
   } catch (error) {
     console.error('Error bulk deleting impedances:', error);
-    throw error;
+    // Axios tự động throw error với response data
+    throw error.response?.data?.message || error.message || 'Có lỗi xảy ra';
   }
 };

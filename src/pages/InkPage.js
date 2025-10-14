@@ -120,9 +120,9 @@ const InkPage = () => {
       // Thêm dữ liệu
       const rows = data.map((item, index) => ({
         index: index + 1,
-        type: item.TYPE === 'SOLDERMASK_INK' ? 'Mực hàn' : 
-              item.TYPE === 'SILKSCREEN_INK' ? 'Mực phủ sơn' : 
-              item.TYPE === 'SR_PLUG_INK' ? 'Mực lấp lỗ' : item.TYPE,
+        type: item.TYPE === 'SOLDERMASK_INK' ? 'SOLDERMASK_INK' : 
+              item.TYPE === 'SILKSCREEN_INK' ? 'SILKSCREEN_INK' : 
+              item.TYPE === 'SR_PLUG_INK' ? 'SR_PLUG_INKs' : item.TYPE,
         color: item.COLOR,
         color_name: item.COLOR_NAME,
         method: item.METHOD,
@@ -145,7 +145,7 @@ const InkPage = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Danh_sach_muc_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.download = `Danh sách mực ${new Date().toISOString().split('T')[0]}.xlsx`;
       a.click();
       window.URL.revokeObjectURL(url);
 
@@ -169,11 +169,11 @@ const InkPage = () => {
       render: (type) => {
         switch (type) {
           case 'SOLDERMASK_INK':
-            return 'Mực hàn';
+            return 'SOLDERMASK_INK';
           case 'SILKSCREEN_INK':
-            return 'Mực phủ sơn';
+            return 'SILKSCREEN_INK';
           case 'SR_PLUG_INK':
-            return 'Mực lấp lỗ';
+            return 'SR_PLUG_INK';
           default:
             return type;
         }
@@ -346,9 +346,18 @@ const InkPage = () => {
             <Form.Item
               name="color"
               label="Màu mực"
-              rules={[{ required: true, message: 'Vui lòng nhập màu mực' }]}
+              rules={[{ required: true, message: 'Vui lòng chọn màu mực' }]}
             >
-              <Input placeholder="Nhập màu mực" />
+               <Select placeholder="Chọn màu mực">
+                <Option value="Green">Green</Option>
+                <Option value="Red">Red</Option>
+                <Option value="Blue">Blue</Option>
+                <Option value="Black">Black</Option>
+                <Option value="Reseda">Reseda</Option>
+                <Option value="White">White</Option>
+                <Option value="Red">Red</Option>
+                <Option value="Gray">Gray</Option>
+              </Select>
             </Form.Item>
             <Form.Item
               name="color_name"

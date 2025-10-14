@@ -35,12 +35,34 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
 
           const transformedData = data.map((row, rowIndex) => {
             const transformedRow = {};
-            transformedRow['IMP_1'] = null;
+            transformedRow['IMP_1'] = null; // JobName luôn null khi import
 
-            for (let i = 0; i < 138; i++) {
-              const value = row[i];
-              const impKey = `IMP_${i + 2}`;
+            // Xử lý từng cột
+            for (let colIndex = 0; colIndex < row.length; colIndex++) {
+              const value = row[colIndex];
+              let impKey;
 
+              // Ánh xạ cột Excel sang IMP key
+            if (colIndex === 0) {
+              impKey = 'IMP_2';  // Mã Hàng
+            } else if (colIndex === 1) {
+              impKey = 'IMP_138';  // Ngày tạo
+            } else if (colIndex === 2) {
+              impKey = 'IMP_137';  // Tổng hợp dữ liệu đo thực tế
+            } else if (colIndex >= 3 && colIndex <= 35) {
+              impKey = `IMP_${colIndex}`;  // IMP_3 đến IMP_35
+            } else if (colIndex === 36) {
+              impKey = 'IMP_136';  // Coupon Code (cột thứ 37)
+            } else if (colIndex === 37) {
+              impKey = 'IMP_36';  // Bắt đầu "Tổng hợp kết quả mô phỏng"
+            } else if (colIndex >= 38 && colIndex <= 136) {
+              impKey = `IMP_${colIndex - 1}`;  // Điều chỉnh cho các cột sau Coupon Code
+            } else if (colIndex === 137) {
+              impKey = 'NOTE';  // Ghi chú (cột cuối)
+            } else {
+              continue; 
+            }
+              // Xử lý giá trị
               if (
                 value === undefined ||
                 value === null ||
@@ -70,12 +92,12 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
               if (typeof value === 'string') {
                 const trimmedValue = value.trim();
                 
-                // Nếu là dấu gạch ngang với khoảng trắng
                 if (trimmedValue === '-') {
                   transformedRow[impKey] = '-';
                   continue;
                 }
 
+                // Thử parse thành số
                 const numValue = parseFloat(trimmedValue.replace(/,/g, ''));
 
                 if (!isNaN(numValue) && Number.isFinite(numValue) && trimmedValue.match(/^[-+]?\d*\.?\d+$/)) {
@@ -87,24 +109,8 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
               }
             }
 
-            const noteValue = row[134];
-            if (noteValue !== undefined && noteValue !== null) {
-              if (noteValue === '-') {
-                transformedRow['NOTE'] = '-';
-              } else if (String(noteValue).trim() !== '' && 
-                        String(noteValue).toLowerCase() !== 'nan' && 
-                        String(noteValue).toLowerCase() !== 'null') {
-                transformedRow['NOTE'] = String(noteValue).trim();
-              } else {
-                transformedRow['NOTE'] = null;
-              }
-            } else {
-              transformedRow['NOTE'] = null;
-            }
-
             return transformedRow;
           });
-
           resolve(transformedData);
         } catch (error) {
           console.error('Error parsing Excel:', error);
@@ -162,6 +168,13 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
       dataIndex: 'IMP_2',
       key: 'imp_2',
       width: 100,
+      align: 'center',
+    },
+    {
+      title: 'Ngày tạo',
+      dataIndex: 'IMP_138',
+      key: 'imp_138',
+      width: 120,
       align: 'center',
     },
     {
@@ -423,6 +436,13 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
           title: 'GAP',
           dataIndex: 'IMP_35',
           key: 'imp_35',
+          width: 100,
+          align: 'center',
+        },
+        {
+          title: 'Coupon Code',
+          dataIndex: 'IMP_136',
+          key: 'imp_136',
           width: 100,
           align: 'center',
         },
@@ -1212,13 +1232,6 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
       ]
     },
     {
-      title: 'Coupon Code',
-      dataIndex: 'IMP_136',
-      key: 'imp_136',
-      width: 100,
-      align: 'center',
-    },
-    {
       title: 'Ghi chú',
       dataIndex: 'NOTE',
       key: 'note',
@@ -1227,7 +1240,7 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
 
   ];
 
-  const uploadProps = {
+ const uploadProps = {
     accept: '.xlsx,.xls',
     fileList,
     beforeUpload: handleUpload,
@@ -1240,6 +1253,7 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
       setFileList(info.fileList.slice(-1));
     }
   };
+
   useEffect(() => {
     if (!visible) {
       setAllData([]);
@@ -1299,14 +1313,14 @@ const ImportImpedanceModal = ({ visible, onCancel, onImport }) => {
 
       {previewData.length > 0 && (
         <div style={{ marginTop: 16 }}>
-          <Title level={4}>Xem trước dữ liệu</Title>
+          <Title level={4}>Xem trước dữ liệu ({previewData.length} dòng)</Title>
           <Table
             columns={columns}
             dataSource={previewData.map((item, index) => ({
               ...item,
               key: index
             }))}
-            scroll={{ y: 400 }}
+            scroll={{ x: 1500, y: 400 }}
             pagination={{
               defaultPageSize: 5,
               showSizeChanger: true,
