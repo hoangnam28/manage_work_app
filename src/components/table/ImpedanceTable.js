@@ -9,12 +9,42 @@ const renderColumnTitle = (text) => (
   </div>
 );
 
-// Hàm render giá trị, hiển thị '-' nếu trống
 const renderCell = (value) => {
   if (value === null || value === undefined || value === '') return '-';
+  
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+
+  if (!isNaN(numValue) && numValue !== '') {
+    return numValue.toFixed(2);
+  }
+  
   return value;
 };
-
+const renderDate = (value) => {
+  if (value === null || value === undefined || value === '') return '-';
+  
+  // Nếu là số (timestamp)
+  if (typeof value === 'number') {
+    return new Date(value).toLocaleDateString('vi-VN');
+  }
+  
+  // Nếu là chuỗi, thử parse
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed === '') return '-';
+    
+    // Thử parse và định dạng lại
+    const date = new Date(trimmed);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString('vi-VN');
+    }
+    
+    // Nếu đã là format ngày, trả về như là
+    return trimmed;
+  }
+  
+  return value;
+};
 const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
   const [tableData, setTableData] = useState([]);
   const [newRowId, setNewRowId] = useState(null);
@@ -139,11 +169,11 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
     },
     {
       title: renderColumnTitle('Ngày tạo'),
-      dataIndex: 'IMPE_138',
+      dataIndex: 'IMP_138',
       key: 'imp_138',
       align: 'center',
       fixed: 'left',
-      render: renderCell,
+      render: renderDate,
     },
     {
       title: renderColumnTitle('Tổng hợp dữ liệu đo thực tế'),
@@ -269,7 +299,6 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_16',
               width: 100,
               align: 'center',
-              render: renderCell,
             },
             {
               title: renderColumnTitle('Tỷ lệ đồng còn lại lớp GND1'),
@@ -277,7 +306,6 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_17',
               width: 100,
               align: 'center',
-              render: renderCell,
             },
             {
               title: renderColumnTitle('Tỷ lê đồng còn lại lớp GND2'),
@@ -285,7 +313,6 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_18',
               width: 100,
               align: 'center',
-              render: renderCell,
             },
 
           ],

@@ -13,7 +13,7 @@ import {
   Popconfirm,
   Tooltip
 } from 'antd';
-import { PlusOutlined, CheckCircleOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
+import { PlusOutlined, CheckCircleOutlined, EditOutlined, DeleteOutlined, DownloadOutlined, EyeOutlined } from '@ant-design/icons';
 import { fetchInkList, createInkRequest, approveInkRequest, updateInkRequest, deleteInkRequest } from '../utils/ink-management-api';
 import MainLayout from '../components/layout/MainLayout';
 import { toast, Toaster } from 'sonner';
@@ -286,6 +286,14 @@ const InkPage = () => {
       <Card>
         <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
           <Title level={2} style={{ color: '#7593c0ff' }}>Quản lý màu mực</Title>
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
+            onClick={() => window.open('/material_ink.pdf', '_blank', 'noopener,noreferrer')}
+            style={{ background: '#1890ff', borderColor: '#1890ff' }}
+          >
+            Hướng dẫn sử dụng
+          </Button>
           <Space>
             <Button
               type="primary"

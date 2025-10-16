@@ -8,7 +8,9 @@ import {
   CheckCircleOutlined,
   SafetyCertificateOutlined,
   CopyOutlined,
-  BgColorsOutlined
+  BgColorsOutlined,
+  DashboardOutlined,
+  ProjectOutlined
 } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -42,6 +44,18 @@ const MenuItem = ({ icon, title, path, description }) => (
 
 const Home = () => {
   const menuItems = [
+    {
+      icon: <DashboardOutlined />,
+      title: 'Dashboard',
+      path: '/dashboard',
+      description: 'Tổng quan nhanh về Business, Project, Task'
+    },
+    {
+      icon: <ProjectOutlined />,
+      title: 'Business Management',
+      path: '/business',
+      description: 'Quản lý nghiệp vụ và dự án'
+    },
     {
       icon: <FileSearchOutlined />,
       title: 'Review Tasks',

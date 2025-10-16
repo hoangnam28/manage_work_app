@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Input, Button, Spin, Typography, Alert, Select } from 'antd';
-import ImpedanceTable from '../components/layout/ImpedanceTable';
+import ImpedanceTable from '../components/table/ImpedanceTable';
 import MainLayout from '../components/layout/MainLayout';
 import CreateImpedanceModal from '../components/modal/CreateImpedanceModal';
 import UpdateImpedanceModal from '../components/modal/UpdateImpedanceModal';

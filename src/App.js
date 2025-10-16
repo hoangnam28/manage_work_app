@@ -14,7 +14,11 @@ import UlMaterial from './pages/UlMaterial';
 import MaterialCertification from './pages/Material.Certification';
 import CertificationForm from './pages/CertificationForm';
 import Home from './pages/Home';
-import InkPage from './pages/InkPage'
+import InkPage from './pages/InkPage';
+import DashBoard from './pages/DashBoard';
+import BussinessList from './pages/BussinessList';
+import ProjectList from './pages/ProjectList';
+import TaskList from './pages/TaskList';
 
 function App() {
   return (
@@ -123,6 +127,38 @@ function App() {
           element={
             <PrivateRoute>
               <InkPage />
+            </PrivateRoute>
+          }
+        />
+        <Route 
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <DashBoard />
+            </PrivateRoute>
+          }
+        />
+        <Route 
+          path="/business"
+          element={
+            <PrivateRoute>
+              <BussinessList />
+            </PrivateRoute>
+          }
+        />
+        <Route 
+          path="/business/:businessId/projects"
+          element={
+            <PrivateRoute>
+              <ProjectList />
+            </PrivateRoute>
+          }
+        />
+        <Route 
+          path="/business/:businessId/project/:projectId/tasks"
+          element={
+            <PrivateRoute>
+              <TaskList />
             </PrivateRoute>
           }
         />
