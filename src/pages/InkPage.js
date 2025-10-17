@@ -28,18 +28,35 @@ const InkPage = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [editingRecord, setEditingRecord] = useState(null);
+  const [filteredMethods, setFilteredMethods] = useState([]);
 
-  const handleEdit = (record) => {
-    setEditingRecord(record);
-    form.setFieldsValue({
-      type: record.TYPE,
-      color: record.COLOR,
-      color_name: record.COLOR_NAME,
-      method: record.METHOD,
-      vendor: record.VENDOR
-    });
-    setModalVisible(true);
-  };
+
+ const handleEdit = (record) => {
+  setEditingRecord(record);
+  form.setFieldsValue({
+    type: record.TYPE,
+    color: record.COLOR,
+    color_name: record.COLOR_NAME,
+    method: record.METHOD,
+    vendor: record.VENDOR,
+  });
+  switch (record.TYPE) {
+    case 'SOLDERMASK_INK':
+      setFilteredMethods(['Screen', 'Spray']);
+      break;
+    case 'SILKSCREEN_INK':
+      setFilteredMethods(['Screen']);
+      break;
+    case 'SR_PLUG_INK':
+      setFilteredMethods(['Resin Plug', 'Soldermask Plug']);
+      break;
+    default:
+      setFilteredMethods([]);
+  }
+
+  setModalVisible(true);
+};
+
 
   const fetchData = async () => {
     setLoading(true);
@@ -120,9 +137,7 @@ const InkPage = () => {
       // Thêm dữ liệu
       const rows = data.map((item, index) => ({
         index: index + 1,
-        type: item.TYPE === 'SOLDERMASK_INK' ? 'SOLDERMASK_INK' : 
-              item.TYPE === 'SILKSCREEN_INK' ? 'SILKSCREEN_INK' : 
-              item.TYPE === 'SR_PLUG_INK' ? 'SR_PLUG_INKs' : item.TYPE,
+        type: item.TYPE,
         color: item.COLOR,
         color_name: item.COLOR_NAME,
         method: item.METHOD,
@@ -139,7 +154,6 @@ const InkPage = () => {
         column.alignment = { vertical: 'middle', horizontal: 'left' };
       });
 
-      // Tạo file Excel và download
       const buffer = await workbook.xlsx.writeBuffer();
       const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const url = window.URL.createObjectURL(blob);
@@ -344,13 +358,30 @@ const InkPage = () => {
               label="Loại mực"
               rules={[{ required: true, message: 'Vui lòng chọn loại mực' }]}
             >
-              <Select placeholder="Chọn loại mực">
+              <Select
+                placeholder="Chọn loại mực"
+                onChange={(value) => {
+                  form.setFieldsValue({ method: undefined }); // reset method
+                  switch (value) {
+                    case 'SOLDERMASK_INK':
+                      setFilteredMethods(['Screen', 'Spray']);
+                      break;
+                    case 'SILKSCREEN_INK':
+                      setFilteredMethods(['Screen']);
+                      break;
+                    case 'SR_PLUG_INK':
+                      setFilteredMethods(['Resin Plug', 'Soldermask Plug']);
+                      break;
+                    default:
+                      setFilteredMethods([]);
+                  }
+                }}
+              >
                 <Option value="SOLDERMASK_INK">SOLDERMASK_INK_</Option>
                 <Option value="SILKSCREEN_INK">SILKSCREEN_INK_</Option>
                 <Option value="SR_PLUG_INK">SR_PLUG_INK_</Option>
               </Select>
             </Form.Item>
-
             <Form.Item
               name="color"
               label="Màu mực"
@@ -380,15 +411,14 @@ const InkPage = () => {
               label="Method"
               rules={[{ required: true, message: 'Vui lòng chọn Method' }]}
             >
-              <Select placeholder="Chọn Method">
-                <Option value="Screen">Screen</Option>
-                <Option value="Resin Plug">Resin Plug</Option>
-                <Option value="Soldermask Plug">Soldermask Plug</Option>
-                <Option value="Flat Press">Flat Press</Option>
-                <Option value="Spray">Spray</Option>
+              <Select placeholder="Chọn Method" disabled={filteredMethods.length === 0}>
+                {filteredMethods.map((m) => (
+                  <Option key={m} value={m}>
+                    {m}
+                  </Option>
+                ))}
               </Select>
             </Form.Item>
-
             <Form.Item
               name="vendor"
               label="Vendor"

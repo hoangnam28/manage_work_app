@@ -3,32 +3,57 @@ import { Table, Button, Space, Popconfirm, Spin, Tooltip, Modal, message } from 
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { bulkDeleteImpedancesByProduct } from '../../utils/api';
 
+
 const renderColumnTitle = (text) => (
   <div className="column-title">
     {text}
   </div>
 );
 
+// Hàm render giá trị, hiển thị '-' nếu trống
 const renderCell = (value) => {
   if (value === null || value === undefined || value === '') return '-';
-  
-  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  return value;
+};
 
+const renderCell1 = (value) => {
+  if (value === null || value === undefined || value === '') return '-';
+  
+  // Thử convert sang số
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  
+  // Nếu là số hợp lệ, làm tròn 2 chữ số
   if (!isNaN(numValue) && numValue !== '') {
     return numValue.toFixed(2);
   }
   
   return value;
 };
+
+const renderPercentCell = (value) => {
+  if (value === null || value === undefined || value === '') return '-';
+  if (typeof value === 'string') {
+    const percentCount = (value.match(/%/g) || []).length;
+    if (/[+\-*/]/.test(value) || percentCount > 1) return value;
+    if (value.includes('%')) {
+      const numValue = parseFloat(value);
+      return isNaN(numValue) ? '-' : `${numValue.toFixed(0)}%`;
+    }
+  }
+  const numValue = parseFloat(value);
+  if (isNaN(numValue)) return '-';
+  const percentage = (numValue * 100).toFixed(0);
+  return `${percentage}%`;
+};
+
+
 const renderDate = (value) => {
   if (value === null || value === undefined || value === '') return '-';
   
-  // Nếu là số (timestamp)
   if (typeof value === 'number') {
     return new Date(value).toLocaleDateString('vi-VN');
   }
   
-  // Nếu là chuỗi, thử parse
   if (typeof value === 'string') {
     const trimmed = value.trim();
     if (trimmed === '') return '-';
@@ -45,6 +70,7 @@ const renderDate = (value) => {
   
   return value;
 };
+
 const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
   const [tableData, setTableData] = useState([]);
   const [newRowId, setNewRowId] = useState(null);
@@ -299,6 +325,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_16',
               width: 100,
               align: 'center',
+              render: renderPercentCell,
             },
             {
               title: renderColumnTitle('Tỷ lệ đồng còn lại lớp GND1'),
@@ -306,6 +333,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_17',
               width: 100,
               align: 'center',
+              render: renderPercentCell,
             },
             {
               title: renderColumnTitle('Tỷ lê đồng còn lại lớp GND2'),
@@ -313,6 +341,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_18',
               width: 100,
               align: 'center',
+              render: renderPercentCell,
             },
 
           ],
@@ -342,7 +371,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_21',
               width: 100,
               align: 'center',
-              render: renderCell,
+              render: renderPercentCell,
             },
           ]
         },
@@ -371,7 +400,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_24',
               width: 100,
               align: 'center',
-              render: renderCell,
+              render: renderPercentCell,
             },
           ]
         },
@@ -1269,7 +1298,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_126',
               width: 100,
               align: 'center',
-              render: renderCell,
+              render: renderCell1,
             },
           ]
         },
@@ -1298,7 +1327,7 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
               key: 'imp_129',
               width: 100,
               align: 'center',
-              render: renderCell,
+              render: renderCell1,
             },
           ]
         },
@@ -1401,6 +1430,12 @@ const ImpedanceTable = ({ data, onDataChange, onEdit, onSoftDelete }) => {
             scroll={{ x: 'max-content', y: 'calc(100vh - 280px)' }}
             size="middle"
             sticky
+            style={{
+              width: '100%',
+              border: '1px solid #f0f0f0',
+              borderRadius: '8px'
+            }}
+            className="impedance-table"
           />
         </Spin>
       </div>

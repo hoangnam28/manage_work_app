@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import axios from 'axios';
+
 
 const TaskForm = ({ open, onClose, onSubmit, projectId, initialData = null }) => {
   const [formData, setFormData] = useState({
@@ -29,16 +29,12 @@ const TaskForm = ({ open, onClose, onSubmit, projectId, initialData = null }) =>
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3001/api/users', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setUsers(response.data);
+      const data = await userApi.getUsers();
+      setUsers(data);
     } catch (error) {
       console.error('Error fetching users:', error);
     }
   };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));

@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Modal, Form, Input, Popconfirm, Space, Select, Card, Avatar, Upload, Tag, Descriptions, Row, Col, Statistic, message } from 'antd';
 import { EditOutlined, DeleteOutlined, UserAddOutlined, EyeOutlined, UserOutlined, UploadOutlined, TeamOutlined, SafetyOutlined, ClockCircleOutlined } from '@ant-design/icons';
-import axios from '../utils/axios';
 import MainLayout from '../components/layout/MainLayout';
 import { Toaster, toast } from 'sonner';
+import { fetchUsersList, createUser, updateUser, deleteUser, uploadAvatar } from '../utils/user-api';
 
 const { Option } = Select;
 
@@ -24,10 +24,9 @@ const UserManagement = () => {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`/user/list`);
-      setUsers(response.data);
+      const data = await fetchUsersList();
+      setUsers(data);
     } catch (error) {
-      console.error('Error fetching users:', error);
       if (error.response?.status === 403) {
         toast.error('Bạn không có quyền truy cập trang này');
       } else {
@@ -42,77 +41,76 @@ const UserManagement = () => {
     fetchUsers();
   }, []);
 
-const handleSubmit = async (values) => {
-  try {
-    const token = localStorage.getItem('accessToken');
-    if (!token) {
-      toast.error('Phiên đăng nhập đã hết hạn');
-      return;
-    }
-    
-    if (!values.username?.trim()) {
-      toast.error('Vui lòng nhập tên người dùng');
-      return;
-    }
-
-    if (!editingUser && !values.company_id?.trim()) {
-      toast.error('Vui lòng nhập ID công ty');
-      return;
-    }
-
-    const userData = editingUser ? {
-      username: values.username.trim(),
-      department: values.department?.trim(),
-      email: values.email?.trim(),
-      avatar: avatarUrl || editingUser.AVATAR || null,
-      ...(values.password_hash && { password_hash: values.password_hash }),
-      ...(values.role && { role: Array.isArray(values.role) ? values.role : [values.role] })
-    } : {
-      username: values.username.trim(),
-      company_id: values.company_id.trim(),
-      password_hash: values.password_hash,
-      department: values.department?.trim(),
-      email: values.email?.trim(),
-      avatar: avatarUrl || null,
-      role: Array.isArray(values.role) ? values.role : [values.role]
-    };
-
-
-    if (editingUser) {
-      await axios.put(`/user/update/${editingUser.USER_ID}`, userData);
-
-      toast.success('Cập nhật người dùng thành công');
-      const currentUser = JSON.parse(localStorage.getItem('userInfo'));
-     if (currentUser && currentUser.userId === editingUser.USER_ID) {
-      const updatedUserInfo = {
-      ...currentUser,
-      username: userData.username || currentUser.username,
-      avatar: userData.avatar || currentUser.avatar,
-      email: userData.email || currentUser.email
-    };
-    localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
-  }
-  
-  handleCloseModal();
-  await fetchUsers();
-    } else {
-      const response = await axios.post(
-        `/user/create`,
-        userData
-      );
-
-      if (response.data?.data) {
-        setUsers(prevUsers => [...prevUsers, response.data.data]);
-        toast.success('Tạo người dùng thành công');
-        handleCloseModal();
+  const handleSubmit = async (values) => {
+    try {
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        toast.error('Phiên đăng nhập đã hết hạn');
+        return;
       }
+
+      if (!values.username?.trim()) {
+        toast.error('Vui lòng nhập tên người dùng');
+        return;
+      }
+
+      if (!editingUser && !values.company_id?.trim()) {
+        toast.error('Vui lòng nhập ID công ty');
+        return;
+      }
+
+      const userData = editingUser
+        ? {
+            username: values.username.trim(),
+            department: values.department?.trim(),
+            email: values.email?.trim(),
+            avatar: avatarUrl || editingUser.AVATAR || null,
+            ...(values.password_hash && { password_hash: values.password_hash }),
+            ...(values.role && { role: Array.isArray(values.role) ? values.role : [values.role] }),
+          }
+        : {
+            username: values.username.trim(),
+            company_id: values.company_id.trim(),
+            password_hash: values.password_hash,
+            department: values.department?.trim(),
+            email: values.email?.trim(),
+            avatar: avatarUrl || null,
+            role: Array.isArray(values.role) ? values.role : [values.role],
+          };
+
+      if (editingUser) {
+        await updateUser(editingUser.USER_ID, userData);
+        toast.success('Cập nhật người dùng thành công');
+
+        const currentUser = JSON.parse(localStorage.getItem('userInfo'));
+        if (currentUser && currentUser.userId === editingUser.USER_ID) {
+          const updatedUserInfo = {
+            ...currentUser,
+            username: userData.username || currentUser.username,
+            avatar: userData.avatar || currentUser.avatar,
+            email: userData.email || currentUser.email,
+          };
+          localStorage.setItem('userInfo', JSON.stringify(updatedUserInfo));
+        }
+
+        handleCloseModal();
+        await fetchUsers();
+      } else {
+        const response = await createUser(userData);
+
+        if (response?.data) {
+          setUsers((prevUsers) => [...prevUsers, response.data]);
+          toast.success('Tạo người dùng thành công');
+          handleCloseModal();
+        }
+      }
+    } catch (error) {
+      console.error('Error saving user:', error);
+      const errorMessage = error.response?.data?.message || 'Lỗi khi lưu người dùng';
+      toast.error(errorMessage);
     }
-  } catch (error) {
-    console.error('Error saving user:', error);
-    const errorMessage = error.response?.data?.message || 'Lỗi khi lưu người dùng';
-    toast.error(errorMessage);
-  }
-};
+  };
+
   const handleCloseModal = () => {
     setIsModalVisible(false);
     form.resetFields();
@@ -127,7 +125,7 @@ const handleSubmit = async (values) => {
       username: user.USERNAME,
       department: user.DEPARTMENT,
       email: user.EMAIL,
-      role: typeof user.ROLE === 'string' ? user.ROLE.split(',').map(r => r.trim()) : user.ROLE
+      role: typeof user.ROLE === 'string' ? user.ROLE.split(',').map((r) => r.trim()) : user.ROLE,
     });
     setIsModalVisible(true);
   };
@@ -139,7 +137,7 @@ const handleSubmit = async (values) => {
 
   const handleDelete = async (userId) => {
     try {
-      await axios.delete(`/user/delete/${userId}`);
+      await deleteUser(userId);
       toast.success('Xóa người dùng thành công');
       fetchUsers();
     } catch (error) {
@@ -150,23 +148,22 @@ const handleSubmit = async (values) => {
 
   const filteredUsers = useMemo(() => {
     let result = users;
-    
+
     if (searchText) {
       const searchLower = searchText.toLowerCase();
-      result = result.filter(user =>
-        user.USERNAME?.toLowerCase().includes(searchLower) ||
-        user.COMPANY_ID?.toLowerCase().includes(searchLower) ||
-        user.EMAIL?.toLowerCase().includes(searchLower) ||
-        user.DEPARTMENT?.toLowerCase().includes(searchLower)
+      result = result.filter(
+        (user) =>
+          user.USERNAME?.toLowerCase().includes(searchLower) ||
+          user.COMPANY_ID?.toLowerCase().includes(searchLower) ||
+          user.EMAIL?.toLowerCase().includes(searchLower) ||
+          user.DEPARTMENT?.toLowerCase().includes(searchLower)
       );
     }
 
     if (selectedRoles.length > 0) {
-      result = result.filter(user => {
-        const userRoles = typeof user.ROLE === 'string' 
-          ? user.ROLE.split(',').map(r => r.trim()) 
-          : Array.isArray(user.ROLE) ? user.ROLE : [];
-        return selectedRoles.some(role => userRoles.includes(role));
+      result = result.filter((user) => {
+        const userRoles = typeof user.ROLE === 'string' ? user.ROLE.split(',').map((r) => r.trim()) : Array.isArray(user.ROLE) ? user.ROLE : [];
+        return selectedRoles.some((role) => userRoles.includes(role));
       });
     }
 
@@ -179,7 +176,7 @@ const handleSubmit = async (values) => {
       editor: 'blue',
       viewer: 'green',
       imp: 'purple',
-      bo: 'orange'
+      bo: 'orange',
     };
     return colors[role] || 'default';
   };
@@ -190,68 +187,60 @@ const handleSubmit = async (values) => {
       editor: 'Editor',
       viewer: 'Viewer',
       imp: 'Imp',
-      bo: 'Bo'
+      bo: 'Bo',
     };
     return names[role] || role;
   };
 
- const handleAvatarUpload = async (file) => {
-  const isImage = file.type.startsWith('image/');
-  if (!isImage) {
-    message.error('Chỉ được upload file ảnh!');
-    return false;
-  }
-
-  const isLt5M = file.size / 1024 / 1024 < 5;
-  if (!isLt5M) {
-    message.error('Ảnh phải nhỏ hơn 5MB!');
-    return false;
-  }
-
-  setUploadLoading(true);
-  try {
-    const formData = new FormData();
-    formData.append('avatar', file);
-    
-    const response = await axios.post('/user/upload-avatar', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-    
-     if (response.data?.url) {
-      console.log('Avatar uploaded, URL:', response.data.url); // ✅ THÊM
-      setAvatarUrl(response.data.url); // ✅ Đảm bảo có dòng này
-      message.success('Upload avatar thành công');
+  const handleAvatarUpload = async (file) => {
+    const isImage = file.type.startsWith('image/');
+    if (!isImage) {
+      message.error('Chỉ được upload file ảnh!');
+      return false;
     }
-  } catch (error) {
-    console.error('Error uploading avatar:', error);
-    message.error(error.response?.data?.message || 'Lỗi khi upload avatar');
-  } finally {
-    setUploadLoading(false);
-  }
-  return false;
-};
 
-const getAvatarSrc = (avatar) => {
-  if (!avatar) return null;
-  
-  console.log('Getting avatar src for:', avatar);
-  
-  // Nếu đã là URL đầy đủ
-  if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
+    const isLt5M = file.size / 1024 / 1024 < 5;
+    if (!isLt5M) {
+      message.error('Ảnh phải nhỏ hơn 5MB!');
+      return false;
+    }
+
+    setUploadLoading(true);
+    try {
+      const response = await uploadAvatar(file);
+
+      if (response?.url) {
+        console.log('Avatar uploaded, URL:', response.url);
+        setAvatarUrl(response.url);
+        message.success('Upload avatar thành công');
+      }
+    } catch (error) {
+      console.error('Error uploading avatar:', error);
+      message.error(error.response?.data?.message || 'Lỗi khi upload avatar');
+    } finally {
+      setUploadLoading(false);
+    }
+    return false;
+  };
+
+  const getAvatarSrc = (avatar) => {
+    if (!avatar) return null;
+
+    console.log('Getting avatar src for:', avatar);
+
+    if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
+      return avatar;
+    }
+
+    if (avatar.startsWith('/')) {
+      const fullUrl = `http://192.84.105.173:5000${avatar}`;
+      console.log('Full avatar URL:', fullUrl);
+      return fullUrl;
+    }
+
     return avatar;
-  }
-  
-  // Nếu là đường dẫn tương đối bắt đầu bằng /
-  if (avatar.startsWith('/')) {
-    const fullUrl = `http://192.84.105.173:5000${avatar}`;
-    console.log('Full avatar URL:', fullUrl);
-    return fullUrl;
-  }
-  
-  return avatar;
-};
+  };
+
   const columns = [
     {
       title: 'Avatar',
@@ -260,9 +249,9 @@ const getAvatarSrc = (avatar) => {
       width: 80,
       align: 'center',
       render: (avatar, record) => (
-        <Avatar 
-          size={48} 
-          src={getAvatarSrc(avatar)} 
+        <Avatar
+          size={48}
+          src={getAvatarSrc(avatar)}
           icon={!avatar && <UserOutlined />}
           style={{ backgroundColor: !avatar ? '#1890ff' : undefined }}
         >
@@ -275,7 +264,7 @@ const getAvatarSrc = (avatar) => {
       dataIndex: 'USERNAME',
       key: 'username',
       sorter: (a, b) => (a.USERNAME || '').localeCompare(b.USERNAME || ''),
-      render: (text) => <strong>{text}</strong>
+      render: (text) => <strong>{text}</strong>,
     },
     {
       title: 'ID Công ty',
@@ -287,30 +276,30 @@ const getAvatarSrc = (avatar) => {
       title: 'Email',
       dataIndex: 'EMAIL',
       key: 'email',
-      render: (email) => email || <span style={{ color: '#999' }}>-</span>
+      render: (email) => email || <span style={{ color: '#999' }}>-</span>,
     },
     {
       title: 'Phòng ban',
       dataIndex: 'DEPARTMENT',
       key: 'department',
-      render: (dept) => dept || <span style={{ color: '#999' }}>-</span>
+      render: (dept) => dept || <span style={{ color: '#999' }}>-</span>,
     },
     {
       title: 'Vai trò',
       dataIndex: 'ROLE',
       key: 'role',
       render: (role) => {
-        const rolesArr = typeof role === 'string' ? role.split(',').map(r => r.trim()) : Array.isArray(role) ? role : [];
+        const rolesArr = typeof role === 'string' ? role.split(',').map((r) => r.trim()) : Array.isArray(role) ? role : [];
         return (
           <Space size={4} wrap>
-            {rolesArr.map(r => (
+            {rolesArr.map((r) => (
               <Tag key={r} color={getRoleColor(r)}>
                 {getRoleName(r)}
               </Tag>
             ))}
           </Space>
         );
-      }
+      },
     },
     {
       title: 'Ngày tạo',
@@ -327,18 +316,8 @@ const getAvatarSrc = (avatar) => {
       fixed: 'right',
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="default"
-            icon={<EyeOutlined />}
-            onClick={() => handleView(record)}
-            title="Xem chi tiết"
-          />
-          <Button
-            type="primary"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-            title="Chỉnh sửa"
-          />
+          <Button type="default" icon={<EyeOutlined />} onClick={() => handleView(record)} title="Xem chi tiết" />
+          <Button type="primary" icon={<EditOutlined />} onClick={() => handleEdit(record)} title="Chỉnh sửa" />
           <Popconfirm
             title="Xóa người dùng"
             description="Bạn có chắc chắn muốn xóa người dùng này?"
@@ -346,12 +325,7 @@ const getAvatarSrc = (avatar) => {
             okText="Có"
             cancelText="Không"
           >
-            <Button 
-              type="primary" 
-              danger 
-              icon={<DeleteOutlined />}
-              title="Xóa"
-            />
+            <Button type="primary" danger icon={<DeleteOutlined />} title="Xóa" />
           </Popconfirm>
         </Space>
       ),
@@ -360,10 +334,10 @@ const getAvatarSrc = (avatar) => {
 
   const statsData = useMemo(() => {
     const totalUsers = users.length;
-    const adminCount = users.filter(u => u.ROLE?.includes('admin')).length;
-    const editorCount = users.filter(u => u.ROLE?.includes('editor')).length;
-    const viewerCount = users.filter(u => u.ROLE?.includes('viewer')).length;
-    
+    const adminCount = users.filter((u) => u.ROLE?.includes('admin')).length;
+    const editorCount = users.filter((u) => u.ROLE?.includes('editor')).length;
+    const viewerCount = users.filter((u) => u.ROLE?.includes('viewer')).length;
+
     return { totalUsers, adminCount, editorCount, viewerCount };
   }, [users]);
 
@@ -376,8 +350,7 @@ const getAvatarSrc = (avatar) => {
             <TeamOutlined /> Quản lý người dùng
           </h1>
           <p style={{ color: '#666', marginBottom: '24px' }}>Quản lý tài khoản và phân quyền người dùng hệ thống</p>
-          
-          {/* Statistics Cards */}
+
           <Row gutter={16} style={{ marginBottom: '24px' }}>
             <Col xs={24} sm={12} md={6}>
               <Card>
@@ -440,7 +413,6 @@ const getAvatarSrc = (avatar) => {
               </Button>
             </div>
 
-            {/* Filters */}
             <Row gutter={16}>
               <Col xs={24} sm={12} md={8}>
                 <Input.Search
@@ -484,7 +456,6 @@ const getAvatarSrc = (avatar) => {
               </Col>
             </Row>
 
-            {/* Table */}
             <Table
               columns={columns}
               dataSource={filteredUsers}
@@ -494,14 +465,13 @@ const getAvatarSrc = (avatar) => {
                 pageSize: pageSize,
                 showSizeChanger: false,
                 showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} người dùng`,
-                position: ['bottomCenter']
+                position: ['bottomCenter'],
               }}
               scroll={{ x: 1200 }}
             />
           </Space>
         </Card>
 
-        {/* Create/Edit Modal */}
         <Modal
           title={
             <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
@@ -513,16 +483,12 @@ const getAvatarSrc = (avatar) => {
           footer={null}
           width={600}
         >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-          >
+          <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item label="Avatar">
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <Avatar 
-                  size={80} 
-                  src={getAvatarSrc(avatarUrl || editingUser?.AVATAR)} 
+                <Avatar
+                  size={80}
+                  src={getAvatarSrc(avatarUrl || editingUser?.AVATAR)}
                   icon={!avatarUrl && !editingUser?.AVATAR && <UserOutlined />}
                   style={{ backgroundColor: !avatarUrl && !editingUser?.AVATAR ? '#1890ff' : undefined }}
                 >
@@ -538,14 +504,9 @@ const getAvatarSrc = (avatar) => {
                     {uploadLoading ? 'Đang tải...' : 'Upload Avatar'}
                   </Button>
                 </Upload>
-                {(avatarUrl || editingUser?.AVATAR) && (
-                  <Button 
-                    danger 
-                    onClick={() => setAvatarUrl('')}
-                  >
+                {(avatarUrl || editingUser?.AVATAR) && <Button danger onClick={() => setAvatarUrl('')}>
                     Xóa
-                  </Button>
-                )}
+                  </Button>}
               </div>
             </Form.Item>
 
@@ -555,7 +516,7 @@ const getAvatarSrc = (avatar) => {
               rules={[
                 { required: true, message: 'Vui lòng nhập tên người dùng' },
                 { min: 3, message: 'Tên người dùng phải có ít nhất 3 ký tự' },
-                { max: 100, message: 'Tên người dùng không được vượt quá 100 ký tự' }
+                { max: 100, message: 'Tên người dùng không được vượt quá 100 ký tự' },
               ]}
             >
               <Input size="large" placeholder="Nhập tên người dùng" />
@@ -567,7 +528,7 @@ const getAvatarSrc = (avatar) => {
                 label="ID Công ty"
                 rules={[
                   { required: true, message: 'Vui lòng nhập ID công ty' },
-                  { max: 50, message: 'ID công ty không được vượt quá 50 ký tự' }
+                  { max: 50, message: 'ID công ty không được vượt quá 50 ký tự' },
                 ]}
               >
                 <Input size="large" placeholder="Nhập ID công ty" />
@@ -592,18 +553,12 @@ const getAvatarSrc = (avatar) => {
             <Form.Item
               name="department"
               label="Phòng ban"
-              rules={[
-                { max: 50, message: 'Phòng ban không được vượt quá 50 ký tự' }
-              ]}
+              rules={[{ max: 50, message: 'Phòng ban không được vượt quá 50 ký tự' }]}
             >
               <Input size="large" placeholder="Nhập phòng ban" />
             </Form.Item>
 
-            <Form.Item
-              name="role"
-              label="Vai trò"
-              rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}
-            >
+            <Form.Item name="role" label="Vai trò" rules={[{ required: true, message: 'Vui lòng chọn vai trò' }]}>
               <Select mode="multiple" size="large" allowClear placeholder="Chọn vai trò">
                 <Option value="admin">Admin</Option>
                 <Option value="editor">Editor</Option>
@@ -615,11 +570,11 @@ const getAvatarSrc = (avatar) => {
 
             <Form.Item
               name="password_hash"
-              label={editingUser ? "Mật khẩu mới (để trống nếu không muốn thay đổi)" : "Mật khẩu"}
+              label={editingUser ? 'Mật khẩu mới (để trống nếu không muốn thay đổi)' : 'Mật khẩu'}
               rules={[
                 { required: !editingUser, message: 'Vui lòng nhập mật khẩu' },
                 { min: 6, message: 'Mật khẩu phải có ít nhất 6 ký tự' },
-                { max: 255, message: 'Mật khẩu không được vượt quá 255 ký tự' }
+                { max: 255, message: 'Mật khẩu không được vượt quá 255 ký tự' },
               ]}
             >
               <Input.Password size="large" placeholder="Nhập mật khẩu" />
@@ -638,7 +593,6 @@ const getAvatarSrc = (avatar) => {
           </Form>
         </Modal>
 
-        {/* Detail Modal */}
         <Modal
           title={
             <div style={{ fontSize: '20px', fontWeight: 'bold' }}>
@@ -651,25 +605,25 @@ const getAvatarSrc = (avatar) => {
             <Button key="close" onClick={() => setIsDetailModalVisible(false)}>
               Đóng
             </Button>,
-            <Button 
-              key="edit" 
-              type="primary" 
+            <Button
+              key="edit"
+              type="primary"
               onClick={() => {
                 setIsDetailModalVisible(false);
                 handleEdit(viewingUser);
               }}
             >
               Chỉnh sửa
-            </Button>
+            </Button>,
           ]}
           width={700}
         >
           {viewingUser && (
             <div>
               <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-                <Avatar 
-                  size={120} 
-                  src={getAvatarSrc(viewingUser.AVATAR)} 
+                <Avatar
+                  size={120}
+                  src={getAvatarSrc(viewingUser.AVATAR)}
                   icon={!viewingUser.AVATAR && <UserOutlined />}
                   style={{ backgroundColor: !viewingUser.AVATAR ? '#1890ff' : undefined }}
                 >
@@ -680,9 +634,7 @@ const getAvatarSrc = (avatar) => {
               </div>
 
               <Descriptions bordered column={1}>
-                <Descriptions.Item label="User ID">
-                  {viewingUser.USER_ID}
-                </Descriptions.Item>
+                <Descriptions.Item label="User ID">{viewingUser.USER_ID}</Descriptions.Item>
                 <Descriptions.Item label="Email">
                   {viewingUser.EMAIL || <span style={{ color: '#999' }}>Chưa cập nhật</span>}
                 </Descriptions.Item>
@@ -691,10 +643,12 @@ const getAvatarSrc = (avatar) => {
                 </Descriptions.Item>
                 <Descriptions.Item label="Vai trò">
                   <Space size={4} wrap>
-                    {(typeof viewingUser.ROLE === 'string' 
-                      ? viewingUser.ROLE.split(',').map(r => r.trim()) 
-                      : Array.isArray(viewingUser.ROLE) ? viewingUser.ROLE : []
-                    ).map(r => (
+                    {(typeof viewingUser.ROLE === 'string'
+                      ? viewingUser.ROLE.split(',').map((r) => r.trim())
+                      : Array.isArray(viewingUser.ROLE)
+                      ? viewingUser.ROLE
+                      : []
+                    ).map((r) => (
                       <Tag key={r} color={getRoleColor(r)}>
                         {getRoleName(r)}
                       </Tag>

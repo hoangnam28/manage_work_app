@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Table,
@@ -16,7 +16,6 @@ import {
   Col,
   Statistic,
   Tag,
-  Badge,
   Tooltip
 } from 'antd';
 import {
@@ -24,7 +23,6 @@ import {
   EditOutlined,
   DeleteOutlined,
   PlayCircleOutlined,
-  PauseCircleOutlined,
   CheckCircleOutlined,
   UserOutlined,
   ClockCircleOutlined,
@@ -32,6 +30,9 @@ import {
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
+import { taskApi } from '../utils/task-api';
+import { projectApi } from '../utils/project-api';
+import { fetchUsersList } from '../utils/user-api';
 import moment from 'moment';
 
 const { Title } = Typography;
@@ -50,79 +51,68 @@ const TaskList = () => {
   const [form] = Form.useForm();
 
   // Load tasks
-  const loadTasks = async () => {
+  const loadTasks = useCallback(async () => {
     try {
       setLoading(true);
-      // TODO: Implement API call
-      // const data = await taskApi.getTasksByProject(projectId);
-      // setTasks(data);
-      
-      // Mock data for now
-      setTasks([
-        {
-          id: 1,
-          name: 'Task 1',
-          description: 'Mô tả task 1',
-          status: 'PENDING',
-          assignedTo: 1,
-          supporterId: 2,
-          checkerId: 3,
-          assignedName: 'User 1',
-          supporterName: 'User 2',
-          checkerName: 'User 3',
-          deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          createdAt: new Date().toISOString()
-        }
-      ]);
+      const data = await taskApi.getTasksByProject(projectId);
+      setTasks(data || []);
     } catch (error) {
       message.error('Lỗi khi tải danh sách task');
       console.error('Error loading tasks:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId]);
 
   // Load users
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
-      // TODO: Implement API call
-      // const data = await userApi.getUsers();
-      // setUsers(data);
-      
-      // Mock data for now
-      setUsers([
-        { id: 1, username: 'admin', fullName: 'Administrator' },
-        { id: 2, username: 'user1', fullName: 'User 1' },
-        { id: 3, username: 'user2', fullName: 'User 2' },
-        { id: 4, username: 'user3', fullName: 'User 3' }
-      ]);
+      const data = await fetchUsersList();
+      setUsers(data || []);
     } catch (error) {
+      message.error('Lỗi khi tải danh sách người dùng');
       console.error('Error loading users:', error);
     }
-  };
+  }, []);
+
+  // Load project info
+  const loadProject = useCallback(async () => {
+    try {
+      const data = await projectApi.getProjectById(projectId);
+      setProject(data);
+    } catch (error) {
+      console.error('Error loading project:', error);
+    }
+  }, [projectId]);
 
   useEffect(() => {
-    loadTasks();
-    loadUsers();
-  }, [projectId]);
+    if (projectId) {
+      loadTasks();
+      loadUsers();
+      loadProject();
+    }
+  }, [projectId, loadTasks, loadUsers, loadProject]);
 
   // Handle create/update task
   const handleSubmit = async (values) => {
     try {
+      const taskData = {
+        ...values,
+        deadline: values.deadline ? values.deadline.toISOString() : null
+      };
+
       if (editingTask) {
-        // TODO: Implement update API
-        // await taskApi.updateTask(editingTask.id, values);
+        await taskApi.updateTask(editingTask.id, taskData);
         message.success('Cập nhật task thành công');
       } else {
-        // TODO: Implement create API
-        // await taskApi.createTask({ ...values, projectId });
+        await taskApi.createTask({ ...taskData, projectId });
         message.success('Tạo task thành công');
       }
       
       setModalVisible(false);
       setEditingTask(null);
       form.resetFields();
-      loadTasks();
+      await loadTasks();
     } catch (error) {
       message.error('Có lỗi xảy ra khi lưu task');
       console.error('Error saving task:', error);
@@ -146,10 +136,9 @@ const TaskList = () => {
   // Handle delete task
   const handleDelete = async (taskId) => {
     try {
-      // TODO: Implement delete API
-      // await taskApi.deleteTask(taskId);
+      await taskApi.deleteTask(taskId);
       message.success('Xóa task thành công');
-      loadTasks();
+      await loadTasks();
     } catch (error) {
       message.error('Có lỗi xảy ra khi xóa task');
       console.error('Error deleting task:', error);
@@ -159,10 +148,9 @@ const TaskList = () => {
   // Handle start task
   const handleStartTask = async (taskId) => {
     try {
-      // TODO: Implement start API
-      // await taskApi.startTask(taskId);
+      await taskApi.startTask(taskId);
       message.success('Bắt đầu task thành công');
-      loadTasks();
+      await loadTasks();
     } catch (error) {
       message.error('Có lỗi xảy ra khi bắt đầu task');
       console.error('Error starting task:', error);
@@ -172,10 +160,9 @@ const TaskList = () => {
   // Handle end task
   const handleEndTask = async (taskId) => {
     try {
-      // TODO: Implement end API
-      // await taskApi.endTask(taskId);
+      await taskApi.endTask(taskId, 'Task completed');
       message.success('Kết thúc task thành công');
-      loadTasks();
+      await loadTasks();
     } catch (error) {
       message.error('Có lỗi xảy ra khi kết thúc task');
       console.error('Error ending task:', error);
@@ -204,12 +191,19 @@ const TaskList = () => {
     return new Date(deadline) < new Date();
   };
 
+  // Get user name by ID
+  const getUserName = (userId) => {
+    const user = users.find(u => u.USER_ID === userId || u.id === userId);
+    return user ? user.USERNAME || user.fullName : 'N/A';
+  };
+
   // Table columns
   const columns = [
     {
       title: 'Tên task',
       dataIndex: 'name',
       key: 'name',
+      width: 150,
       render: (text, record) => (
         <div>
           <strong>{text}</strong>
@@ -225,12 +219,14 @@ const TaskList = () => {
       title: 'Mô tả',
       dataIndex: 'description',
       key: 'description',
-      ellipsis: true
+      ellipsis: true,
+      width: 150
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
+      width: 120,
       render: (status) => {
         const statusInfo = getStatusInfo(status);
         return (
@@ -242,31 +238,35 @@ const TaskList = () => {
     },
     {
       title: 'Người thực hiện',
-      dataIndex: 'assignedName',
-      key: 'assignedName',
-      render: (text) => (
-        <Space>
+      dataIndex: 'assignedTo',
+      key: 'assignedTo',
+      width: 120,
+      render: (userId) => (
+        <Space size={4}>
           <UserOutlined />
-          {text}
+          {getUserName(userId)}
         </Space>
       )
     },
     {
       title: 'Người hỗ trợ',
-      dataIndex: 'supporterName',
-      key: 'supporterName',
-      render: (text) => text || '-'
+      dataIndex: 'supporterId',
+      key: 'supporterId',
+      width: 120,
+      render: (userId) => userId ? getUserName(userId) : '-'
     },
     {
       title: 'Người kiểm tra',
-      dataIndex: 'checkerName',
-      key: 'checkerName',
-      render: (text) => text || '-'
+      dataIndex: 'checkerId',
+      key: 'checkerId',
+      width: 120,
+      render: (userId) => userId ? getUserName(userId) : '-'
     },
     {
       title: 'Hạn chót',
       dataIndex: 'deadline',
       key: 'deadline',
+      width: 120,
       render: (deadline) => (
         <span style={{ 
           color: isOverdue(deadline, 'PENDING') ? '#ff4d4f' : 'inherit' 
@@ -278,8 +278,10 @@ const TaskList = () => {
     {
       title: 'Thao tác',
       key: 'actions',
+      width: 200,
+      fixed: 'right',
       render: (_, record) => (
-        <Space>
+        <Space size="small" wrap>
           {record.status === 'PENDING' && (
             <Tooltip title="Bắt đầu task">
               <Button
@@ -372,7 +374,7 @@ const TaskList = () => {
         </Row>
 
         <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          <Col span={6}>
+          <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Tổng số tasks"
@@ -381,7 +383,7 @@ const TaskList = () => {
               />
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Chờ thực hiện"
@@ -390,7 +392,7 @@ const TaskList = () => {
               />
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Đang thực hiện"
@@ -399,7 +401,7 @@ const TaskList = () => {
               />
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Hoàn thành"
@@ -423,6 +425,7 @@ const TaskList = () => {
               showTotal: (total, range) =>
                 `${range[0]}-${range[1]} của ${total} tasks`
             }}
+            scroll={{ x: 1200 }}
           />
         </Card>
 
@@ -497,8 +500,8 @@ const TaskList = () => {
                 >
                   <Select placeholder="Chọn người thực hiện">
                     {users.map(user => (
-                      <Option key={user.id} value={user.id}>
-                        {user.fullName}
+                      <Option key={user.USER_ID} value={user.USER_ID}>
+                        {user.USERNAME}
                       </Option>
                     ))}
                   </Select>
@@ -511,8 +514,8 @@ const TaskList = () => {
                 >
                   <Select placeholder="Chọn người hỗ trợ" allowClear>
                     {users.map(user => (
-                      <Option key={user.id} value={user.id}>
-                        {user.fullName}
+                      <Option key={user.USER_ID} value={user.USER_ID}>
+                        {user.USERNAME}
                       </Option>
                     ))}
                   </Select>
@@ -525,8 +528,8 @@ const TaskList = () => {
                 >
                   <Select placeholder="Chọn người kiểm tra" allowClear>
                     {users.map(user => (
-                      <Option key={user.id} value={user.id}>
-                        {user.fullName}
+                      <Option key={user.USER_ID} value={user.USER_ID}>
+                        {user.USERNAME}
                       </Option>
                     ))}
                   </Select>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   Table,
@@ -24,6 +24,8 @@ import {
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
+import { projectApi } from '../utils/project-api';
+import { businessApi } from '../utils/business-api';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -33,81 +35,57 @@ const ProjectList = () => {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [business, setBusiness] = useState(null);
-  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [form] = Form.useForm();
 
   // Load projects
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     try {
       setLoading(true);
-      // TODO: Implement API call
-      // const data = await projectApi.getProjectsByBusiness(businessId);
-      // setProjects(data);
-      
-      // Mock data for now
-      setProjects([
-        {
-          id: 1,
-          name: 'Dự án A',
-          code: 'PA001',
-          description: 'Mô tả dự án A',
-          status: 'ACTIVE',
-          createdBy: 1,
-          creatorName: 'Admin',
-          createdAt: new Date().toISOString()
-        }
-      ]);
+      const data = await projectApi.getProjectsByBusiness(businessId);
+      setProjects(data);
     } catch (error) {
       message.error('Lỗi khi tải danh sách dự án');
       console.error('Error loading projects:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [businessId]);
 
-  // Load users
-  const loadUsers = async () => {
+  // Load business info
+  const loadBusiness = useCallback(async () => {
     try {
-      // TODO: Implement API call
-      // const data = await userApi.getUsers();
-      // setUsers(data);
-      
-      // Mock data for now
-      setUsers([
-        { id: 1, username: 'admin', fullName: 'Administrator' },
-        { id: 2, username: 'user1', fullName: 'User 1' },
-        { id: 3, username: 'user2', fullName: 'User 2' }
-      ]);
+      const data = await businessApi.getBusinessById(businessId);
+      setBusiness(data);
     } catch (error) {
-      console.error('Error loading users:', error);
+      console.error('Error loading business:', error);
     }
-  };
+  }, [businessId]);
 
   useEffect(() => {
-    loadProjects();
-    loadUsers();
-  }, [businessId]);
+    if (businessId) {
+      loadProjects();
+      loadBusiness();
+    }
+  }, [businessId, loadProjects, loadBusiness]);
 
   // Handle create/update project
   const handleSubmit = async (values) => {
     try {
       if (editingProject) {
-        // TODO: Implement update API
-        // await projectApi.updateProject(editingProject.id, values);
+        await projectApi.updateProject(editingProject.id, values);
         message.success('Cập nhật dự án thành công');
       } else {
-        // TODO: Implement create API
-        // await projectApi.createProject({ ...values, businessId });
+        await projectApi.createProject({ ...values, businessId });
         message.success('Tạo dự án thành công');
       }
-      
+
       setModalVisible(false);
       setEditingProject(null);
       form.resetFields();
-      loadProjects();
+      await loadProjects();
     } catch (error) {
       message.error('Có lỗi xảy ra khi lưu dự án');
       console.error('Error saving project:', error);
@@ -128,10 +106,9 @@ const ProjectList = () => {
   // Handle delete project
   const handleDelete = async (projectId) => {
     try {
-      // TODO: Implement delete API
-      // await projectApi.deleteProject(projectId);
+      await projectApi.deleteProject(projectId);
       message.success('Xóa dự án thành công');
-      loadProjects();
+      await loadProjects();
     } catch (error) {
       message.error('Có lỗi xảy ra khi xóa dự án');
       console.error('Error deleting project:', error);
@@ -146,10 +123,14 @@ const ProjectList = () => {
   // Get status color
   const getStatusColor = (status) => {
     switch (status) {
-      case 'ACTIVE': return 'green';
-      case 'INACTIVE': return 'red';
-      case 'COMPLETED': return 'blue';
-      default: return 'default';
+      case 'ACTIVE':
+        return 'green';
+      case 'INACTIVE':
+        return 'red';
+      case 'COMPLETED':
+        return 'blue';
+      default:
+        return 'default';
     }
   };
 
@@ -179,8 +160,11 @@ const ProjectList = () => {
       key: 'status',
       render: (status) => (
         <Tag color={getStatusColor(status)}>
-          {status === 'ACTIVE' ? 'Hoạt động' : 
-           status === 'INACTIVE' ? 'Tạm dừng' : 'Hoàn thành'}
+          {status === 'ACTIVE'
+            ? 'Hoạt động'
+            : status === 'INACTIVE'
+            ? 'Tạm dừng'
+            : 'Hoàn thành'}
         </Tag>
       )
     },
@@ -254,7 +238,7 @@ const ProjectList = () => {
                 </Col>
                 <Col>
                   <Space>
-                    <Button onClick={() => navigate(`/business/${businessId}`)}>
+                    <Button onClick={() => navigate(`/business`)}>
                       Quay lại
                     </Button>
                     <Button
@@ -276,7 +260,7 @@ const ProjectList = () => {
         </Row>
 
         <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
-          <Col span={6}>
+          <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Tổng số dự án"
@@ -285,31 +269,27 @@ const ProjectList = () => {
               />
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Dự án hoạt động"
-                value={projects.filter(p => p.status === 'ACTIVE').length}
+                value={projects.filter((p) => p.status === 'ACTIVE').length}
                 valueStyle={{ color: '#3f8600' }}
               />
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={24} sm={12} md={6}>
             <Card>
               <Statistic
                 title="Dự án hoàn thành"
-                value={projects.filter(p => p.status === 'COMPLETED').length}
+                value={projects.filter((p) => p.status === 'COMPLETED').length}
                 valueStyle={{ color: '#1890ff' }}
               />
             </Card>
           </Col>
-          <Col span={6}>
+          <Col xs={24} sm={12} md={6}>
             <Card>
-              <Statistic
-                title="Tổng tasks"
-                value={0}
-                suffix="tasks"
-              />
+              <Statistic title="Tổng tasks" value={0} suffix="tasks" />
             </Card>
           </Col>
         </Row>
@@ -341,11 +321,7 @@ const ProjectList = () => {
           footer={null}
           width={600}
         >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-          >
+          <Form form={form} layout="vertical" onFinish={handleSubmit}>
             <Form.Item
               name="name"
               label="Tên dự án"
@@ -376,17 +352,12 @@ const ProjectList = () => {
                 { min: 10, message: 'Mô tả phải có ít nhất 10 ký tự' }
               ]}
             >
-              <TextArea
-                rows={4}
-                placeholder="Nhập mô tả chi tiết về dự án"
-              />
+              <TextArea rows={4} placeholder="Nhập mô tả chi tiết về dự án" />
             </Form.Item>
 
             <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
               <Space>
-                <Button onClick={() => setModalVisible(false)}>
-                  Hủy
-                </Button>
+                <Button onClick={() => setModalVisible(false)}>Hủy</Button>
                 <Button type="primary" htmlType="submit">
                   {editingProject ? 'Cập nhật' : 'Tạo mới'}
                 </Button>
