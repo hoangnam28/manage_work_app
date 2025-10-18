@@ -55,7 +55,22 @@ const TaskList = () => {
     try {
       setLoading(true);
       const data = await taskApi.getTasksByProject(projectId);
-      setTasks(data || []);
+      
+      // Format task data để phù hợp với hiển thị
+      const formattedTasks = (data || []).map(task => ({
+        id: task.ID,
+        name: task.NAME,
+        description: task.DESCRIPTION,
+        status: task.STATUS,
+        assignedTo: task.ASSIGNED_TO,
+        supporterId: task.SUPPORTER_ID,
+        checkerId: task.CHECKER_ID,
+        deadline: task.DEADLINE,
+        // Giữ lại dữ liệu gốc cho việc chỉnh sửa
+        ...task
+      }));
+      
+      setTasks(formattedTasks);
     } catch (error) {
       message.error('Lỗi khi tải danh sách task');
       console.error('Error loading tasks:', error);
@@ -97,15 +112,20 @@ const TaskList = () => {
   const handleSubmit = async (values) => {
     try {
       const taskData = {
-        ...values,
-        deadline: values.deadline ? values.deadline.toISOString() : null
+        name: values.name,
+        description: values.description,
+        assigned_to: values.assignedTo,
+        supporter_id: values.supporterId || null,
+        checker_id: values.checkerId || null,
+        deadline: values.deadline ? values.deadline.format('YYYY-MM-DD HH:mm:ss') : null,
+        project_id: projectId
       };
 
       if (editingTask) {
-        await taskApi.updateTask(editingTask.id, taskData);
+        await taskApi.updateTask(editingTask.ID || editingTask.id, taskData);
         message.success('Cập nhật task thành công');
       } else {
-        await taskApi.createTask({ ...taskData, projectId });
+        await taskApi.createTask(taskData);
         message.success('Tạo task thành công');
       }
       
@@ -114,7 +134,7 @@ const TaskList = () => {
       form.resetFields();
       await loadTasks();
     } catch (error) {
-      message.error('Có lỗi xảy ra khi lưu task');
+      message.error(error.response?.data?.message || 'Có lỗi xảy ra khi lưu task');
       console.error('Error saving task:', error);
     }
   };
@@ -123,12 +143,12 @@ const TaskList = () => {
   const handleEdit = (task) => {
     setEditingTask(task);
     form.setFieldsValue({
-      name: task.name,
-      description: task.description,
-      assignedTo: task.assignedTo,
-      supporterId: task.supporterId,
-      checkerId: task.checkerId,
-      deadline: task.deadline ? moment(task.deadline) : null
+      name: task.NAME || task.name,
+      description: task.DESCRIPTION || task.description,
+      assignedTo: task.ASSIGNED_TO || task.assignedTo,
+      supporterId: task.SUPPORTER_ID || task.supporterId,
+      checkerId: task.CHECKER_ID || task.checkerId,
+      deadline: task.DEADLINE || task.deadline ? moment(task.DEADLINE || task.deadline) : null
     });
     setModalVisible(true);
   };
@@ -171,23 +191,23 @@ const TaskList = () => {
 
   // Get status color and icon
   const getStatusInfo = (status) => {
-    switch (status) {
-      case 'PENDING':
-        return { color: 'orange', icon: <ClockCircleOutlined />, text: 'Chờ thực hiện' };
-      case 'IN_PROGRESS':
-        return { color: 'blue', icon: <PlayCircleOutlined />, text: 'Đang thực hiện' };
-      case 'COMPLETED':
-        return { color: 'green', icon: <CheckCircleOutlined />, text: 'Hoàn thành' };
-      case 'CHECKED':
-        return { color: 'purple', icon: <ExclamationCircleOutlined />, text: 'Đã kiểm tra' };
-      default:
-        return { color: 'default', icon: null, text: status };
-    }
-  };
+  switch (status) {
+    case 'pending':  
+      return { color: 'orange', icon: <ClockCircleOutlined />, text: 'Chờ thực hiện' };
+    case 'in_progress': 
+      return { color: 'blue', icon: <PlayCircleOutlined />, text: 'Đang thực hiện' };
+    case 'done':  
+      return { color: 'green', icon: <CheckCircleOutlined />, text: 'Hoàn thành' };
+    case 'checked':  
+      return { color: 'purple', icon: <CheckCircleOutlined />, text: 'Đã kiểm tra' };
+    default:
+      return { color: 'default', icon: null, text: status };
+  }
+};
 
   // Check if task is overdue
   const isOverdue = (deadline, status) => {
-    if (status === 'COMPLETED' || status === 'CHECKED') return false;
+    if (status === 'done' || status === 'checked') return false;
     return new Date(deadline) < new Date();
   };
 

@@ -19,10 +19,8 @@ const renderCell = (value) => {
 const renderCell1 = (value) => {
   if (value === null || value === undefined || value === '') return '-';
   
-  // Thử convert sang số
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
   
-  // Nếu là số hợp lệ, làm tròn 2 chữ số
   if (!isNaN(numValue) && numValue !== '') {
     return numValue.toFixed(2);
   }

@@ -354,6 +354,15 @@ const handleSubmit = async () => {
               >
                 <Input placeholder='Nhập USE Type vd: HDI/MLB' />
               </Form.Item>
+               <Form.Item
+                name="rigid"
+                label="RIGID"
+              >
+                <Select placeholder="Chọn RIGID">
+                  <Option value="TRUE">TRUE</Option>
+                  <Option value="FALSE">FALSE</Option>
+                </Select>
+              </Form.Item>
               <Form.Item
                 name="top_foil_cu_weight"
                 label="Top Foil Cu Weight"

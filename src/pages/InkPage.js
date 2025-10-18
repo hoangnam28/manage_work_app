@@ -299,7 +299,7 @@ const InkPage = () => {
         <Toaster position="top-right" richColors />
       <Card>
         <Space style={{ marginBottom: 16, justifyContent: 'space-between', width: '100%' }}>
-          <Title level={2} style={{ color: '#7593c0ff' }}>Quản lý màu mực</Title>
+          <Title level={2} style={{ color: '#7593c0ff' }}>INK</Title>
           <Button
             type="primary"
             icon={<EyeOutlined />}
@@ -339,7 +339,7 @@ const InkPage = () => {
         />
 
         <Modal
-          title={editingRecord ? "Cập nhật yêu cầu màu mực" : "Tạo yêu cầu màu mực mới"}
+          title={editingRecord ? "Cập nhật yêu cầu cập nhật mực" : "Tạo yêu cầu cập nhật mực"}
           open={modalVisible}
           onOk={() => form.submit()}
           onCancel={() => {

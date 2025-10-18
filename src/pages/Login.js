@@ -26,10 +26,19 @@ const Login = () => {
         localStorage.setItem('refreshToken', response.data.refreshToken);
         localStorage.setItem('userInfo', JSON.stringify(response.data.user));
 
-        toast.success('Đăng nhập thành công');
-        setTimeout(() => {
+        // Check if user has assigned tasks
+        try {
+          const tasksResponse = await axiosInstance.get('/bussiness/my-tasks');
+          const hasTasks = tasksResponse.data && tasksResponse.data.length > 0;
+          
+          toast.success('Đăng nhập thành công');
+          setTimeout(() => {
+            navigate(hasTasks ? '/my-tasks' : '/home', { replace: true });
+          }, 1000);
+        } catch (error) {
+          console.error('Error checking tasks:', error);
           navigate('/home', { replace: true });
-        }, 1000);
+        }
       }
     } catch (error) {
       console.error('Login error:', error);

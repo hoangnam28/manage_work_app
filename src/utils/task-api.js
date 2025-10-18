@@ -53,6 +53,9 @@ export const taskApi = {
       return response.data;
     } catch (error) {
       console.error('Error starting task:', error);
+      if (error.response) {
+        throw error.response.data;
+      }
       throw error;
     }
   },

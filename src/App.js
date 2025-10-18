@@ -19,6 +19,7 @@ import DashBoard from './pages/DashBoard';
 import BussinessList from './pages/BussinessList';
 import ProjectList from './pages/ProjectList';
 import TaskList from './pages/TaskList';
+import MyTasks from './pages/MyTasks';
 
 function App() {
   return (
@@ -159,6 +160,14 @@ function App() {
           element={
             <PrivateRoute>
               <TaskList />
+            </PrivateRoute>
+          }
+        />
+        <Route 
+          path="/my-tasks"
+          element={
+            <PrivateRoute>
+              <MyTasks />
             </PrivateRoute>
           }
         />
