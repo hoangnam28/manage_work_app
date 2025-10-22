@@ -10,7 +10,8 @@ import {
   CopyOutlined,
   BgColorsOutlined,
   DashboardOutlined,
-  ProjectOutlined
+  ProjectOutlined,
+  FileDoneOutlined
 } from '@ant-design/icons';
 
 const { Title } = Typography;
@@ -115,6 +116,12 @@ const Home = () => {
       title: 'Defect Details',
       path: 'http://192.84.105.173:3000/services/defect-details',
       description: 'Báo cáo tỷ lệ lỗi DR'
+    },
+    {
+      icon: <FileDoneOutlined />,
+      title: 'Task Management',
+      path: '/my-tasks',
+      description: 'Quản lý công việc của bạn'
     }
   ];
 

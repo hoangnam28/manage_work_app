@@ -5,7 +5,7 @@ export const taskApi = {
   // Lấy danh sách tasks theo project
   getTasksByProject: async (projectId) => {
     try {
-      const response = await axios.get(`/bussiness/projects/${projectId}/tasks`);
+      const response = await axios.get(`/projects/${projectId}/tasks`);
       return response.data;
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -13,10 +13,9 @@ export const taskApi = {
     }
   },
 
-  // Tạo task mới
   createTask: async (data) => {
     try {
-      const response = await axios.post('/bussiness/tasks', data);
+      const response = await axios.post('/tasks', data);
       return response.data;
     } catch (error) {
       console.error('Error creating task:', error);
@@ -27,7 +26,7 @@ export const taskApi = {
   // Cập nhật task
   updateTask: async (taskId, data) => {
     try {
-      const response = await axios.put(`/bussiness/tasks/${taskId}`, data);
+      const response = await axios.put(`/tasks/${taskId}`, data);
       return response.data;
     } catch (error) {
       console.error('Error updating task:', error);
@@ -38,7 +37,7 @@ export const taskApi = {
   // Xóa task
   deleteTask: async (taskId) => {
     try {
-      const response = await axios.delete(`/bussiness/tasks/${taskId}`);
+      const response = await axios.delete(`/tasks/${taskId}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting task:', error);
@@ -49,7 +48,7 @@ export const taskApi = {
   // Bắt đầu task
   startTask: async (taskId) => {
     try {
-      const response = await axios.post(`/bussiness/tasks/${taskId}/start`);
+      const response = await axios.post(`/tasks/${taskId}/start`);
       return response.data;
     } catch (error) {
       console.error('Error starting task:', error);
@@ -63,18 +62,18 @@ export const taskApi = {
   // Kết thúc task
   endTask: async (taskId, note) => {
     try {
-      const response = await axios.post(`/bussiness/tasks/${taskId}/end`, { note });
+      const response = await axios.post(`/tasks/${taskId}/complete`, { note });
       return response.data;
     } catch (error) {
       console.error('Error ending task:', error);
       throw error;
     }
   },
-
+  
   // Lấy tasks của tôi
   getMyTasks: async () => {
     try {
-      const response = await axios.get('/bussiness/my-tasks');
+      const response = await axios.get('/tasks/my-tasks');
       return response.data;
     } catch (error) {
       console.error('Error fetching my tasks:', error);
@@ -85,7 +84,7 @@ export const taskApi = {
   // Lấy tasks cần kiểm tra
   getCheckTasks: async () => {
     try {
-      const response = await axios.get('/bussiness/check-tasks');
+      const response = await axios.get('tasks/check-tasks');
       return response.data;
     } catch (error) {
       console.error('Error fetching check tasks:', error);
@@ -96,7 +95,7 @@ export const taskApi = {
   // Lấy chi tiết task
   getTaskById: async (taskId) => {
     try {
-      const response = await axios.get(`/bussiness/tasks/${taskId}`);
+      const response = await axios.get(`/tasks/${taskId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching task details:', error);

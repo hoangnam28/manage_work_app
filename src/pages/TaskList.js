@@ -26,7 +26,6 @@ import {
   CheckCircleOutlined,
   UserOutlined,
   ClockCircleOutlined,
-  ExclamationCircleOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
@@ -407,7 +406,7 @@ const TaskList = () => {
             <Card>
               <Statistic
                 title="Chờ thực hiện"
-                value={tasks.filter(t => t.status === 'PENDING').length}
+                value={tasks.filter(t => t.status === 'pending').length}
                 valueStyle={{ color: '#fa8c16' }}
               />
             </Card>
@@ -416,7 +415,7 @@ const TaskList = () => {
             <Card>
               <Statistic
                 title="Đang thực hiện"
-                value={tasks.filter(t => t.status === 'IN_PROGRESS').length}
+                value={tasks.filter(t => t.status === 'in_progress').length}
                 valueStyle={{ color: '#1890ff' }}
               />
             </Card>
@@ -425,7 +424,7 @@ const TaskList = () => {
             <Card>
               <Statistic
                 title="Hoàn thành"
-                value={tasks.filter(t => t.status === 'COMPLETED').length}
+                value={tasks.filter(t => t.status === 'done').length}
                 valueStyle={{ color: '#52c41a' }}
               />
             </Card>
@@ -510,53 +509,77 @@ const TaskList = () => {
             </Form.Item>
 
             <Row gutter={16}>
-              <Col span={8}>
-                <Form.Item
-                  name="assignedTo"
-                  label="Người thực hiện"
-                  rules={[
-                    { required: true, message: 'Vui lòng chọn người thực hiện' }
-                  ]}
+            <Col span={8}>
+              <Form.Item
+                name="assignedTo"
+                label="Người thực hiện"
+                rules={[
+                  { required: true, message: 'Vui lòng chọn người thực hiện' }
+                ]}
+              >
+                <Select
+                  placeholder="Chọn người thực hiện"
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option?.children?.toLowerCase().includes(input.toLowerCase())
+                  }
                 >
-                  <Select placeholder="Chọn người thực hiện">
-                    {users.map(user => (
-                      <Option key={user.USER_ID} value={user.USER_ID}>
-                        {user.USERNAME}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item
-                  name="supporterId"
-                  label="Người hỗ trợ"
-                >
-                  <Select placeholder="Chọn người hỗ trợ" allowClear>
-                    {users.map(user => (
-                      <Option key={user.USER_ID} value={user.USER_ID}>
-                        {user.USERNAME}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col span={8}>
-                <Form.Item
-                  name="checkerId"
-                  label="Người kiểm tra"
-                >
-                  <Select placeholder="Chọn người kiểm tra" allowClear>
-                    {users.map(user => (
-                      <Option key={user.USER_ID} value={user.USER_ID}>
-                        {user.USERNAME}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-            </Row>
+                  {users.map(user => (
+                    <Option key={user.USER_ID} value={user.USER_ID}>
+                      {user.USERNAME}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
 
+            <Col span={8}>
+              <Form.Item
+                name="supporterId"
+                label="Người hỗ trợ"
+              >
+                <Select
+                  placeholder="Chọn người hỗ trợ"
+                  allowClear
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option?.children?.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {users.map(user => (
+                    <Option key={user.USER_ID} value={user.USER_ID}>
+                      {user.USERNAME}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col span={8}>
+              <Form.Item
+                name="checkerId"
+                label="Người kiểm tra"
+              >
+                <Select
+                  placeholder="Chọn người kiểm tra"
+                  allowClear
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option?.children?.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {users.map(user => (
+                    <Option key={user.USER_ID} value={user.USER_ID}>
+                      {user.USERNAME}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
             <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
               <Space>
                 <Button onClick={() => setModalVisible(false)}>

@@ -56,41 +56,6 @@ export const businessApi = {
       throw error;
     }
   },
-
-  // Lấy danh sách projects theo business
-  getProjectsByBusiness: async (businessId) => {
-    try {
-      const response = await axios.get(`/bussiness/${businessId}/projects`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching projects:', error);
-      throw error;
-    }
-  },
-
-  startTask: async (taskId) => {
-    try {
-      const response = await axios.post(`/bussiness/tasks/${taskId}/start`);
-      return response.data;
-    } catch (error) {
-      console.error('Error starting task:', error);
-      if (error.response) {
-        throw error.response.data;
-      }
-      throw error;
-    }
-  },
-
-  // Kết thúc task
-  endTask: async (taskId, note) => {
-    try {
-      const response = await axios.post(`/bussiness/tasks/${taskId}/end`, { note });
-      return response.data;
-    } catch (error) {
-      console.error('Error ending task:', error);
-      throw error;
-    }
-  },
 };
 
 export default businessApi;

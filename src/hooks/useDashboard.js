@@ -47,15 +47,16 @@ export const useDashboard = () => {
 
   // Calculate derived data
   const totalTasks = Object.values(stats.taskStatusDistribution || {}).reduce((sum, count) => sum + count, 0);
+  const completedTasks = (stats.taskStatusDistribution.done || 0) + (stats.taskStatusDistribution.checked || 0);
   const completionRate = totalTasks > 0 
-    ? Math.round(((stats.taskStatusDistribution.COMPLETED || 0) / totalTasks) * 100) 
+    ? Math.round((completedTasks / totalTasks) * 100) 
     : 0;
 
   const chartData = [
-    { status: 'PENDING', count: stats.taskStatusDistribution.PENDING || 0, color: '#fbbf24' },
-    { status: 'IN_PROGRESS', count: stats.taskStatusDistribution.IN_PROGRESS || 0, color: '#3b82f6' },
-    { status: 'COMPLETED', count: stats.taskStatusDistribution.COMPLETED || 0, color: '#10b981' },
-    { status: 'CHECKED', count: stats.taskStatusDistribution.CHECKED || 0, color: '#8b5cf6' }
+    { status: 'pending', count: stats.taskStatusDistribution.peding || 0, color: '#fbbf24' },
+    { status: 'in_progress', count: stats.taskStatusDistribution.in_progress || 0, color: '#3b82f6' },
+    { status: 'done', count: stats.taskStatusDistribution.done || 0, color: '#10b981' },
+    { status: 'checked', count: stats.taskStatusDistribution.checked || 0, color: '#8b5cf6' }
   ];
 
   return {

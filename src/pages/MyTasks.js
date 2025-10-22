@@ -41,29 +41,36 @@ const MyTasks = () => {
   const [endNote, setEndNote] = useState('');
   const [currentTaskId, setCurrentTaskId] = useState(null);
 
+  // Normalize status to lowercase for consistent comparison
+  const normalizeStatus = (status) => {
+    return status ? status.toLowerCase() : 'pending';
+  };
+
   // Load my tasks
-  const loadMyTasks = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await taskApi.getMyTasks();
-      console.log('Loaded tasks:', data); // Debug log
-      setTasks(data || []);
-    } catch (error) {
-      message.error('Lỗi khi tải danh sách task của tôi');
-      console.error('Error loading my tasks:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+ const loadMyTasks = useCallback(async () => {
+  setLoading(true);
+  try {
+    const data = await taskApi.getMyTasks();
+    setTasks(data || []);
+  } catch {
+    message.error('Lỗi khi tải danh sách task của tôi');
+  } finally {
+    setLoading(false);
+  }
+}, []); // <-- Không phụ thuộc gì
+
 
   useEffect(() => {
+  loadMyTasks();
+  const interval = setInterval(() => {
     loadMyTasks();
-    // Refresh tasks every 30 seconds
-    const interval = setInterval(loadMyTasks, 30000);
-    return () => clearInterval(interval);
-  }, [loadMyTasks]);
+  }, 30000);
 
-  // Handle start task
+  return () => clearInterval(interval);
+// eslint-disable-next-line react-hooks/exhaustive-deps
+}, []); // <-- Chỉ chạy 1 lần
+
+
   const handleStartTask = async (taskId) => {
     try {
       await taskApi.startTask(taskId);
@@ -103,30 +110,41 @@ const MyTasks = () => {
 
   // Get status color and icon
   const getStatusInfo = (status) => {
-  switch (status) {
-    case 'pending':  
-      return { color: 'orange', icon: <ClockCircleOutlined />, text: 'Chờ thực hiện' };
-    case 'in_progress': 
-      return { color: 'blue', icon: <PlayCircleOutlined />, text: 'Đang thực hiện' };
-    case 'done':  
-      return { color: 'green', icon: <CheckCircleOutlined />, text: 'Hoàn thành' };
-    case 'checked':  
-      return { color: 'purple', icon: <CheckCircleOutlined />, text: 'Đã kiểm tra' };
-    default:
-      return { color: 'default', icon: null, text: status };
-  }
-};
+    const normalized = normalizeStatus(status);
+    switch (normalized) {
+      case 'pending':  
+        return { color: 'orange', icon: <ClockCircleOutlined />, text: 'Chờ thực hiện' };
+      case 'in_progress': 
+        return { color: 'blue', icon: <PlayCircleOutlined />, text: 'Đang thực hiện' };
+      case 'done':
+        return { color: 'green', icon: <CheckCircleOutlined />, text: 'Hoàn thành' };
+      case 'checked':  
+        return { color: 'purple', icon: <CheckCircleOutlined />, text: 'Đã kiểm tra' };
+      default:
+        return { color: 'default', icon: null, text: status };
+    }
+  };
 
-  // Check if task is overdue
   const isOverdue = (deadline, status) => {
-    if (status === 'done' || status === 'checked') return false;
+    const normalized = normalizeStatus(status);
+    // Task is not overdue if it's completed or checked
+    if (normalized === 'done' || normalized === 'checked') {
+      return false;
+    }
     if (!deadline) return false;
     return new Date(deadline) < new Date();
   };
 
   // Get deadline status
-  const getDeadlineStatus = (deadline) => {
+  const getDeadlineStatus = (deadline, status) => {
     if (!deadline) return null;
+    
+    // Don't show deadline status for completed tasks
+    const normalized = normalizeStatus(status);
+    if (normalized === 'done' || normalized === 'checked') {
+      return null;
+    }
+
     const now = new Date();
     const deadlineDate = new Date(deadline);
     const hoursLeft = (deadlineDate - now) / (1000 * 60 * 60);
@@ -136,12 +154,11 @@ const MyTasks = () => {
     return { type: 'success', text: `${Math.round(hoursLeft / 24)} ngày còn lại` };
   };
 
-  // View task detailsa
   // View task details
-const viewTaskDetails = (task) => {
-  setSelectedTask(task);
-  setDrawerVisible(true);
-};
+  const viewTaskDetails = (task) => {
+    setSelectedTask(task);
+    setDrawerVisible(true);
+  };
 
   // Table columns
   const columns = [
@@ -182,7 +199,7 @@ const viewTaskDetails = (task) => {
       key: 'deadline',
       width: 150,
       render: (deadline, record) => {
-        const deadlineStatus = getDeadlineStatus(deadline);
+        const deadlineStatus = getDeadlineStatus(deadline, record.status);
         const isOver = isOverdue(deadline, record.status);
         
         return (
@@ -221,49 +238,55 @@ const viewTaskDetails = (task) => {
       key: 'actions',
       width: 200,
       fixed: 'right',
-      render: (_, record) => (
-        <Space size="small" wrap>
-          {record.status === 'pending' && (
-            <Tooltip title="Bắt đầu thực hiện task">
-              <Button
-                type="primary"
-                icon={<PlayCircleOutlined />}
-                size="small"
-                onClick={() => handleStartTask(record.id)}
-              >
-                Bắt đầu
-              </Button>
-            </Tooltip>
-          )}
-          {record.status === 'in_progress' && (
-            <Tooltip title="Kết thúc task">
-              <Button
-                type="primary"
-                danger
-                icon={<CheckCircleOutlined />}
-                size="small"
-                onClick={() => showEndModal(record.id)}
-              >
-                Kết thúc
-              </Button>
-            </Tooltip>
-          )}
-          <Button
-            type="default"
-            icon={<FileTextOutlined />}
-            size="small"
-            onClick={() => viewTaskDetails(record)}
-          >
-            Chi tiết
-          </Button>
-        </Space>
-      )
+      render: (_, record) => {
+        const normalized = normalizeStatus(record.status);
+        return (
+          <Space size="small" wrap>
+            {normalized === 'pending' && (
+              <Tooltip title="Bắt đầu thực hiện task">
+                <Button
+                  type="primary"
+                  icon={<PlayCircleOutlined />}
+                  size="small"
+                  onClick={() => handleStartTask(record.id)}
+                >
+                  Bắt đầu
+                </Button>
+              </Tooltip>
+            )}
+            {normalized === 'in_progress' && (
+              <Tooltip title="Kết thúc task">
+                <Button
+                  type="primary"
+                  danger
+                  icon={<CheckCircleOutlined />}
+                  size="small"
+                  onClick={() => showEndModal(record.id)}
+                >
+                  Kết thúc
+                </Button>
+              </Tooltip>
+            )}
+            <Button
+              type="default"
+              icon={<FileTextOutlined />}
+              size="small"
+              onClick={() => viewTaskDetails(record)}
+            >
+              Chi tiết
+            </Button>
+          </Space>
+        );
+      }
     }
   ];
 
-  const pendingCount = tasks.filter(t => t.status === 'PENDING').length;
-  const inProgressCount = tasks.filter(t => t.status === 'IN_PROGRESS').length;
-  const completedCount = tasks.filter(t => t.status === 'COMPLETED' || t.status === 'CHECKED').length;
+  const pendingCount = tasks.filter(t => normalizeStatus(t.status) === 'pending').length;
+  const inProgressCount = tasks.filter(t => normalizeStatus(t.status) === 'in_progress').length;
+  const completedCount = tasks.filter(t => {
+    const normalized = normalizeStatus(t.status);
+    return normalized === 'done' || normalized === 'checked';
+  }).length;
   const overdueCount = tasks.filter(t => isOverdue(t.deadline, t.status)).length;
 
   return (
@@ -422,7 +445,7 @@ const viewTaskDetails = (task) => {
               <Divider />
 
               <div style={{ textAlign: 'center', marginTop: 24 }}>
-                {selectedTask.status === 'PENDING' && (
+                {normalizeStatus(selectedTask.status) === 'pending' && (
                   <Button
                     type="primary"
                     size="large"
@@ -435,7 +458,7 @@ const viewTaskDetails = (task) => {
                     Bắt đầu thực hiện
                   </Button>
                 )}
-                {selectedTask.status === 'IN_PROGRESS' && (
+                {normalizeStatus(selectedTask.status) === 'in_progress' && (
                   <Button
                     type="primary"
                     danger

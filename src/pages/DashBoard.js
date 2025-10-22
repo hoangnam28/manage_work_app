@@ -1,4 +1,3 @@
-import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -31,20 +30,20 @@ const DashBoard = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      'PENDING': 'bg-yellow-100 text-yellow-800',
-      'IN_PROGRESS': 'bg-blue-100 text-blue-800',
-      'COMPLETED': 'bg-green-100 text-green-800',
-      'CHECKED': 'bg-purple-100 text-purple-800'
+      'pending': 'bg-yellow-100 text-yellow-800',
+      'in_progress': 'bg-blue-100 text-blue-800',
+      'done': 'bg-green-100 text-green-800',
+      'checked': 'bg-purple-100 text-purple-800'
     };
     return colors[status] || 'bg-gray-100 text-gray-800';
   };
 
   const getStatusText = (status) => {
     const texts = {
-      'PENDING': 'Chờ xử lý',
-      'IN_PROGRESS': 'Đang làm',
-      'COMPLETED': 'Hoàn thành',
-      'CHECKED': 'Đã kiểm tra'
+      'pending': 'Chờ xử lý',
+      'in_progress': 'Đang làm',
+      'done': 'Hoàn thành',
+      'checked': 'Đã kiểm tra'
     };
     return texts[status] || status;
   };
@@ -146,7 +145,7 @@ const DashBoard = () => {
       <div className="stats-grid">
         <Card className="stat-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tổng Business</CardTitle>
+            <CardTitle className="text-sm font-medium">Tổng Nghiệp Vụ</CardTitle>
             <Building2 className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
@@ -159,7 +158,7 @@ const DashBoard = () => {
 
         <Card className="stat-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tổng Projects</CardTitle>
+            <CardTitle className="text-sm font-medium">Tổng Dự Án</CardTitle>
             <FolderOpen className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
@@ -172,7 +171,7 @@ const DashBoard = () => {
 
         <Card className="stat-card">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tổng Tasks</CardTitle>
+            <CardTitle className="text-sm font-medium">Tổng Công Việc</CardTitle>
             <CheckSquare className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
@@ -205,7 +204,7 @@ const DashBoard = () => {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="h-5 w-5" />
-              Phân bố trạng thái Task
+              Trạng thái công việc
             </CardTitle>
           </CardHeader>
           <CardContent>

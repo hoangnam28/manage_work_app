@@ -160,9 +160,9 @@ const ProjectList = () => {
       key: 'status',
       render: (status) => (
         <Tag color={getStatusColor(status)}>
-          {status === 'ACTIVE'
+          {status === 'pending'
             ? 'Hoạt động'
-            : status === 'INACTIVE'
+            : status === 'done' || status === 'checked'
             ? 'Tạm dừng'
             : 'Hoàn thành'}
         </Tag>

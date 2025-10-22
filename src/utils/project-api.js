@@ -5,7 +5,7 @@ export const projectApi = {
   // Lấy danh sách projects theo business
   getProjectsByBusiness: async (businessId) => {
     try {
-      const response = await axios.get(`/bussiness/${businessId}/projects`);
+      const response = await axios.get(`/projects/${businessId}/projects`);
       return response.data;
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -16,7 +16,7 @@ export const projectApi = {
   // Tạo project mới
   createProject: async (data) => {
     try {
-      const response = await axios.post('/bussiness/projects', data);
+      const response = await axios.post('/projects', data);
       return response.data;
     } catch (error) {
       console.error('Error creating project:', error);
@@ -27,7 +27,7 @@ export const projectApi = {
   // Cập nhật project
   updateProject: async (projectId, data) => {
     try {
-      const response = await axios.put(`/bussiness/projects/${projectId}`, data);
+      const response = await axios.put(`/projects/${projectId}`, data);
       return response.data;
     } catch (error) {
       console.error('Error updating project:', error);
@@ -38,7 +38,7 @@ export const projectApi = {
   // Xóa project
   deleteProject: async (projectId) => {
     try {
-      const response = await axios.delete(`/bussiness/projects/${projectId}`);
+      const response = await axios.delete(`/projects/${projectId}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting project:', error);
@@ -49,7 +49,7 @@ export const projectApi = {
   // Lấy chi tiết project
   getProjectById: async (projectId) => {
     try {
-      const response = await axios.get(`/bussiness/projects/${projectId}`);
+      const response = await axios.get(`/projects/${projectId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching project details:', error);
