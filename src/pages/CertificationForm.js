@@ -13,7 +13,6 @@ import {
   exportCertificationForm,
   fetchMaterialCertificationOptions,
 } from '../utils/material-certification-api';
-import ImageUploadComponent from '../components/modal/ImageUploadComponent';
 import ProgressTab from '../components/tabs/ProgressTab';
 import TimeTrackingTab from '../components/tabs/TimeTrackingTab';
 
@@ -41,7 +40,7 @@ const CertificationForm = () => {
       loadCertificationData();
       loadOptions();
     }
-  }, [certificationId]);
+  }, []);
 
   const loadOptions = async () => {
     try {
@@ -87,7 +86,7 @@ const CertificationForm = () => {
         };
         form.setFieldsValue(formValues);
 
-        // Process images
+        // Process images with timestamp to force reload
         let processedImages = [];
         if (data.IMAGES && Array.isArray(data.IMAGES) && data.IMAGES.length > 0) {
           processedImages = data.IMAGES.map((img, index) => {
@@ -119,6 +118,8 @@ const CertificationForm = () => {
             };
           }).filter(Boolean);
         }
+        
+        console.log('Loaded images:', processedImages);
         setImages(processedImages);
 
         // Set progress form values
@@ -288,11 +289,6 @@ const CertificationForm = () => {
       setExportLoading(false);
     }
   };
-
-  const handleImagesChange = (newImages) => {
-    setImages(newImages);
-  };
-
   return (
     <MainLayout>
       <Toaster position="top-right" richColors />
@@ -424,7 +420,7 @@ const CertificationForm = () => {
                     </Form.Item>
                   </Col>
                   <Col span={8}>
-                    <Form.Item name="MATERIAL_STATUS" label="Trạng thái vật liệu">
+                    <Form.Item name="MATERIAL_STATUS" label="Mới hoặc thêm nhà máy">
                       <Select placeholder="Chọn trạng thái vật liệu" allowClear>
                         {options.materialStatus?.map(item => (
                           <Select.Option key={item.id} value={item.id}>
@@ -474,7 +470,7 @@ const CertificationForm = () => {
 
                 <Row gutter={16}>
                   <Col span={12}>
-                    <Form.Item name="UL_CERT_STATUS" label="Trạng thái chứng nhận UL">
+                    <Form.Item name="UL_CERT_STATUS" label="Cấu trúc lớp đạt chứng nhận">
                       <Select placeholder="Chọn trạng thái UL" allowClear>
                         {options.ulStatus?.map(item => (
                           <Select.Option key={item.id} value={item.id}>
@@ -500,46 +496,154 @@ const CertificationForm = () => {
                   </Col>
                 </Row>
 
-                <Divider orientation="left">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                    <span>Hình ảnh chứng nhận ({images.length} ảnh)</span>
-                  </div>
-                </Divider>
+                <Divider orientation="left">Hình ảnh chứng nhận</Divider>
 
-                <Row justify="center" style={{ marginBottom: '24px' }}>
-                  <Col span={24}>
-                    <div style={{
-                      width: '100%',
-                      padding: '24px',
-                      background: '#fafafa',
-                      borderRadius: '8px',
-                      border: '1px dashed #d9d9d9'
+              <Row gutter={16}>
+                <Col span={12}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ 
+                      fontWeight: 'bold', 
+                      marginBottom: '12px',
+                      fontSize: '14px',
+                      color: '#1890ff'
                     }}>
-                      {imagesLoading ? (
-                        <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-                          <div style={{ fontSize: '16px', marginBottom: '8px' }}>Đang tải ảnh...</div>
+                      Catalog
+                    </div>
+                    {imagesLoading ? (
+                      <div style={{ 
+                        height: '200px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        background: '#fafafa',
+                        border: '1px dashed #d9d9d9',
+                        borderRadius: '8px'
+                      }}>
+                        <span style={{ color: '#999' }}>Đang tải...</span>
+                      </div>
+                    ) : (
+                      images.find(img => 
+                        (img.name || img.NAME || img.fileName || '').toLowerCase().includes('catalog')
+                      ) ? (
+                        <div style={{
+                          border: '1px solid #d9d9d9',
+                          borderRadius: '8px',
+                          padding: '8px',
+                          background: '#fafafa'
+                        }}>
+                          <img
+                            src={images.find(img => 
+                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('catalog')
+                            ).url || images.find(img => 
+                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('catalog')
+                            ).URL}
+                            alt="Catalog"
+                            style={{
+                              width: '100%',
+                              maxHeight: '300px',
+                              objectFit: 'contain',
+                              borderRadius: '4px'
+                            }}
+                            onError={(e) => {
+                              e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3EKhông tải được%3C/text%3E%3C/svg%3E';
+                            }}
+                          />
                         </div>
                       ) : (
-                        <ImageUploadComponent
-                          certificationId={certificationId}
-                          images={images}
-                          onImagesChange={handleImagesChange}
-                        />
-                      )}
-                      {!imagesLoading && images.length === 0 && (
                         <div style={{
-                          textAlign: 'center',
-                          color: '#999',
-                          marginTop: '16px',
-                          fontSize: '14px'
+                          height: '200px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#fafafa',
+                          border: '1px dashed #d9d9d9',
+                          borderRadius: '8px',
+                          color: '#999'
                         }}>
-                          Chưa có ảnh nào được upload. Nhấn vào nút "Thêm ảnh" để bắt đầu.
+                          Chưa có hình Catalog
                         </div>
-                      )}
-                    </div>
-                  </Col>
-                </Row>
+                      )
+                    )}
+                  </div>
+                </Col>
 
+                <Col span={12}>
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{ 
+                      fontWeight: 'bold', 
+                      marginBottom: '12px',
+                      fontSize: '14px',
+                      color: '#1890ff'
+                    }}>
+                      Cấu trúc lớp
+                    </div>
+                    {imagesLoading ? (
+                      <div style={{ 
+                        height: '200px', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        background: '#fafafa',
+                        border: '1px dashed #d9d9d9',
+                        borderRadius: '8px'
+                      }}>
+                        <span style={{ color: '#999' }}>Đang tải...</span>
+                      </div>
+                    ) : (
+                      images.find(img => 
+                        (img.name || img.NAME || img.fileName || '').toLowerCase().includes('layer') ||
+                        (img.name || img.NAME || img.fileName || '').toLowerCase().includes('structure') ||
+                        (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cau_truc') ||
+                        (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cautruc')
+                      ) ? (
+                        <div style={{
+                          border: '1px solid #d9d9d9',
+                          borderRadius: '8px',
+                          padding: '8px',
+                          background: '#fafafa'
+                        }}>
+                          <img
+                            src={images.find(img => 
+                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('layer') ||
+                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('structure') ||
+                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cau_truc') ||
+                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cautruc')
+                            ).url || images.find(img => 
+                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('layer') ||
+                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('structure') ||
+                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cau_truc') ||
+                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cautruc')
+                            ).URL}
+                            alt="Layer Structure"
+                            style={{
+                              width: '100%',
+                              maxHeight: '300px',
+                              objectFit: 'contain',
+                              borderRadius: '4px'
+                            }}
+                            onError={(e) => {
+                              e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3EKhông tải được%3C/text%3E%3C/svg%3E';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div style={{
+                          height: '200px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#fafafa',
+                          border: '1px dashed #d9d9d9',
+                          borderRadius: '8px',
+                          color: '#999'
+                        }}>
+                          Chưa có hình Cấu trúc lớp
+                        </div>
+                      )
+                    )}
+                  </div>
+                </Col>
+              </Row>
                 <Row justify="end" style={{ marginTop: '24px' }}>
                   <Button type="default" onClick={() => navigate(-1)} style={{ marginRight: '8px' }}>
                     Quay lại

@@ -194,7 +194,7 @@ const MyTasks = () => {
       }
     },
     {
-      title: 'Hạn chót',
+      title: 'Kỳ Hạn',
       dataIndex: 'deadline',
       key: 'deadline',
       width: 150,
@@ -426,7 +426,7 @@ const MyTasks = () => {
 
               <Row gutter={16} style={{ marginBottom: 24 }}>
                 <Col span={12}>
-                  <Text strong>Hạn chót:</Text>
+                  <Text strong>Kỳ Hạn:</Text>
                   <div style={{ marginTop: 8 }}>
                     <CalendarOutlined /> {new Date(selectedTask.deadline).toLocaleDateString('vi-VN')}
                   </div>

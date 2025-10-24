@@ -3,15 +3,26 @@ import axios from './axios';
 // Project Management API service
 export const projectApi = {
   // Lấy danh sách projects theo business
-  getProjectsByBusiness: async (businessId) => {
+ getProjectById: async (projectId) => {
+  try {
+    const response = await axios.get(`/projects/${projectId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching project details:', error);
+    throw error;
+  }
+},
+getProjectsByBusiness: async (businessId) => {
     try {
-      const response = await axios.get(`/projects/${businessId}/projects`);
+      // ✅ Cập nhật đường dẫn mới
+      const response = await axios.get(`/projects/business/${businessId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching projects:', error);
       throw error;
     }
   },
+
 
   // Tạo project mới
   createProject: async (data) => {
@@ -45,17 +56,17 @@ export const projectApi = {
       throw error;
     }
   },
-
-  // Lấy chi tiết project
-  getProjectById: async (projectId) => {
+  getBusinessById: async (businessId) => {
     try {
-      const response = await axios.get(`/projects/${projectId}`);
+      const response = await axios.get(`/bussiness/${businessId}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching project details:', error);
+      console.error('Error fetching business details:', error);
       throw error;
     }
-  }
+  },
 };
+
+ 
 
 export default projectApi;

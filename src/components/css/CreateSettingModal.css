@@ -1,0 +1,186 @@
+.setting-modal {
+    max-width: 600px;
+    width: 100%;
+}
+
+.setting-modal .modal-body {
+    padding: 24px;
+    max-height: calc(90vh - 160px);
+    overflow-y: auto;
+}
+
+.setting-modal .form-group {
+    margin-bottom: 20px;
+}
+
+.setting-modal .form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+}
+
+.setting-modal .required {
+    color: #ef4444;
+    margin-left: 4px;
+}
+
+.setting-modal .form-group input[type="text"],
+.setting-modal .form-group input[type="number"],
+.setting-modal .form-group textarea,
+.setting-modal .form-group select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.setting-modal .form-group input:focus,
+.setting-modal .form-group textarea:focus,
+.setting-modal .form-group select:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.setting-modal .form-group textarea {
+    resize: vertical;
+    font-family: inherit;
+}
+
+.setting-modal .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.setting-modal .checkbox-group {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.setting-modal .checkbox-group label {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.setting-modal .checkbox-group input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-right: 10px;
+    cursor: pointer;
+    accent-color: #3b82f6;
+}
+
+.setting-modal .error-messages {
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+}
+
+.setting-modal .error-message {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #dc2626;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.setting-modal .error-message:last-child {
+    margin-bottom: 0;
+}
+
+.setting-modal .error-message i {
+    font-size: 16px;
+}
+
+.setting-modal .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 20px 24px;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+    border-radius: 0 0 12px 12px;
+    margin: 24px -24px -24px;
+}
+
+.setting-modal .btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.setting-modal .btn-secondary {
+    background-color: #fff;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.setting-modal .btn-secondary:hover:not(:disabled) {
+    background-color: #f9fafb;
+}
+
+.setting-modal .btn-primary {
+    background-color: #3b82f6;
+    color: white;
+}
+
+.setting-modal .btn-primary:hover:not(:disabled) {
+    background-color: #2563eb;
+}
+
+.setting-modal .btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.setting-modal .btn i.fa-spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .setting-modal {
+        max-width: 95%;
+        margin: 20px;
+    }
+
+    .setting-modal .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .setting-modal .modal-body {
+        padding: 16px;
+    }
+
+    .setting-modal .modal-footer {
+        padding: 16px;
+        margin: 16px -16px -16px;
+    }
+}

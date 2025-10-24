@@ -20,6 +20,7 @@ import BussinessList from './pages/BussinessList';
 import ProjectList from './pages/ProjectList';
 import TaskList from './pages/TaskList';
 import MyTasks from './pages/MyTasks';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -168,6 +169,14 @@ function App() {
           element={
             <PrivateRoute>
               <MyTasks />
+            </PrivateRoute>
+          }
+        />
+        <Route 
+          path="/settings"
+          element={
+            <PrivateRoute>
+              <Settings />
             </PrivateRoute>
           }
         />

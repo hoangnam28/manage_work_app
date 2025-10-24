@@ -14,6 +14,9 @@ import {
   Col,
   Statistic,
   Tag,
+  Select,
+  Divider,
+  Alert,
 } from 'antd';
 import {
   PlusOutlined,
@@ -21,14 +24,18 @@ import {
   DeleteOutlined,
   EyeOutlined,
   FolderOutlined,
+  ThunderboltOutlined,
+  ProjectOutlined,
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import { projectApi } from '../utils/project-api';
 import { businessApi } from '../utils/business-api';
+import { settingApi } from '../utils/setting-api';
 
 const { Title } = Typography;
 const { TextArea } = Input;
+const { Option } = Select;
 
 const ProjectList = () => {
   const { businessId } = useParams();
@@ -39,6 +46,13 @@ const ProjectList = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [form] = Form.useForm();
+
+  // Template states
+  const [businessTemplates, setBusinessTemplates] = useState([]);
+  const [selectedBusinessTemplate, setSelectedBusinessTemplate] = useState(null);
+  const [projectTemplates, setProjectTemplates] = useState([]);
+  const [selectedProjectTemplate, setSelectedProjectTemplate] = useState(null);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
 
   // Load projects
   const loadProjects = useCallback(async () => {
@@ -64,12 +78,83 @@ const ProjectList = () => {
     }
   }, [businessId]);
 
+  // Load business templates
+  const loadBusinessTemplates = async () => {
+    try {
+      setLoadingTemplates(true);
+      const result = await settingApi.getActiveBusinessTemplates();
+      setBusinessTemplates(result.data || []);
+    } catch (error) {
+      console.error('Error loading business templates:', error);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  // Load project templates based on selected business template
+  const loadProjectTemplates = async (boTemplateId) => {
+    try {
+      setLoadingTemplates(true);
+      const result = await settingApi.getActiveProjectTemplates(boTemplateId);
+      setProjectTemplates(result.data || []);
+    } catch (error) {
+      console.error('Error loading project templates:', error);
+      setProjectTemplates([]);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
   useEffect(() => {
     if (businessId) {
       loadProjects();
       loadBusiness();
     }
   }, [businessId, loadProjects, loadBusiness]);
+
+  // Load business templates when modal opens for creation
+  useEffect(() => {
+    if (modalVisible && !editingProject) {
+      loadBusinessTemplates();
+    }
+  }, [modalVisible, editingProject]);
+
+  // Load project templates when business template is selected
+  useEffect(() => {
+    if (selectedBusinessTemplate) {
+      loadProjectTemplates(selectedBusinessTemplate);
+    } else {
+      setProjectTemplates([]);
+      setSelectedProjectTemplate(null);
+    }
+  }, [selectedBusinessTemplate]);
+
+  // Handle business template selection
+  const handleBusinessTemplateSelect = (templateId) => {
+    setSelectedBusinessTemplate(templateId);
+    setSelectedProjectTemplate(null);
+    // Reset form khi chọn business template mới
+    form.resetFields();
+  };
+
+  // Handle project template selection
+  const handleProjectTemplateSelect = (templateId) => {
+    setSelectedProjectTemplate(templateId);
+    
+    if (templateId) {
+      const template = projectTemplates.find(t => t.ID === templateId);
+      if (template) {
+        form.setFieldsValue({
+          name: template.NAME,
+          code: template.CODE || '',
+          description: template.DESCRIPTION || ''
+        });
+        message.success(`Đã áp dụng template: ${template.NAME}`);
+      }
+    } else {
+      form.resetFields();
+    }
+  };
 
   // Handle create/update project
   const handleSubmit = async (values) => {
@@ -78,13 +163,15 @@ const ProjectList = () => {
         await projectApi.updateProject(editingProject.id, values);
         message.success('Cập nhật dự án thành công');
       } else {
-        await projectApi.createProject({ ...values, businessId });
+        await projectApi.createProject({ 
+          ...values, 
+          businessId,
+          projectTemplateId: selectedProjectTemplate // Lưu template ID
+        });
         message.success('Tạo dự án thành công');
       }
 
-      setModalVisible(false);
-      setEditingProject(null);
-      form.resetFields();
+      handleModalCancel();
       await loadProjects();
     } catch (error) {
       message.error('Có lỗi xảy ra khi lưu dự án');
@@ -117,7 +204,17 @@ const ProjectList = () => {
 
   // Handle view tasks
   const handleViewTasks = (projectId) => {
+    console.log('🔍 ProjectList - Navigating to tasks for projectId:', projectId, 'businessId:', businessId);
     navigate(`/business/${businessId}/project/${projectId}/tasks`);
+  };
+  // Handle modal cancel
+  const handleModalCancel = () => {
+    setModalVisible(false);
+    setEditingProject(null);
+    setSelectedBusinessTemplate(null);
+    setSelectedProjectTemplate(null);
+    setProjectTemplates([]);
+    form.resetFields();
   };
 
   // Get status color
@@ -246,6 +343,8 @@ const ProjectList = () => {
                       icon={<PlusOutlined />}
                       onClick={() => {
                         setEditingProject(null);
+                        setSelectedBusinessTemplate(null);
+                        setSelectedProjectTemplate(null);
                         form.resetFields();
                         setModalVisible(true);
                       }}
@@ -311,17 +410,133 @@ const ProjectList = () => {
         </Card>
 
         <Modal
-          title={editingProject ? 'Cập nhật dự án' : 'Tạo dự án mới'}
+          title={
+            <Space>
+              {editingProject ? 'Cập nhật dự án' : 'Tạo dự án mới'}
+              {!editingProject && businessTemplates.length > 0 && (
+                <Tag color="blue" icon={<ThunderboltOutlined />}>
+                  Có {businessTemplates.length} business template
+                </Tag>
+              )}
+            </Space>
+          }
           open={modalVisible}
-          onCancel={() => {
-            setModalVisible(false);
-            setEditingProject(null);
-            form.resetFields();
-          }}
+          onCancel={handleModalCancel}
           footer={null}
-          width={600}
+          width={700}
         >
           <Form form={form} layout="vertical" onFinish={handleSubmit}>
+            {/* Template Selector - Chỉ hiển thị khi tạo mới */}
+            {!editingProject && businessTemplates.length > 0 && (
+              <>
+                <Alert
+                  message="Sử dụng Template"
+                  description="Chọn loại nghiệp vụ và template dự án có sẵn để tự động điền thông tin, hoặc nhập thủ công bên dưới."
+                  type="info"
+                  showIcon
+                  icon={<ThunderboltOutlined />}
+                  style={{ marginBottom: 16 }}
+                />
+
+                <Form.Item
+                  label={
+                    <Space>
+                      <ProjectOutlined style={{ color: '#1890ff' }} />
+                      <span>Bước 1: Chọn loại nghiệp vụ</span>
+                    </Space>
+                  }
+                >
+                  <Select
+                    placeholder="-- Chọn loại nghiệp vụ (Business Template) --"
+                    value={selectedBusinessTemplate}
+                    onChange={handleBusinessTemplateSelect}
+                    loading={loadingTemplates}
+                    allowClear
+                    showSearch
+                    optionFilterProp="children"
+                    filterOption={(input, option) =>
+                      option.children.props.children[1].toLowerCase().indexOf(input.toLowerCase()) >= 0
+                    }
+                  >
+                    {businessTemplates.map(template => (
+                      <Option key={template.ID} value={template.ID}>
+                        <Space>
+                          <ProjectOutlined style={{ color: '#52c41a' }} />
+                          {template.NAME}
+                        </Space>
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+
+                {selectedBusinessTemplate && projectTemplates.length > 0 && (
+                  <Form.Item
+                    label={
+                      <Space>
+                        <ThunderboltOutlined style={{ color: '#1890ff' }} />
+                        <span>Bước 2: Chọn template dự án</span>
+                        <Tag color="green">{projectTemplates.length} template</Tag>
+                      </Space>
+                    }
+                  >
+                    <Select
+                      placeholder="-- Chọn template dự án hoặc nhập thủ công --"
+                      value={selectedProjectTemplate}
+                      onChange={handleProjectTemplateSelect}
+                      loading={loadingTemplates}
+                      allowClear
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        option.children.props.children[1].toLowerCase().indexOf(input.toLowerCase()) >= 0
+                      }
+                    >
+                      {projectTemplates.map(template => (
+                        <Option key={template.ID} value={template.ID}>
+                          <Space>
+                            <FolderOutlined style={{ color: '#faad14' }} />
+                            {template.NAME}
+                            {template.CODE && (
+                              <Tag color="blue">{template.CODE}</Tag>
+                            )}
+                          </Space>
+                        </Option>
+                      ))}
+                    </Select>
+                    <div style={{ 
+                      marginTop: '8px', 
+                      fontSize: '12px', 
+                      color: '#8c8c8c',
+                      fontStyle: 'italic' 
+                    }}>
+                      💡 Template sẽ tự động điền tên, mã và mô tả dự án
+                    </div>
+                  </Form.Item>
+                )}
+
+                {selectedBusinessTemplate && projectTemplates.length === 0 && (
+                  <Alert
+                    message="Chưa có Project Template"
+                    description={
+                      <span>
+                        Loại nghiệp vụ này chưa có template dự án nào. 
+                        Bạn có thể <a href="/settings">tạo template mới</a> hoặc nhập thủ công bên dưới.
+                      </span>
+                    }
+                    type="warning"
+                    showIcon
+                    style={{ marginBottom: 16 }}
+                  />
+                )}
+
+                <Divider style={{ margin: '16px 0' }}>
+                  <span style={{ color: '#8c8c8c', fontSize: '12px' }}>
+                    Thông tin dự án
+                  </span>
+                </Divider>
+              </>
+            )}
+
             <Form.Item
               name="name"
               label="Tên dự án"
@@ -330,7 +545,10 @@ const ProjectList = () => {
                 { min: 3, message: 'Tên dự án phải có ít nhất 3 ký tự' }
               ]}
             >
-              <Input placeholder="Nhập tên dự án" />
+              <Input 
+                placeholder="Nhập tên dự án" 
+                prefix={<FolderOutlined style={{ color: '#bfbfbf' }} />}
+              />
             </Form.Item>
 
             <Form.Item
@@ -341,7 +559,10 @@ const ProjectList = () => {
                 { min: 2, message: 'Mã dự án phải có ít nhất 2 ký tự' }
               ]}
             >
-              <Input placeholder="Nhập mã dự án" />
+              <Input 
+                placeholder="Nhập mã dự án (VD: FE-DEV, BE-API)" 
+                style={{ textTransform: 'uppercase' }}
+              />
             </Form.Item>
 
             <Form.Item
@@ -357,7 +578,7 @@ const ProjectList = () => {
 
             <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
               <Space>
-                <Button onClick={() => setModalVisible(false)}>Hủy</Button>
+                <Button onClick={handleModalCancel}>Hủy</Button>
                 <Button type="primary" htmlType="submit">
                   {editingProject ? 'Cập nhật' : 'Tạo mới'}
                 </Button>

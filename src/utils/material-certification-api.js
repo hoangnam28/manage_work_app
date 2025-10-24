@@ -22,38 +22,6 @@ export const getCertificationImageUrl = (certificationId, imageId) => {
   return url;
 };
 
-
-// Upload multiple images - IMPROVED VERSION
-export const uploadCertificationImages = async (certificationId, files) => {
-  try {
-    if (!certificationId || !files || files.length === 0) {
-      throw new Error('Thiếu ID hoặc file để upload');
-    }
-    
-    console.log('Uploading images for certification:', certificationId);
-    console.log('Files to upload:', files.length);
-    
-    const formData = new FormData();
-    Array.from(files).forEach((file, index) => {
-      console.log(`Adding file ${index}:`, file.name, file.size);
-      formData.append('images', file);
-    });
-    
-    const response = await axiosInstance.post(`/material-certification/upload-images/${certificationId}`, formData, {
-      headers: { 
-        'Content-Type': 'multipart/form-data' 
-      },
-      timeout: 60000 
-    });
-    
-    console.log('Upload response:', response.data);
-    return response.data;
-  } catch (error) {
-    console.error('Error uploading certification images:', error);
-    throw error;
-  }
-};
-
 // Get all images for a certification - IMPROVED VERSION
 export const listCertificationImages = async (certificationId) => {
   try {
@@ -167,8 +135,14 @@ export const fetchMaterialCertificationOptions = async () => {
   }
 };
 
+// ... (giữ nguyên tất cả code phía trên)
+
+// UPDATED: createMaterialCertification with debug logs
 export const createMaterialCertification = async (data) => {
   try {
+    console.log('=== API: createMaterialCertification START ===');
+    console.log('📤 API: Input data:', data);
+    
     const formattedData = {
       ...data,
       materialProperty1Id: data.materialProperty1Id ? Number(data.materialProperty1Id) : null,
@@ -180,13 +154,112 @@ export const createMaterialCertification = async (data) => {
       reliabilityLevelId: data.reliabilityLevelId ? Number(data.reliabilityLevelId) : null,
     };
 
+    console.log('📤 API: Formatted data:', formattedData);
+    console.log('⏳ API: Sending POST request...');
+    
     const response = await axiosInstance.post('/material-certification/create', formattedData);
+    
+    console.log('📥 API: Raw response:', response);
+    console.log('📥 API: Response status:', response.status);
+    console.log('📥 API: Response data:', response.data);
+    console.log('📥 API: Response data.success:', response.data?.success);
+    console.log('📥 API: Response data.data:', response.data?.data);
+    console.log('📥 API: Response data.data.id:', response.data?.data?.id);
+    
+    // Validation
+    if (!response.data) {
+      console.error('❌ API: No response.data!');
+      throw new Error('No response data from server');
+    }
+    
+    if (!response.data.success) {
+      console.error('❌ API: Request not successful');
+      throw new Error(response.data.message || 'Request failed');
+    }
+    
+    if (!response.data.data || typeof response.data.data.id === 'undefined') {
+      console.error('❌ API: No ID in response!');
+      console.error('Full response.data:', JSON.stringify(response.data, null, 2));
+      throw new Error('No certification ID returned from server');
+    }
+    
+    console.log('✅ API: Success! Certification ID:', response.data.data.id);
+    console.log('=== API: createMaterialCertification END ===');
+    
     return response.data;
+    
   } catch (error) {
-    console.error('Error creating UL certification:', error);
+    console.error('❌ API: Error in createMaterialCertification');
+    console.error('Error object:', error);
+    
+    if (error.response) {
+      console.error('Error response status:', error.response.status);
+      console.error('Error response data:', error.response.data);
+      console.error('Error response headers:', error.response.headers);
+    } else if (error.request) {
+      console.error('Error request (no response):', error.request);
+    } else {
+      console.error('Error message:', error.message);
+    }
+    
     throw error;
   }
 };
+
+// UPDATED: uploadCertificationImages with better logs
+export const uploadCertificationImages = async (certificationId, files) => {
+  try {
+    if (!certificationId || !files || files.length === 0) {
+      throw new Error('Thiếu ID hoặc file để upload');
+    }
+    
+    console.log('=== API: uploadCertificationImages START ===');
+    console.log('📤 API: Certification ID:', certificationId);
+    console.log('📤 API: Number of files:', files.length);
+    
+    const formData = new FormData();
+    Array.from(files).forEach((file, index) => {
+      console.log(`📎 API: File ${index + 1}:`, {
+        name: file.name,
+        size: `${(file.size / 1024).toFixed(2)} KB`,
+        type: file.type
+      });
+      formData.append('images', file);
+    });
+    
+    console.log('⏳ API: Uploading images...');
+    
+    const response = await axiosInstance.post(
+      `/material-certification/upload-images/${certificationId}`, 
+      formData, 
+      {
+        headers: { 
+          'Content-Type': 'multipart/form-data' 
+        },
+        timeout: 60000 
+      }
+    );
+    
+    console.log('📥 API: Upload response:', response.data);
+    console.log('✅ API: Upload success:', response.data?.success);
+    console.log('📊 API: Uploaded count:', response.data?.count || response.data?.images?.length || 0);
+    console.log('=== API: uploadCertificationImages END ===');
+    
+    return response.data;
+    
+  } catch (error) {
+    console.error('❌ API: Error uploading certification images');
+    console.error('Error:', error);
+    
+    if (error.response) {
+      console.error('Upload error response:', error.response.data);
+    }
+    
+    throw error;
+  }
+};
+
+// ... (giữ nguyên tất cả các function còn lại)
 
 export const updateMaterialCertification = async (id, data) => {
   try {

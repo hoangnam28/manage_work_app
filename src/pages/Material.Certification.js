@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef} from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Space, Popconfirm, Input, Dropdown, Menu, Tag, Tooltip } from 'antd';
 import Highlighter from 'react-highlight-words';
@@ -19,12 +19,13 @@ import {
   createMaterialCertification,
   updateMaterialCertification,
   deleteMaterialCertification,
-  exportMaterialCertification,
   fetchMaterialCertificationOptions
 } from '../utils/material-certification-api';
 import CreateUlCertificationModal from '../components/modal/CreateUlCertificationModal';
 import { toast, Toaster } from 'sonner';
 import './UlCertification.css';
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 const MaterialCertification = () => {
   const navigate = useNavigate();
@@ -95,31 +96,24 @@ const MaterialCertification = () => {
   useEffect(() => {
     fetchData();
     fetchOptions();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Handle create
-  const handleCreate = async (values) => {
-    try {
-      const result = await createMaterialCertification(values);
-      if (result && result.success === false) {
-        throw new Error(result.message || 'Tạo mới thất bại');
-      }
-
-      fetchData(1, pagination.pageSize);
-      setModalVisible(false);
-      setEditingRecord(null);
-      setModalMode('create');
-
-      return { success: true, message: 'Tạo mới thành công' };
-
-    } catch (error) {
-      console.error('Error creating UL certification:', error);
-      throw new Error('Lỗi khi tạo mới: ' + (error.message || 'Đã có lỗi xảy ra'));
+const handleCreate = async (values) => {
+  try {
+    const result = await createMaterialCertification(values);
+    if (result && result.success === false) {
+      throw new Error(result.message || 'Tạo mới thất bại');
     }
-  };
+    fetchData(1, pagination.pageSize);
+    return result; // ⬅️ THÊM DÒNG NÀY
 
-  // Handle update
+  } catch (error) {
+    console.error('Error creating UL certification:', error);
+    throw error; // Throw error để Modal xử lý
+  }
+};
+
   const handleUpdate = async (values) => {
     try {
       const recordId = editingRecord.ID || editingRecord.id;
@@ -145,9 +139,9 @@ const MaterialCertification = () => {
   };
 
   // Handle delete
-  const handleDelete = async (recordId) => {
+  const handleDelete = async (recordOrId) => {
     try {
-      const id = Number(recordId?.id ?? recordId?.ID ?? recordId);
+      const id = Number(recordOrId?.id ?? recordOrId?.ID ?? recordOrId);
       if (!id || isNaN(id)) {
         toast.error('ID không hợp lệ, không thể xóa!');
         return;
@@ -161,72 +155,132 @@ const MaterialCertification = () => {
     }
   };
 
-  // Handle export
-  const handleExport = async () => {
-    try {
-      const loadingToast = toast.loading('Đang xuất dữ liệu...');
-      const response = await exportMaterialCertification();
+ const handleExport = () => {
+  try {
+    const loadingToast = toast.loading("Đang xuất dữ liệu...");
 
-      const url = window.URL.createObjectURL(new Blob([response]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `ULCertificationExport_${new Date().toISOString().split('T')[0]}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      toast.dismiss(loadingToast);
-      toast.success('Xuất file thành công!');
-    } catch (error) {
-      console.error('Export error:', error);
-      toast.error('Lỗi khi xuất file: ' + (error.message || 'Đã có lỗi xảy ra'));
-    }
-  };
+    // ✅ Lấy toàn bộ dữ liệu từ state data
+    const exportData = data.map((row) => {
+      return {
+        ID: row.ID ?? "-",
+        MATERIAL_NAME: row.MATERIAL_NAME ?? "-",
+        MATERIAL_CLASS: row.MATERIAL_CLASS ?? "-",
+        UL_CERT_STATUS: row.UL_CERT_STATUS ?? "-",
+        RELIABILITY_LEVEL: row.RELIABILITY_LEVEL ?? "-",
+        DEPARTMENT_CODE: row.DEPARTMENT_CODE ?? "-",
+        PERSON_IN_CHARGE: row.PERSON_IN_CHARGE ?? "-",
+        START_DATE: row.START_DATE
+          ? new Date(row.START_DATE).toLocaleDateString("vi-VN")
+          : "-",
+        PD5_REPORT_DEADLINE: row.PD5_REPORT_DEADLINE
+          ? new Date(row.PD5_REPORT_DEADLINE).toLocaleDateString("vi-VN")
+          : "-",
+        COMPLETION_DEADLINE: row.COMPLETION_DEADLINE
+          ? new Date(row.COMPLETION_DEADLINE).toLocaleDateString("vi-VN")
+          : "-",
+        PD5_REPORT_ACTUAL_DATE: row.PD5_REPORT_ACTUAL_DATE
+          ? new Date(row.PD5_REPORT_ACTUAL_DATE).toLocaleDateString("vi-VN")
+          : "-",
+        ACTUAL_COMPLETION_DATE: row.ACTUAL_COMPLETION_DATE
+          ? new Date(row.ACTUAL_COMPLETION_DATE).toLocaleDateString("vi-VN")
+          : "-",
+        PROGRESS: row.PROGRESS ?? "-",
+        NOTES_1: row.NOTES_1 ?? "-",
+        PERSON_DO: row.PERSON_DO ?? "-",
+        PERSON_CHECK: row.PERSON_CHECK ?? "-",
+        TIME_DO: row.TIME_DO ?? "-",
+        TIME_CHECK: row.TIME_CHECK ?? "-",
+        TOTAL_TIME: row.TOTAL_TIME ?? "-",
+      };
+    });
+
+    // ✅ Tạo worksheet và workbook
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "MaterialCertification");
+
+    // ✅ Ghi ra file Excel
+    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbout], { type: "application/octet-stream" });
+    const filename = `MaterialCertification_${new Date()
+      .toISOString()
+      .split("T")[0]}.xlsx`;
+
+    saveAs(blob, filename);
+
+    toast.dismiss(loadingToast);
+    toast.success("Xuất file thành công!");
+  } catch (error) {
+    console.error("Export error:", error);
+    toast.error("Lỗi khi xuất file!");
+  }
+};
 
   const getColumnSearchProps = dataIndex => ({
-    filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters, close }) => (
-      <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
-        <Input
-          ref={searchInput}
-          placeholder={`Tìm kiếm ${dataIndex}`}
-          value={selectedKeys[0]}
-          onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
-          onPressEnter={() => { handleSearch(selectedKeys, dataIndex); close(); }}
-          style={{ marginBottom: 8, display: 'block' }}
-        />
-        <Space>
-          <Button
-            type="primary"
-            onClick={() => { handleSearch(selectedKeys, dataIndex); close(); }}
-            icon={<SearchOutlined />}
-            size="small"
-            style={{ width: 90 }}
-          >
-            Tìm kiếm
-          </Button>
-          <Button
-            onClick={() => clearFilters && handleReset(clearFilters, dataIndex)}
-            size="small"
-            style={{ width: 90 }}
-          >
-            Reset
-          </Button>
-          <Button
-            type="link"
-            size="small"
-            onClick={() => close()}
-          >
-            Đóng
-          </Button>
-        </Space>
-      </div>
-    ),
+    filterDropdown: ({ setSelectedKeys, selectedKeys, clearFilters, close }) => {
+      // initialize selectedKeys from searchFilters when dropdown opens
+      const initialValue = searchFilters[dataIndex] ?? '';
+      // If selectedKeys is empty but we have a filter in state, set it
+      if ((!selectedKeys || selectedKeys.length === 0) && initialValue) {
+        setSelectedKeys([initialValue]);
+      }
+
+      return (
+        <div style={{ padding: 8 }} onKeyDown={(e) => e.stopPropagation()}>
+          <Input
+            ref={searchInput}
+            placeholder={`Tìm kiếm ${dataIndex}`}
+            value={selectedKeys && selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => { handleSearch(selectedKeys, dataIndex); close(); }}
+            style={{ marginBottom: 8, display: 'block' }}
+          />
+          <Space>
+            <Button
+              type="primary"
+              onClick={() => { handleSearch(selectedKeys, dataIndex); close(); }}
+              icon={<SearchOutlined />}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Tìm kiếm
+            </Button>
+            <Button
+              onClick={() => {
+                if (clearFilters) {
+                  clearFilters();
+                }
+                handleReset(clearFilters, dataIndex);
+              }}
+              size="small"
+              style={{ width: 90 }}
+            >
+              Reset
+            </Button>
+            <Button
+              type="link"
+              size="small"
+              onClick={() => close()}
+            >
+              Đóng
+            </Button>
+          </Space>
+        </div>
+      );
+    },
     filterIcon: (filtered) => (
       <SearchOutlined
         style={{ color: filtered ? '#1890ff' : undefined }}
       />
     ),
+    // If server-side filtering is used, AntD's filteredValue is used just for UI persistence.
     filteredValue: searchFilters[dataIndex] ? [searchFilters[dataIndex]] : null,
+    // Provide a local filter to allow client-side filtering (instant) if needed.
+    onFilter: (value, record) => {
+      const recordValue = record[dataIndex];
+      if (recordValue === undefined || recordValue === null) return false;
+      return recordValue.toString().toLowerCase().includes(value.toString().toLowerCase());
+    },
     onFilterDropdownOpenChange: (visible) => {
       if (visible) {
         setTimeout(() => searchInput.current?.select(), 100);
@@ -251,7 +305,7 @@ const MaterialCertification = () => {
   });
 
   const handleSearch = (selectedKeys, dataIndex) => {
-    const searchValue = selectedKeys[0];
+    const searchValue = selectedKeys && selectedKeys[0];
     const newFilters = { ...searchFilters };
     if (searchValue) {
       newFilters[dataIndex] = searchValue;
@@ -263,19 +317,25 @@ const MaterialCertification = () => {
       ...prev,
       current: 1
     }));
+    // Call server with new filters (if your API expects different keys, map them in your API util)
     fetchData(1, pagination.pageSize, newFilters);
   };
 
   const handleReset = (clearFilters, dataIndex) => {
     const newFilters = { ...searchFilters };
-    delete newFilters[dataIndex];
+    if (dataIndex) {
+      delete newFilters[dataIndex];
+    } else {
+      // reset all
+      Object.keys(newFilters).forEach(k => delete newFilters[k]);
+    }
     setSearchFilters(newFilters);
     setPagination(prev => ({
       ...prev,
       current: 1
     }));
     fetchData(1, pagination.pageSize, newFilters);
-    clearFilters();
+    if (typeof clearFilters === 'function') clearFilters();
   };
 
   const handleTableChange = (paginationConfig, filters, sorter) => {
@@ -300,7 +360,7 @@ const MaterialCertification = () => {
   // Columns definition
   const columns = [
     {
-      title: 'ID',
+      title: 'No',
       dataIndex: 'ID',
       key: 'id',
       width: 80,
@@ -335,7 +395,13 @@ const MaterialCertification = () => {
       dataIndex: 'MATERIAL_CLASS',
       key: 'material_class',
       width: 150,
-      ...getColumnSearchProps('MATERIAL_CLASS')
+      ...getColumnSearchProps('MATERIAL_CLASS'),
+      render: (text) => {
+        if (!text) return '';
+        const matches = text.match(/\b[A-Z]{2,}\b/g); // Lấy các từ viết hoa từ 2 ký tự trở lên
+        return matches ? matches.join(', ') : text;
+      },
+      align: 'center'
     },
     {
       title: 'Cấu trúc',
@@ -347,19 +413,26 @@ const MaterialCertification = () => {
         <Tag color={getStatusColor(status)}>{status}</Tag>
       ) : '-'
     },
-     {
+    {
       title: 'Mức độ tin cậy',
       dataIndex: 'RELIABILITY_LEVEL',
       key: 'reliability_level',
       width: 150,
-      ...getColumnSearchProps('RELIABILITY_LEVEL')
+      ...getColumnSearchProps('RELIABILITY_LEVEL'),
+      render: (text) => {
+        if (!text) return '';
+
+        // Tìm "Cấp độ" + số (ví dụ: "Cấp độ 4")
+        const match = text.match(/Cấp độ\s*\d+/i);
+        return match ? match[0] : text;
+      },
     },
     {
-      title: 'Bộ phận phụ trách',
+      title: <>Bộ phận<br />phụ trách</>,
       dataIndex: 'DEPARTMENT_CODE',
       key: 'department_code',
-      width: 150,
-      render: v => v || '-',
+      width: 100,
+      render: (v) => v || '-',
     },
     {
       title: 'Người phụ trách',
@@ -367,6 +440,7 @@ const MaterialCertification = () => {
       key: 'person_in_charge',
       width: 150,
       render: v => v || '-',
+      align: 'center'
     },
     {
       title: 'Ngày bắt đầu',
@@ -376,38 +450,38 @@ const MaterialCertification = () => {
       render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
     },
     {
-      title: 'Kỳ hạn gửi báo cáo tới PD5',
+      title: <>Kỳ hạn<br/>gửi báo cáo<br/>tới PD5</>,
       dataIndex: 'PD5_REPORT_DEADLINE',
       key: 'pd5_report_deadline',
-      width: 200,
+      width: 100,
       render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
     },
     {
-      title: 'Kỳ hạn hoàn thành',
+      title: <>Kỳ hạn<br/>hoàn thành</>,
       dataIndex: 'COMPLETION_DEADLINE',
       key: 'completion_deadline',
-      width: 150,
+      width: 100,
       render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
     },
     {
-      title: 'Ngày gửi báo cáo tới PD5 thực tế',
+      title: <>Ngày gửi<br/>báo cáo<br/>tới PD5<br/>thực tế</>,
       dataIndex: 'PD5_REPORT_ACTUAL_DATE',
       key: 'pd5_report_actual_date',
-      width: 250,
+      width: 100,
       render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
     },
     {
-      title: 'Ngày hoàn thành thực tế',
+      title: <>Ngày<br/>hoàn thành<br/>thực tế</>,
       dataIndex: 'ACTUAL_COMPLETION_DATE',
       key: 'actual_completion_date',
-      width: 190,
+      width: 100,
       render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
     },
     {
       title: 'Tiến độ',
       dataIndex: 'PROGRESS',
       key: 'progress',
-      width: 120,
+      width: 100,
       render: v => v || '-',
     },
     {
@@ -415,6 +489,7 @@ const MaterialCertification = () => {
       dataIndex: 'NOTES_1',
       key: 'notes_1',
       width: 200,
+      align: 'center'
     },
     {
       title: 'Người làm',
@@ -503,6 +578,7 @@ const MaterialCertification = () => {
   };
 
   const handleEdit = (record) => {
+    console.log('Edit record:', record);
     setModalMode('edit');
     setEditingRecord(record);
     setModalVisible(true);

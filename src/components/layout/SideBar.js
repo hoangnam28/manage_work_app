@@ -154,14 +154,23 @@ const SideBar = ({ onLogout, userId }) => {
       ),
     },
      {
-          key: '/material-certification',
-          icon: <SafetyCertificateOutlined />,
-          label: (
+        key: '/material-certification',
+        icon: <SafetyCertificateOutlined />,
+        label: (
             <Link to="/material-certification" style={location.pathname === '/material-certification' ? { color: '#1890ff', fontWeight: 600 } : {}}>
               Material Certification
             </Link>
           ),
-        },
+      },
+      {
+        key: '/settings',
+        icon: <SafetyCertificateOutlined />,
+        label: (
+            <Link to="/settings" style={location.pathname === '/settings' ? { color: '#1890ff', fontWeight: 600 } : {}}>
+              Settings
+            </Link>
+        ),
+      }
   ];
   return (
     <Sider

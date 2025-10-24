@@ -115,7 +115,7 @@ const ProgressTab = ({
       <Divider orientation="left">Thời gian thực hiện</Divider>
       <Row gutter={16} style={{ backgroundColor: '#f0f8ff', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
         <Col span={8}>
-          <Form.Item name="COMPLETION_DEADLINE" label="Kì hạn hoàn thành">
+          <Form.Item name="COMPLETION_DEADLINE" label="Ngày mong muốn nhận chứng nhận">
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="8/2/2025" />
           </Form.Item>
         </Col>

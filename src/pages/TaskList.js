@@ -16,7 +16,9 @@ import {
   Col,
   Statistic,
   Tag,
-  Tooltip
+  Tooltip,
+  Divider,
+  Alert,
 } from 'antd';
 import {
   PlusOutlined,
@@ -26,12 +28,17 @@ import {
   CheckCircleOutlined,
   UserOutlined,
   ClockCircleOutlined,
+  ThunderboltOutlined,
+  CheckSquareOutlined,
+  FireOutlined,
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import { taskApi } from '../utils/task-api';
 import { projectApi } from '../utils/project-api';
 import { fetchUsersList } from '../utils/user-api';
+import { settingApi } from '../utils/setting-api';
+
 import moment from 'moment';
 
 const { Title } = Typography;
@@ -41,6 +48,9 @@ const { Option } = Select;
 const TaskList = () => {
   const { businessId, projectId } = useParams();
   const navigate = useNavigate();
+  
+  // Debug log để kiểm tra projectId
+  console.log('🔍 TaskList - businessId:', businessId, 'projectId:', projectId);
   const [tasks, setTasks] = useState([]);
   const [project, setProject] = useState(null);
   const [users, setUsers] = useState([]);
@@ -49,13 +59,17 @@ const TaskList = () => {
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
 
+  // Template states - Chỉ cần task templates
+  const [taskTemplates, setTaskTemplates] = useState([]);
+  const [selectedTaskTemplate, setSelectedTaskTemplate] = useState(null);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+
   // Load tasks
   const loadTasks = useCallback(async () => {
     try {
       setLoading(true);
       const data = await taskApi.getTasksByProject(projectId);
       
-      // Format task data để phù hợp với hiển thị
       const formattedTasks = (data || []).map(task => ({
         id: task.ID,
         name: task.NAME,
@@ -65,7 +79,6 @@ const TaskList = () => {
         supporterId: task.SUPPORTER_ID,
         checkerId: task.CHECKER_ID,
         deadline: task.DEADLINE,
-        // Giữ lại dữ liệu gốc cho việc chỉnh sửa
         ...task
       }));
       
@@ -75,6 +88,19 @@ const TaskList = () => {
       console.error('Error loading tasks:', error);
     } finally {
       setLoading(false);
+    }
+  }, [projectId]);
+
+  // Load project info
+  const loadProject = useCallback(async () => {
+    try {
+      if (projectId) {
+        const data = await projectApi.getProjectById(projectId);
+        setProject(data);
+      }
+    } catch (error) {
+      message.error('Lỗi khi tải thông tin dự án');
+      console.error('Error loading project:', error);
     }
   }, [projectId]);
 
@@ -89,23 +115,90 @@ const TaskList = () => {
     }
   }, []);
 
-  // Load project info
-  const loadProject = useCallback(async () => {
-    try {
-      const data = await projectApi.getProjectById(projectId);
-      setProject(data);
-    } catch (error) {
-      console.error('Error loading project:', error);
-    }
-  }, [projectId]);
 
-  useEffect(() => {
-    if (projectId) {
-      loadTasks();
-      loadUsers();
-      loadProject();
+
+const loadTaskTemplates = useCallback(async () => {
+  try {
+    setLoadingTemplates(true);
+
+    const projectResult = await projectApi.getProjectById(projectId);
+    console.log('✅ projectResult:', projectResult);
+
+    const projectTemplateId = projectResult?.projectTemplateId;
+
+    if (!projectTemplateId) {
+      console.warn('⚠️ Project chưa gắn project_template_id, không thể load task templates.');
+      setTaskTemplates([]);
+      return;
     }
-  }, [projectId, loadTasks, loadUsers, loadProject]);
+
+    const taskResult = await settingApi.getTaskTemplates(projectTemplateId);
+    console.log('✅ Loaded task templates:', taskResult.data);
+    setTaskTemplates(taskResult.data || []);
+
+  } catch (error) {
+    console.error('❌ Error loading task templates:', error);
+    setTaskTemplates([]);
+  } finally {
+    setLoadingTemplates(false);
+  }
+}, [projectId]);
+
+useEffect(() => {
+  if (projectId) {
+    loadProject();
+    loadTasks();
+    loadUsers(); 
+  }
+}, [projectId, loadProject, loadTasks, loadUsers]);
+
+useEffect(() => {
+  if (modalVisible && !editingTask) {
+    loadTaskTemplates();
+    loadUsers(); // ✅ thêm lại dòng này
+  }
+}, [modalVisible, editingTask, loadTaskTemplates, loadUsers]);
+
+
+  // Handle task template selection
+  const handleTaskTemplateSelect = (templateId) => {
+    setSelectedTaskTemplate(templateId);
+    
+    if (templateId) {
+      const template = taskTemplates.find(t => t.ID === templateId);
+      if (template) {
+        form.setFieldsValue({
+          name: template.NAME,
+          description: template.DESCRIPTION || ''
+        });
+        
+        // Auto set deadline based on estimated duration (if exists)
+        if (template.ESTIMATED_DURATION) {
+          const deadline = moment().add(template.ESTIMATED_DURATION, 'hours');
+          form.setFieldsValue({
+            deadline: deadline
+          });
+        }
+        
+        message.success(`Đã áp dụng template: ${template.NAME}`);
+      }
+    } else {
+      form.setFieldsValue({
+        name: '',
+        description: ''
+      });
+    }
+  };
+
+  // Get priority badge
+  const getPriorityBadge = (priority) => {
+    const config = {
+      'HIGH': { color: 'red', icon: <FireOutlined />, text: 'Cao' },
+      'MEDIUM': { color: 'orange', icon: <ClockCircleOutlined />, text: 'Trung bình' },
+      'LOW': { color: 'green', icon: <CheckCircleOutlined />, text: 'Thấp' }
+    };
+    return config[priority] || config['MEDIUM'];
+  };
 
   // Handle create/update task
   const handleSubmit = async (values) => {
@@ -128,9 +221,7 @@ const TaskList = () => {
         message.success('Tạo task thành công');
       }
       
-      setModalVisible(false);
-      setEditingTask(null);
-      form.resetFields();
+      handleModalCancel();
       await loadTasks();
     } catch (error) {
       message.error(error.response?.data?.message || 'Có lỗi xảy ra khi lưu task');
@@ -164,7 +255,7 @@ const TaskList = () => {
     }
   };
 
-  // Handle start task
+
   const handleStartTask = async (taskId) => {
     try {
       await taskApi.startTask(taskId);
@@ -188,29 +279,35 @@ const TaskList = () => {
     }
   };
 
+  // Handle modal cancel
+  const handleModalCancel = () => {
+    setModalVisible(false);
+    setEditingTask(null);
+    setSelectedTaskTemplate(null);
+    form.resetFields();
+  };
+
   // Get status color and icon
   const getStatusInfo = (status) => {
-  switch (status) {
-    case 'pending':  
-      return { color: 'orange', icon: <ClockCircleOutlined />, text: 'Chờ thực hiện' };
-    case 'in_progress': 
-      return { color: 'blue', icon: <PlayCircleOutlined />, text: 'Đang thực hiện' };
-    case 'done':  
-      return { color: 'green', icon: <CheckCircleOutlined />, text: 'Hoàn thành' };
-    case 'checked':  
-      return { color: 'purple', icon: <CheckCircleOutlined />, text: 'Đã kiểm tra' };
-    default:
-      return { color: 'default', icon: null, text: status };
-  }
-};
+    switch (status) {
+      case 'pending':  
+        return { color: 'orange', icon: <ClockCircleOutlined />, text: 'Chờ thực hiện' };
+      case 'in_progress': 
+        return { color: 'blue', icon: <PlayCircleOutlined />, text: 'Đang thực hiện' };
+      case 'done':  
+        return { color: 'green', icon: <CheckCircleOutlined />, text: 'Hoàn thành' };
+      case 'checked':  
+        return { color: 'purple', icon: <CheckCircleOutlined />, text: 'Đã kiểm tra' };
+      default:
+        return { color: 'default', icon: null, text: status };
+    }
+  };
 
-  // Check if task is overdue
   const isOverdue = (deadline, status) => {
     if (status === 'done' || status === 'checked') return false;
     return new Date(deadline) < new Date();
   };
 
-  // Get user name by ID
   const getUserName = (userId) => {
     const user = users.find(u => u.USER_ID === userId || u.id === userId);
     return user ? user.USERNAME || user.fullName : 'N/A';
@@ -282,7 +379,7 @@ const TaskList = () => {
       render: (userId) => userId ? getUserName(userId) : '-'
     },
     {
-      title: 'Hạn chót',
+      title: 'Kỳ Hạn',
       dataIndex: 'deadline',
       key: 'deadline',
       width: 120,
@@ -379,6 +476,7 @@ const TaskList = () => {
                       icon={<PlusOutlined />}
                       onClick={() => {
                         setEditingTask(null);
+                        setSelectedTaskTemplate(null);
                         form.resetFields();
                         setModalVisible(true);
                       }}
@@ -449,13 +547,18 @@ const TaskList = () => {
         </Card>
 
         <Modal
-          title={editingTask ? 'Cập nhật task' : 'Tạo task mới'}
+          title={
+            <Space>
+              {editingTask ? 'Cập nhật task' : 'Tạo task mới'}
+              {!editingTask && taskTemplates.length > 0 && (
+                <Tag color="purple" icon={<ThunderboltOutlined />}>
+                  Có {taskTemplates.length} task template
+                </Tag>
+              )}
+            </Space>
+          }
           open={modalVisible}
-          onCancel={() => {
-            setModalVisible(false);
-            setEditingTask(null);
-            form.resetFields();
-          }}
+          onCancel={handleModalCancel}
           footer={null}
           width={800}
         >
@@ -464,6 +567,91 @@ const TaskList = () => {
             layout="vertical"
             onFinish={handleSubmit}
           >
+            {/* Template Selector - Chỉ Task Templates - Chỉ hiển thị khi tạo mới */}
+            {!editingTask && taskTemplates.length > 0 && (
+              <>
+                <Alert
+                  message="Sử dụng Task Template"
+                  description={`Chọn task template có sẵn cho dự án "${project?.name}" để tự động điền thông tin và ước tính thời gian.`}
+                  type="info"
+                  showIcon
+                  icon={<ThunderboltOutlined />}
+                  style={{ marginBottom: 16 }}
+                />
+
+                <Form.Item
+                  label={
+                    <Space>
+                      <CheckSquareOutlined style={{ color: '#1890ff' }} />
+                      <span>Chọn Task Template</span>
+                      <Tag color="purple">{taskTemplates.length} template có sẵn</Tag>
+                    </Space>
+                  }
+                >
+                  <Select
+                    placeholder="-- Chọn task template hoặc nhập thủ công --"
+                    value={selectedTaskTemplate}
+                    onChange={handleTaskTemplateSelect}
+                    loading={loadingTemplates}
+                    allowClear
+                    showSearch
+                    optionFilterProp="children"
+                    size="large"
+                  >
+                    {taskTemplates.map(template => {
+                      const priorityInfo = getPriorityBadge(template.PRIORITY);
+                      return (
+                        <Option key={template.ID} value={template.ID}>
+                          <Space>
+                            <CheckSquareOutlined style={{ color: '#13c2c2' }} />
+                            <strong>{template.NAME}</strong>
+                            {template.ESTIMATED_DURATION && (
+                              <Tag color="cyan">
+                                <ClockCircleOutlined /> {template.ESTIMATED_DURATION}h
+                              </Tag>
+                            )}
+                            <Tag color={priorityInfo.color} icon={priorityInfo.icon}>
+                              {priorityInfo.text}
+                            </Tag>
+                          </Space>
+                        </Option>
+                      );
+                    })}
+                  </Select>
+                  <div style={{ 
+                    marginTop: '8px', 
+                    fontSize: '12px', 
+                    color: '#8c8c8c',
+                    fontStyle: 'italic' 
+                  }}>
+                    💡 Template sẽ tự động điền tên, mô tả và tính deadline = hôm nay + thời gian ước tính
+                  </div>
+                </Form.Item>
+
+                <Divider style={{ margin: '16px 0' }}>
+                  <span style={{ color: '#8c8c8c', fontSize: '12px' }}>
+                    Thông tin task
+                  </span>
+                </Divider>
+              </>
+            )}
+
+            {!editingTask && taskTemplates.length === 0 && (
+              <Alert
+                message="Chưa có Task Template"
+                description={
+                  <span>
+                    Dự án này chưa có task template nào. Bạn có thể{' '}
+                    <a href="/settings">tạo template mới</a> hoặc nhập thủ công bên dưới.
+                  </span>
+                }
+                type="warning"
+                showIcon
+                style={{ marginBottom: 16 }}
+                closable
+              />
+            )}
+
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
@@ -474,21 +662,25 @@ const TaskList = () => {
                     { min: 3, message: 'Tên task phải có ít nhất 3 ký tự' }
                   ]}
                 >
-                  <Input placeholder="Nhập tên task" />
+                  <Input 
+                    placeholder="Nhập tên task" 
+                    prefix={<CheckSquareOutlined style={{ color: '#bfbfbf' }} />}
+                  />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item
                   name="deadline"
-                  label="Hạn chót"
+                  label="Kỳ Hạn"
                   rules={[
-                    { required: true, message: 'Vui lòng chọn hạn chót' }
+                    { required: true, message: 'Vui lòng chọn kỳ hạn' }
                   ]}
                 >
                   <DatePicker 
                     style={{ width: '100%' }}
-                    placeholder="Chọn hạn chót"
+                    placeholder="Chọn kỳ hạn"
                     showTime
+                    format="DD/MM/YYYY HH:mm"
                   />
                 </Form.Item>
               </Col>
@@ -579,10 +771,11 @@ const TaskList = () => {
                 </Select>
               </Form.Item>
             </Col>
-          </Row>
+            </Row>
+
             <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
               <Space>
-                <Button onClick={() => setModalVisible(false)}>
+                <Button onClick={handleModalCancel}>
                   Hủy
                 </Button>
                 <Button type="primary" htmlType="submit">

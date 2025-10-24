@@ -148,7 +148,7 @@ const TaskDetails = () => {
             <Descriptions.Item label="Thời gian tạo">
               {formatDateTime(task?.createdAt)}
             </Descriptions.Item>
-            <Descriptions.Item label="Hạn chót">
+            <Descriptions.Item label="Kỳ Hạn">
               {formatDateTime(task?.deadline)}
             </Descriptions.Item>
             <Descriptions.Item label="Thời gian bắt đầu">
