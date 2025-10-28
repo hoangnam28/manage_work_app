@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Table, Button, Space, Popconfirm, Input, Dropdown, Menu, Tag, Tooltip } from 'antd';
 import Highlighter from 'react-highlight-words';
@@ -9,9 +9,9 @@ import {
   SearchOutlined,
   ExportOutlined,
   ReloadOutlined,
-  EyeOutlined,
   DownOutlined,
-  FileExcelOutlined
+  FileExcelOutlined,
+  ClockCircleOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -22,6 +22,7 @@ import {
   fetchMaterialCertificationOptions
 } from '../utils/material-certification-api';
 import CreateUlCertificationModal from '../components/modal/CreateUlCertificationModal';
+import CertificationHistoryModal from '../components/modal/CertificationHistoryModal';
 import { toast, Toaster } from 'sonner';
 import './UlCertification.css';
 import * as XLSX from "xlsx";
@@ -37,6 +38,9 @@ const MaterialCertification = () => {
   const [searchFilters, setSearchFilters] = useState({});
   const [options, setOptions] = useState({});
   const searchInput = useRef(null);
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
+  const [selectedCertification, setSelectedCertification] = useState(null);
+
 
   const [pagination, setPagination] = useState({
     current: 1,
@@ -47,7 +51,7 @@ const MaterialCertification = () => {
     showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,
     pageSizeOptions: ['20', '50', '100'],
   });
-
+  const fetchTimeoutRef = useRef(null);
   const handleViewCertificationForm = (record) => {
     navigate(`/certification-form/${record.ID}`, { 
       state: { certificationData: record } 
@@ -338,14 +342,30 @@ const handleCreate = async (values) => {
     if (typeof clearFilters === 'function') clearFilters();
   };
 
-  const handleTableChange = (paginationConfig, filters, sorter) => {
-    setPagination(prev => ({
-      ...prev,
-      current: paginationConfig.current,
-      pageSize: paginationConfig.pageSize
-    }));
-    fetchData(paginationConfig.current, paginationConfig.pageSize, searchFilters);
-  };
+ const handleTableChange = (paginationConfig, filters) => {  
+  const newFilters = {};
+  
+  Object.keys(filters).forEach(key => {
+    if (filters[key] && filters[key].length > 0) {
+      newFilters[key] = filters[key];
+    }
+  });
+  
+  Object.keys(searchFilters).forEach(key => {
+    if (!filters.hasOwnProperty(key)) {
+      newFilters[key] = searchFilters[key];
+    }
+  });  
+  setSearchFilters(newFilters);
+  if (fetchTimeoutRef.current) {
+    clearTimeout(fetchTimeoutRef.current);
+  }
+  
+  fetchTimeoutRef.current = setTimeout(() => {
+    fetchData(paginationConfig.current, paginationConfig.pageSize, newFilters);
+  }, 50);
+};
+
 
   // Get status color
   const getStatusColor = (status) => {
@@ -398,7 +418,7 @@ const handleCreate = async (values) => {
       ...getColumnSearchProps('MATERIAL_CLASS'),
       render: (text) => {
         if (!text) return '';
-        const matches = text.match(/\b[A-Z]{2,}\b/g); // Lấy các từ viết hoa từ 2 ký tự trở lên
+        const matches = text.match(/\b[A-Z]{2,}\b/g); 
         return matches ? matches.join(', ') : text;
       },
       align: 'center'
@@ -421,18 +441,38 @@ const handleCreate = async (values) => {
       ...getColumnSearchProps('RELIABILITY_LEVEL'),
       render: (text) => {
         if (!text) return '';
-
-        // Tìm "Cấp độ" + số (ví dụ: "Cấp độ 4")
         const match = text.match(/Cấp độ\s*\d+/i);
         return match ? match[0] : text;
       },
+    },
+   {
+      title: 'Tiến độ',
+      dataIndex: 'PROGRESS',
+      key: 'progress',
+      width: 100,
+      filters: Array.isArray(options.progress)
+        ? options.progress.map(p => ({ text: p.status_name, value: String(p.status_id) }))
+        : [],
+      filteredValue: searchFilters.PROGRESS || null,
+      filterMultiple: true, // Cho phép chọn nhiều
+      render: (v, record) => {
+        if (v) return v;
+        const progressId = record.PROGRESS_ID ?? record.PROGRESS;
+        if (options && Array.isArray(options.progress) && (progressId !== undefined && progressId !== null)) {
+          const found = options.progress.find(p => String(p.status_id) === String(progressId));
+          if (found) return found.status_name;
+        }
+        return '-';
+      },
+      align: 'center'
     },
     {
       title: <>Bộ phận<br />phụ trách</>,
       dataIndex: 'DEPARTMENT_CODE',
       key: 'department_code',
       width: 100,
-      render: (v) => v || '-',
+      render: (v) => v || '-',            
+      align: 'center'
     },
     {
       title: 'Người phụ trách',
@@ -476,13 +516,6 @@ const handleCreate = async (values) => {
       key: 'actual_completion_date',
       width: 100,
       render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
-    },
-    {
-      title: 'Tiến độ',
-      dataIndex: 'PROGRESS',
-      key: 'progress',
-      width: 100,
-      render: v => v || '-',
     },
     {
       title: 'Ghi chú',
@@ -534,11 +567,11 @@ const handleCreate = async (values) => {
       align: 'center',
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="Xem chi tiết">
+          <Tooltip title="Xem lịch sử">
             <Button
               type="default"
-              icon={<EyeOutlined />}
-              onClick={() => handleViewDetails(record)}
+              icon={<ClockCircleOutlined />}
+              onClick={() => handleViewHistory(record)}
               size="small"
             />
           </Tooltip>
@@ -567,15 +600,13 @@ const handleCreate = async (values) => {
           </Popconfirm>
         </Space>
       ),
-    },  
+    },
   ];
 
-  // Event handlers
-  const handleViewDetails = (record) => {
-    setModalMode('view');
-    setEditingRecord(record);
-    setModalVisible(true);
-  };
+const handleViewHistory = (record) => {
+  setSelectedCertification(record);
+  setHistoryModalVisible(true);
+};
 
   const handleEdit = (record) => {
     console.log('Edit record:', record);
@@ -617,7 +648,7 @@ const handleCreate = async (values) => {
       <Toaster position="top-right" richColors />
       <div className="ul-certification-container">
         <div className="ul-certification-header">
-          <h1 style={{ color: '#e29a51ff' }}>Material Certification</h1>
+          <h1 style={{ color: '#e29a51ff' }}>Chứng nhận vật liệu</h1>
           <div className="header-actions">
             <Button
               type="primary"
@@ -676,6 +707,15 @@ const handleCreate = async (values) => {
           mode={modalMode}
           options={options}
           onSuccess={handleModalSuccess}
+        />
+        <CertificationHistoryModal
+          open={historyModalVisible}
+          onClose={() => {
+            setHistoryModalVisible(false);
+            setSelectedCertification(null);
+          }}
+          certificationId={selectedCertification?.ID}
+          certificationName={selectedCertification?.MATERIAL_NAME}
         />
       </div>
     </MainLayout>

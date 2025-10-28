@@ -1,6 +1,6 @@
-import React from 'react';
-import { Form, Input, DatePicker, Select, Button, Row, Col, Divider } from 'antd';
+import { Form, Input, DatePicker, Select, Button, Row, Col, Divider, Alert, Space } from 'antd';
 import { useNavigate } from 'react-router-dom';
+import { CheckCircleOutlined } from '@ant-design/icons';
 
 const { TextArea } = Input;
 
@@ -8,9 +8,32 @@ const ProgressTab = ({
   form, 
   onFinish, 
   loading, 
-  options 
+  options,
+  currentProgressId,
+  onApprovalSuccess 
 }) => {
   const navigate = useNavigate();
+  const handleCompletionDeadlineChange = (date) => {
+    if (date) {
+      const pd5Deadline = date.clone().subtract(1, 'month');
+      form.setFieldsValue({
+        PD5_REPORT_DEADLINE: pd5Deadline
+      });
+    } else {
+      form.setFieldsValue({
+        PD5_REPORT_DEADLINE: null
+      });
+    }
+  };
+
+  // Kiểm tra điều kiện hiển thị nút phê duyệt
+  const showTKSXApproval = currentProgressId === 1; // Đang xác nhận yêu cầu
+  const showQL2Approval = currentProgressId === 2; // Đang lập kế hoạch
+
+  // Lấy status name để hiển thị
+  const currentProgressName = options.progress?.find(
+    p => p.status_id === currentProgressId
+  )?.status_name || '';
 
   return (
     <Form
@@ -19,6 +42,21 @@ const ProgressTab = ({
       onFinish={onFinish}
       initialValues={{}}
     >
+      {/* Alert hiển thị trạng thái hiện tại và hướng dẫn */}
+      {(showTKSXApproval || showQL2Approval) && (
+        <Alert
+          message={`Trạng thái hiện tại: ${currentProgressName}`}
+          description={
+            showTKSXApproval 
+              ? 'Yêu cầu đang chờ TKSX phê duyệt. Sau khi phê duyệt, trạng thái sẽ chuyển sang "Đang lập kế hoạch".'
+              : 'Kế hoạch đang chờ QL2 phê duyệt. Sau khi phê duyệt, trạng thái sẽ chuyển sang "Đang đánh giá".'
+          }
+          type="info"
+          showIcon
+          style={{ marginBottom: '24px' }}
+        />
+      )}
+
       {/* Progress Status Section */}
       <div style={{ backgroundColor: '#f0f8ff', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
         <Row gutter={16}>
@@ -61,7 +99,7 @@ const ProgressTab = ({
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item name="PROGRESS_ID" label="Tiến độ">
-              <Select placeholder="Chọn trạng thái tiến độ" allowClear>
+              <Select placeholder="Chọn trạng thái tiến độ" allowClear disabled>
                 {options.progress?.map(item => (
                   <Select.Option key={item.status_id} value={item.status_id}>
                     {item.status_name}
@@ -72,7 +110,7 @@ const ProgressTab = ({
           </Col>
           <Col span={8}>
             <Form.Item name="PERSON_IN_CHARGE" label="Người phụ trách">
-              <Input placeholder="hung.nguyencong1" />
+              <Input disabled placeholder="Tự động điền" />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -98,40 +136,125 @@ const ProgressTab = ({
 
       {/* Department and Person Section */}
       <Divider orientation="left">Phân công thực hiện</Divider>
-      <Row gutter={16} style={{ backgroundColor: '#e6f7ff', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
+      <Row
+        gutter={16}
+        style={{
+          backgroundColor: '#e6f7ff',
+          padding: '16px',
+          borderRadius: '8px',
+          marginBottom: '16px',
+        }}
+      >
         <Col span={12}>
           <Form.Item name="START_DATE" label="Ngày bắt đầu">
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="10/16/2024" />
           </Form.Item>
         </Col>
+
         <Col span={12}>
           <Form.Item name="PD5_REPORT_DEADLINE" label="Kì hạn gửi báo cáo tới PD5">
-            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="7/2/2025" />
+            <DatePicker
+              style={{ width: '100%' }}
+              format="DD/MM/YYYY"
+              placeholder="Tự động tính = Kỳ hạn hoàn thành - 1 tháng"
+              disabled
+            />
+          </Form.Item>
+        </Col>
+        <Col span={12}>
+          <Form.Item name="FACTORY_CERT_READY" label="Chứng nhận ở nhà máy khác">
+            <Select placeholder="Chọn trạng thái chứng nhận">
+              <Select.Option value="yes">Yes</Select.Option>
+              <Select.Option value="no">No</Select.Option>
+            </Select>
+          </Form.Item>
+        </Col>
+
+        <Col span={12}>
+          <Form.Item name="FACTORY_CERT_STATUS" label="Nhà máy đã chứng nhận">
+            <Input placeholder="Nhập tên nhà máy hoặc mô tả" />
+          </Form.Item>
+        </Col>
+
+        <Col span={12}>
+          <Form.Item name="FACTORY_LEVEL" label="Cấp độ ở nhà máy khác">
+            <Select placeholder="Chọn cấp độ">
+              <Select.Option value="level1">1</Select.Option>
+              <Select.Option value="level2">2</Select.Option>
+              <Select.Option value="level3">3</Select.Option>
+              <Select.Option value="level4">4</Select.Option>
+            </Select>
+          </Form.Item>
+        </Col>
+
+        <Col span={12}>
+          <Form.Item name="PRICE_REQUEST" label="Yêu cầu báo cáo đánh giá">
+            <Input placeholder="Nhập yêu cầu báo cáo đánh giá" />
+          </Form.Item>
+        </Col>
+
+        <Col span={24}>
+          <Form.Item 
+            name="REPORT_LINK" 
+            label="Link gửi báo cáo đánh giá"
+            extra="Khi điền link và lưu, trạng thái sẽ tự động chuyển sang 'Đang tổng hợp báo cáo'"
+          >
+            <Input placeholder="https://example.com/bao-cao" />
           </Form.Item>
         </Col>
       </Row>
 
-      {/* Timeline Section */}
       <Divider orientation="left">Thời gian thực hiện</Divider>
-      <Row gutter={16} style={{ backgroundColor: '#f0f8ff', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
+      <Row
+        gutter={16}
+        style={{
+          backgroundColor: '#f0f8ff',
+          padding: '16px',
+          borderRadius: '8px',
+          marginBottom: '16px',
+        }}
+      >
         <Col span={8}>
-          <Form.Item name="COMPLETION_DEADLINE" label="Ngày mong muốn nhận chứng nhận">
-            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="8/2/2025" />
+          <Form.Item name="COMPLETION_DEADLINE" label="Kỳ hạn hoàn thành">
+            <DatePicker
+              style={{ width: '100%' }}
+              format="DD/MM/YYYY"
+              placeholder="8/2/2025"
+              onChange={handleCompletionDeadlineChange}
+            />
           </Form.Item>
         </Col>
+
         <Col span={8}>
-          <Form.Item name="ACTUAL_COMPLETION_DATE" label="Ngày hoàn thành thực tế">
+          <Form.Item 
+            name="ACTUAL_COMPLETION_DATE" 
+            label="Ngày hoàn thành thực tế"
+            extra="Khi điền ngày và lưu, trạng thái sẽ tự động chuyển sang 'Hoàn thành'"
+          >
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
           </Form.Item>
         </Col>
+
         <Col span={8}>
-          <Form.Item name="PD5_REPORT_ACTUAL_DATE" label="Ngày gửi báo cáo tới PD5 thực tế">
+          <Form.Item 
+            name="PD5_REPORT_ACTUAL_DATE" 
+            label="Ngày gửi báo cáo tới PD5 thực tế"
+            extra="Khi điền ngày và lưu, trạng thái sẽ tự động chuyển sang 'HQ đang phê duyệt'"
+          >
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
           </Form.Item>
         </Col>
       </Row>
 
-      <Row gutter={16} style={{ backgroundColor: '#fff1f0', padding: '16px', borderRadius: '8px', marginBottom: '16px' }}>
+      <Row
+        gutter={16}
+        style={{
+          backgroundColor: '#fff1f0',
+          padding: '16px',
+          borderRadius: '8px',
+          marginBottom: '16px',
+        }}
+      >
         <Col span={24}>
           <Form.Item name="NOTES_1" label="Ghi chú 1">
             <TextArea rows={4} />
@@ -139,13 +262,46 @@ const ProgressTab = ({
         </Col>
       </Row>
 
-      <Row justify="end" style={{ marginTop: '24px' }}>
-        <Button type="default" onClick={() => navigate(-1)} style={{ marginRight: '8px' }}>
-          Quay lại
-        </Button>
-        <Button type="primary" htmlType="submit" loading={loading}>
-          Lưu tiến độ
-        </Button>
+      {/* Buttons Section */}
+      <Row justify="space-between" style={{ marginTop: '24px' }}>
+        <Col>
+          <Button type="default" onClick={() => navigate(-1)}>
+            Quay lại
+          </Button>
+        </Col>
+        
+        <Col>
+          <Space>
+            {/* Nút TKSX Phê duyệt */}
+            {showTKSXApproval && (
+              <Button
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                onClick={() => onApprovalSuccess && onApprovalSuccess('tksx')}
+                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              >
+                TKSX Phê duyệt
+              </Button>
+            )}
+
+            {/* Nút QL2 Phê duyệt */}
+            {showQL2Approval && (
+              <Button
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                onClick={() => onApprovalSuccess && onApprovalSuccess('ql2')}
+                style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
+              >
+                QL2 Phê duyệt
+              </Button>
+            )}
+
+            {/* Nút Lưu tiến độ */}
+            <Button type="primary" htmlType="submit" loading={loading}>
+              Lưu tiến độ
+            </Button>
+          </Space>
+        </Col>
       </Row>
     </Form>
   );

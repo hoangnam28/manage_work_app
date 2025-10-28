@@ -37,51 +37,6 @@ const CreateUlCertificationModal = ({
   const [catalogPreview, setCatalogPreview] = useState(null);
   const [layerStructurePreview, setLayerStructurePreview] = useState(null);
 
- useEffect(() => {
-  if (open) {
-    if (editingRecord) {
-      // Map field names từ backend sang form
-      const formData = {
-        releaseDate: editingRecord.RELEASE_DATE
-          ? dayjs(editingRecord.RELEASE_DATE)
-          : null,
-        factoryName: editingRecord.FACTORY_NAME,
-        requestReason: editingRecord.REQUEST_REASON,
-        layerStructure: editingRecord.LAYER_STRUCTURE,
-        usage: editingRecord.USAGE,
-        RELIABILITY_LEVEL_ID: editingRecord.RELIABILITY_LEVEL_ID || editingRecord.reliabilityLevelId,
-        expectedProductionQty: editingRecord.EXPECTED_PRODUCTION_QTY,
-        massProductionDate: editingRecord.MASS_PRODUCTION_DATE
-          ? dayjs(editingRecord.MASS_PRODUCTION_DATE)
-          : null,
-        materialCertExpected: editingRecord.MATERIAL_CERT_EXPECTED
-          ? dayjs(editingRecord.MATERIAL_CERT_EXPECTED)
-          : null,
-        manufacturerName: editingRecord.MANUFACTURER_NAME,
-        factoryLocation: editingRecord.FACTORY_LOCATION,
-        materialName: editingRecord.MATERIAL_NAME,
-        MATERIAL_CLASS_ID: editingRecord.MATERIAL_CLASS_ID || editingRecord.materialClassId,
-        materialProperty1Id: editingRecord.MATERIAL_PROPERTY1_ID,
-        materialProperty2Id: editingRecord.MATERIAL_PROPERTY2_ID,
-        materialProperty3Id: editingRecord.MATERIAL_PROPERTY3_ID,
-        materialStatusId: editingRecord.MATERIAL_STATUS,
-        ulStatusId: editingRecord.UL_CERT_STATUS,
-        notes1: editingRecord.NOTES_1,
-      };
-      
-      console.log('Setting form values for edit:', formData);
-      form.setFieldsValue(formData);
-    } else {
-      form.resetFields();
-      // Reset images khi tạo mới
-      setCatalogImage(null);
-      setLayerStructureImage(null);
-      setCatalogPreview(null);
-      setLayerStructurePreview(null);
-    }
-  }
-}, [open, editingRecord, form]);
-
   const handleCancel = () => {
     form.resetFields();
     onCancel();
@@ -173,9 +128,20 @@ useEffect(() => {
       
       console.log('Setting form values for edit:', formData);
       form.setFieldsValue(formData);
+
+      setCatalogImage(null);
+      setLayerStructureImage(null);
+      setCatalogPreview(null);
+      setLayerStructurePreview(null);
     } else {
-      form.resetFields();
-      // Reset images khi tạo mới
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+      form.setFieldsValue({
+        releaseDate: dayjs(), 
+        factoryName: 'タクタット工場 (ベトナム)', 
+        PERSON_IN_CHARGE: userInfo.email || userInfo.username,
+        DEPARTMENT_IN_CHARGE: userInfo.derpartment,
+        START_DATE: dayjs()
+      });
       setCatalogImage(null);
       setLayerStructureImage(null);
       setCatalogPreview(null);
@@ -189,10 +155,6 @@ const handleSubmit = async (values) => {
   setLoading(true);
   
   try {
-    console.log('╔════════════════════════════════════════╗');
-    console.log('║   MODAL: Starting Form Submission     ║');
-    console.log('╚════════════════════════════════════════╝');
-    
     // Prepare data
     const submitData = {
       ...values,
@@ -202,64 +164,11 @@ const handleSubmit = async (values) => {
       materialClassId: values.MATERIAL_CLASS_ID,
       reliabilityLevelId: values.RELIABILITY_LEVEL_ID,
     };
-
-    console.log('📝 MODAL: Form values:', submitData);
-    console.log('🖼️ MODAL: Catalog image ready:', !!catalogImage, catalogImage?.name);
-    console.log('🖼️ MODAL: Layer image ready:', !!layerStructureImage, layerStructureImage?.name);
-    console.log('🎭 MODAL: Current mode:', mode);
-    
-    // Step 1: Create/Update certification
-    console.log('\n--- STEP 1: Creating Certification ---');
-    console.log('⏳ MODAL: Calling onSubmit function...');
     
     const result = await onSubmit(submitData);
-    
-    console.log('\n--- STEP 1 RESULT ---');
-    console.log('📥 MODAL: Result type:', typeof result);
-    console.log('📥 MODAL: Result is null?', result === null);
-    console.log('📥 MODAL: Result is undefined?', result === undefined);
-    console.log('📥 MODAL: Full result:', JSON.stringify(result, null, 2));
-    
-    // Validate result
-    if (!result) {
-      console.error('❌ MODAL: No result object returned!');
-      message.error('Không nhận được phản hồi từ server');
-      return;
-    }
-    
-    console.log('✓ MODAL: Result object exists');
-    console.log('📊 MODAL: result.success =', result.success);
-    
-    if (!result.success) {
-      console.error('❌ MODAL: Request failed');
-      console.error('Error message:', result.message);
-      message.error(result.message || 'Có lỗi xảy ra');
-      return;
-    }
-    
-    console.log('✓ MODAL: Request successful');
-    console.log('📊 MODAL: result.data =', result.data);
-    console.log('📊 MODAL: result.data.id =', result.data?.id);
-    
     const certificationId = result.data?.id;
-    
-    if (!certificationId) {
-      console.error('❌ MODAL: No certification ID in response!');
-      console.error('Expected: result.data.id');
-      console.error('Got result.data:', result.data);
-      message.error('Không nhận được ID từ server');
-      return;
-    }
-    
-    console.log('✅ MODAL: Got certification ID:', certificationId);
-    
-    // Step 2: Upload images (only for create mode)
     if (mode === 'create') {
-      console.log('\n--- STEP 2: Uploading Images ---');
-      
-      const hasImages = catalogImage || layerStructureImage;
-      console.log('🖼️ MODAL: Has images to upload?', hasImages);
-      
+      const hasImages = catalogImage || layerStructureImage;      
       if (hasImages) {
         const imagesToUpload = [];
         
@@ -269,7 +178,6 @@ const handleSubmit = async (values) => {
             type: catalogImage.type 
           });
           imagesToUpload.push(file);
-          console.log('✓ Added catalog:', file.name, `(${(file.size/1024).toFixed(2)} KB)`);
         }
         
         if (layerStructureImage) {
@@ -278,63 +186,32 @@ const handleSubmit = async (values) => {
             type: layerStructureImage.type 
           });
           imagesToUpload.push(file);
-          console.log('✓ Added layer structure:', file.name, `(${(file.size/1024).toFixed(2)} KB)`);
-        }
-        
-        console.log(`📤 MODAL: Uploading ${imagesToUpload.length} image(s)...`);
-        
+        }  
         try {
           const uploadResult = await uploadCertificationImages(certificationId, imagesToUpload);
-          
-          console.log('\n--- STEP 2 RESULT ---');
-          console.log('📥 MODAL: Upload result:', uploadResult);
-          
           if (uploadResult.success) {
             const uploadedCount = uploadResult.count || uploadResult.images?.length || imagesToUpload.length;
-            console.log(`✅ MODAL: Successfully uploaded ${uploadedCount} image(s)`);
             message.success(`✅ Tạo certification và upload ${uploadedCount} hình thành công!`);
           } else {
-            console.warn('⚠️ MODAL: Upload reported as not successful');
             message.warning('⚠️ Tạo thành công nhưng upload hình thất bại: ' + uploadResult.message);
           }
         } catch (uploadError) {
-          console.error('❌ MODAL: Upload error:', uploadError);
           message.warning('⚠️ Tạo certification thành công nhưng upload hình thất bại');
         }
       } else {
-        console.log('ℹ️ MODAL: No images to upload');
         message.success('✅ Tạo certification thành công!');
       }
     } else {
-      console.log('\n--- STEP 2: Skipped (Edit mode) ---');
       message.success('✅ ' + (result.message || 'Cập nhật thành công!'));
     }
-    
-    // Step 3: Callback and close
-    console.log('\n--- STEP 3: Cleanup ---');
-    console.log('🔄 MODAL: Calling onSuccess callback with ID:', certificationId);
     
     if (onSuccess) {
       onSuccess(mode === 'create' ? certificationId : null);
     } else {
       console.warn('⚠️ MODAL: No onSuccess callback provided');
     }
-    
-    console.log('🚪 MODAL: Closing modal...');
     handleCancel();
-    
-    console.log('╔════════════════════════════════════════╗');
-    console.log('║   MODAL: Submission Complete ✅        ║');
-    console.log('╚════════════════════════════════════════╝\n');
-    
   } catch (error) {
-    console.error('\n╔════════════════════════════════════════╗');
-    console.error('║   MODAL: Submission FAILED ❌          ║');
-    console.error('╚════════════════════════════════════════╝');
-    console.error('Error type:', error.constructor.name);
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    
     message.error(error.message || 'Có lỗi xảy ra');
   } finally {
     setLoading(false);

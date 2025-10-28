@@ -12,6 +12,8 @@ import {
   updateMaterialCertification,
   exportCertificationForm,
   fetchMaterialCertificationOptions,
+  tksxApproveCertification,
+  ql2ApproveCertification
 } from '../utils/material-certification-api';
 import ProgressTab from '../components/tabs/ProgressTab';
 import TimeTrackingTab from '../components/tabs/TimeTrackingTab';
@@ -31,6 +33,7 @@ const CertificationForm = () => {
   const [images, setImages] = useState([]);
   const [imagesLoading, setImagesLoading] = useState(false);
   const [options, setOptions] = useState({});
+  const [currentProgressId, setCurrentProgressId] = useState(null);
 
 
   const certificationId = location.state?.certificationData?.ID || location.state?.certificationId;
@@ -40,7 +43,17 @@ const CertificationForm = () => {
       loadCertificationData();
       loadOptions();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const handleMaterialCertExpectedChange = (date) => {
+    if (date) {
+      const pd5Deadline = date.clone().subtract(1, 'month');
+      progressForm.setFieldsValue({
+        PD5_REPORT_DEADLINE: pd5Deadline,
+        COMPLETION_DEADLINE: date,
+      });
+    }
+  };
 
   const loadOptions = async () => {
     try {
@@ -60,7 +73,7 @@ const CertificationForm = () => {
       const response = await fetchMaterialCertificationDetail(certificationId);
       if (response.success && response.data) {
         const data = response.data;
-
+        setCurrentProgressId(data.PROGRESS_ID);
         // Set certification form values
         const formValues = {
           RELEASE_DATE: data.RELEASE_DATE ? moment(data.RELEASE_DATE) : null,
@@ -81,6 +94,11 @@ const CertificationForm = () => {
           MATERIAL_PROPERTY3_ID: data.MATERIAL_PROPERTY3_ID,
           MATERIAL_STATUS: data.MATERIAL_STATUS,
           UL_CERT_STATUS: data.UL_CERT_STATUS,
+          FACTORY_CERT_READY: data.FACTORY_CERT_READY,
+          FACTORY_CERT_STATUS: data.FACTORY_CERT_STATUS,
+          FACTORY_LEVEL: data.FACTORY_LEVEL,
+          PRICE_REQUEST: data.PRICE_REQUEST,
+          REPORT_LINK: data.REPORT_LINK,
           NOTES_1: data.NOTES_1,
           NOTES_2: data.NOTES_2,
         };
@@ -118,11 +136,7 @@ const CertificationForm = () => {
             };
           }).filter(Boolean);
         }
-        
-        console.log('Loaded images:', processedImages);
         setImages(processedImages);
-
-        // Set progress form values
         const progressFormValues = {
           PERSON_IN_CHARGE: data.PERSON_IN_CHARGE || undefined,
           START_DATE: data.START_DATE ? moment(data.START_DATE) : null,
@@ -138,6 +152,11 @@ const CertificationForm = () => {
           RELIABILITY_LEVEL_ID: data.RELIABILITY_LEVEL_ID,
           DEPARTMENT_IN_CHARGE: data.DEPT_ID || data.DEPARTMENT_IN_CHARGE || undefined,
           NOTES_1: data.NOTES_1,
+          FACTORY_CERT_READY: data.FACTORY_CERT_READY || undefined,
+          FACTORY_CERT_STATUS: data.FACTORY_CERT_STATUS || undefined,
+          FACTORY_LEVEL: data.FACTORY_LEVEL || undefined,
+          PRICE_REQUEST: data.PRICE_REQUEST || undefined,
+          REPORT_LINK: data.REPORT_LINK || undefined,
         };
         progressForm.setFieldsValue(progressFormValues);
       }
@@ -230,6 +249,15 @@ const CertificationForm = () => {
         layerStructure: values.LAYER_STRUCTURE,
         reliabilityLevelId: values.RELIABILITY_LEVEL_ID,
         notes1: values.NOTES_1,
+
+        // 🆕 Các field mới
+        factoryCertReady: values.FACTORY_CERT_READY,
+        factoryCertStatus: values.FACTORY_CERT_STATUS,
+        factoryLevel: values.FACTORY_LEVEL,
+        priceRequest: values.PRICE_REQUEST,
+        reportLink: values.REPORT_LINK,
+
+        // Certification data
         releaseDate: certificationData.RELEASE_DATE ? certificationData.RELEASE_DATE.format('YYYY-MM-DD') : null,
         factoryName: certificationData.FACTORY_NAME,
         requestReason: certificationData.REQUEST_REASON,
@@ -247,24 +275,45 @@ const CertificationForm = () => {
         notes2: certificationData.NOTES_2,
       };
 
+      console.log('📤 Submitting progress data:', formattedValues);
+
       const response = await updateMaterialCertification(certificationId, formattedValues);
+
       if (response.success) {
         toast.success('Lưu tiến độ thành công!');
-        const currentCertValues = form.getFieldsValue();
-        form.setFieldsValue({
-          ...currentCertValues,
-          MATERIAL_NAME: values.MATERIAL_NAME,
-          MATERIAL_CLASS_ID: values.MATERIAL_CLASS_ID,
-          LAYER_STRUCTURE: values.LAYER_STRUCTURE,
-          RELIABILITY_LEVEL_ID: values.RELIABILITY_LEVEL_ID,
-          NOTES_1: values.NOTES_1,
-        });
+
+        await loadCertificationData();
+
       } else {
         toast.error(response.message || 'Lưu tiến độ thất bại');
       }
     } catch (error) {
       console.error('Error saving progress:', error);
       toast.error('Lỗi khi lưu tiến độ: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleApproval = async (approvalType) => {
+    try {
+      setLoading(true);
+
+      let response;
+      if (approvalType === 'tksx') {
+        response = await tksxApproveCertification(certificationId);
+        toast.success('TKSX đã phê duyệt thành công!');
+      } else if (approvalType === 'ql2') {
+        response = await ql2ApproveCertification(certificationId);
+        toast.success('QL2 đã phê duyệt thành công!');
+      }
+
+      if (response && response.success) {
+        // Reload data để cập nhật UI
+        await loadCertificationData();
+      }
+    } catch (error) {
+      console.error('Error approving:', error);
+      toast.error('Lỗi khi phê duyệt: ' + (error.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }
@@ -382,8 +431,15 @@ const CertificationForm = () => {
                     </Form.Item>
                   </Col>
                   <Col span={8}>
-                    <Form.Item name="MATERIAL_CERT_EXPECTED" label="Ngày mong muốn nhận chứng nhận">
-                      <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                    <Form.Item
+                      name="MATERIAL_CERT_EXPECTED"
+                      label="Ngày mong muốn nhận chứng nhận"
+                    >
+                      <DatePicker
+                        style={{ width: '100%' }}
+                        format="DD/MM/YYYY"
+                        onChange={handleMaterialCertExpectedChange}
+                      />
                     </Form.Item>
                   </Col>
                 </Row>
@@ -483,73 +539,26 @@ const CertificationForm = () => {
                 </Row>
 
                 <Divider orientation="left">Ghi chú</Divider>
-                <Row gutter={16}>
-                  <Col span={12}>
-                    <Form.Item name="NOTES_1" label="Ghi chú 1">
-                      <TextArea rows={4} />
-                    </Form.Item>
-                  </Col>
-                  <Col span={12}>
-                    <Form.Item name="NOTES_2" label="Ghi chú 2">
-                      <TextArea rows={4} />
-                    </Form.Item>
-                  </Col>
-                </Row>
+                <Col span={24}>
+                  <Form.Item name="NOTES_1" label="Ghi chú">
+                    <TextArea rows={4} />
+                  </Form.Item>
+                </Col>
 
                 <Divider orientation="left">Hình ảnh chứng nhận</Divider>
 
-              <Row gutter={16}>
-                <Col span={12}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ 
-                      fontWeight: 'bold', 
-                      marginBottom: '12px',
-                      fontSize: '14px',
-                      color: '#1890ff'
-                    }}>
-                      Catalog
-                    </div>
-                    {imagesLoading ? (
-                      <div style={{ 
-                        height: '200px', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        background: '#fafafa',
-                        border: '1px dashed #d9d9d9',
-                        borderRadius: '8px'
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{
+                        fontWeight: 'bold',
+                        marginBottom: '12px',
+                        fontSize: '14px',
+                        color: '#1890ff'
                       }}>
-                        <span style={{ color: '#999' }}>Đang tải...</span>
+                        Catalog
                       </div>
-                    ) : (
-                      images.find(img => 
-                        (img.name || img.NAME || img.fileName || '').toLowerCase().includes('catalog')
-                      ) ? (
-                        <div style={{
-                          border: '1px solid #d9d9d9',
-                          borderRadius: '8px',
-                          padding: '8px',
-                          background: '#fafafa'
-                        }}>
-                          <img
-                            src={images.find(img => 
-                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('catalog')
-                            ).url || images.find(img => 
-                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('catalog')
-                            ).URL}
-                            alt="Catalog"
-                            style={{
-                              width: '100%',
-                              maxHeight: '300px',
-                              objectFit: 'contain',
-                              borderRadius: '4px'
-                            }}
-                            onError={(e) => {
-                              e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3EKhông tải được%3C/text%3E%3C/svg%3E';
-                            }}
-                          />
-                        </div>
-                      ) : (
+                      {imagesLoading ? (
                         <div style={{
                           height: '200px',
                           display: 'flex',
@@ -557,76 +566,67 @@ const CertificationForm = () => {
                           justifyContent: 'center',
                           background: '#fafafa',
                           border: '1px dashed #d9d9d9',
-                          borderRadius: '8px',
-                          color: '#999'
+                          borderRadius: '8px'
                         }}>
-                          Chưa có hình Catalog
+                          <span style={{ color: '#999' }}>Đang tải...</span>
                         </div>
-                      )
-                    )}
-                  </div>
-                </Col>
+                      ) : (
+                        images.find(img =>
+                          (img.name || img.NAME || img.fileName || '').toLowerCase().includes('catalog')
+                        ) ? (
+                          <div style={{
+                            border: '1px solid #d9d9d9',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            background: '#fafafa'
+                          }}>
+                            <img
+                              src={images.find(img =>
+                                (img.name || img.NAME || img.fileName || '').toLowerCase().includes('catalog')
+                              ).url || images.find(img =>
+                                (img.name || img.NAME || img.fileName || '').toLowerCase().includes('catalog')
+                              ).URL}
+                              alt="Catalog"
+                              style={{
+                                width: '100%',
+                                maxHeight: '300px',
+                                objectFit: 'contain',
+                                borderRadius: '4px'
+                              }}
+                              onError={(e) => {
+                                e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3EKhông tải được%3C/text%3E%3C/svg%3E';
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div style={{
+                            height: '200px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: '#fafafa',
+                            border: '1px dashed #d9d9d9',
+                            borderRadius: '8px',
+                            color: '#999'
+                          }}>
+                            Chưa có hình Catalog
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </Col>
 
-                <Col span={12}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ 
-                      fontWeight: 'bold', 
-                      marginBottom: '12px',
-                      fontSize: '14px',
-                      color: '#1890ff'
-                    }}>
-                      Cấu trúc lớp
-                    </div>
-                    {imagesLoading ? (
-                      <div style={{ 
-                        height: '200px', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        background: '#fafafa',
-                        border: '1px dashed #d9d9d9',
-                        borderRadius: '8px'
+                  <Col span={12}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{
+                        fontWeight: 'bold',
+                        marginBottom: '12px',
+                        fontSize: '14px',
+                        color: '#1890ff'
                       }}>
-                        <span style={{ color: '#999' }}>Đang tải...</span>
+                        Cấu trúc lớp
                       </div>
-                    ) : (
-                      images.find(img => 
-                        (img.name || img.NAME || img.fileName || '').toLowerCase().includes('layer') ||
-                        (img.name || img.NAME || img.fileName || '').toLowerCase().includes('structure') ||
-                        (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cau_truc') ||
-                        (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cautruc')
-                      ) ? (
-                        <div style={{
-                          border: '1px solid #d9d9d9',
-                          borderRadius: '8px',
-                          padding: '8px',
-                          background: '#fafafa'
-                        }}>
-                          <img
-                            src={images.find(img => 
-                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('layer') ||
-                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('structure') ||
-                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cau_truc') ||
-                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cautruc')
-                            ).url || images.find(img => 
-                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('layer') ||
-                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('structure') ||
-                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cau_truc') ||
-                              (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cautruc')
-                            ).URL}
-                            alt="Layer Structure"
-                            style={{
-                              width: '100%',
-                              maxHeight: '300px',
-                              objectFit: 'contain',
-                              borderRadius: '4px'
-                            }}
-                            onError={(e) => {
-                              e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3EKhông tải được%3C/text%3E%3C/svg%3E';
-                            }}
-                          />
-                        </div>
-                      ) : (
+                      {imagesLoading ? (
                         <div style={{
                           height: '200px',
                           display: 'flex',
@@ -634,16 +634,65 @@ const CertificationForm = () => {
                           justifyContent: 'center',
                           background: '#fafafa',
                           border: '1px dashed #d9d9d9',
-                          borderRadius: '8px',
-                          color: '#999'
+                          borderRadius: '8px'
                         }}>
-                          Chưa có hình Cấu trúc lớp
+                          <span style={{ color: '#999' }}>Đang tải...</span>
                         </div>
-                      )
-                    )}
-                  </div>
-                </Col>
-              </Row>
+                      ) : (
+                        images.find(img =>
+                          (img.name || img.NAME || img.fileName || '').toLowerCase().includes('layer') ||
+                          (img.name || img.NAME || img.fileName || '').toLowerCase().includes('structure') ||
+                          (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cau_truc') ||
+                          (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cautruc')
+                        ) ? (
+                          <div style={{
+                            border: '1px solid #d9d9d9',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            background: '#fafafa'
+                          }}>
+                            <img
+                              src={images.find(img =>
+                                (img.name || img.NAME || img.fileName || '').toLowerCase().includes('layer') ||
+                                (img.name || img.NAME || img.fileName || '').toLowerCase().includes('structure') ||
+                                (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cau_truc') ||
+                                (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cautruc')
+                              ).url || images.find(img =>
+                                (img.name || img.NAME || img.fileName || '').toLowerCase().includes('layer') ||
+                                (img.name || img.NAME || img.fileName || '').toLowerCase().includes('structure') ||
+                                (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cau_truc') ||
+                                (img.name || img.NAME || img.fileName || '').toLowerCase().includes('cautruc')
+                              ).URL}
+                              alt="Layer Structure"
+                              style={{
+                                width: '100%',
+                                maxHeight: '300px',
+                                objectFit: 'contain',
+                                borderRadius: '4px'
+                              }}
+                              onError={(e) => {
+                                e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect fill="%23f0f0f0" width="200" height="200"/%3E%3Ctext x="50%25" y="50%25" text-anchor="middle" dy=".3em" fill="%23999"%3EKhông tải được%3C/text%3E%3C/svg%3E';
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div style={{
+                            height: '200px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            background: '#fafafa',
+                            border: '1px dashed #d9d9d9',
+                            borderRadius: '8px',
+                            color: '#999'
+                          }}>
+                            Chưa có hình Cấu trúc lớp
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </Col>
+                </Row>
                 <Row justify="end" style={{ marginTop: '24px' }}>
                   <Button type="default" onClick={() => navigate(-1)} style={{ marginRight: '8px' }}>
                     Quay lại
@@ -675,6 +724,9 @@ const CertificationForm = () => {
                 onFinish={onProgressFinish}
                 loading={loading}
                 options={options}
+                certificationId={certificationId}
+                currentProgressId={currentProgressId}
+                onApprovalSuccess={handleApproval}
               />
             </TabPane>
 

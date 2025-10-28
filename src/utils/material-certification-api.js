@@ -1,6 +1,5 @@
 import axiosInstance from './axiosConfig';
 
-// Get image URL by certificationId and imageId - FIXED VERSION
 export const getCertificationImageUrl = (certificationId, imageId) => {
   if (!certificationId || !imageId) {
     console.warn('Missing certificationId or imageId for image URL generation');
@@ -18,11 +17,9 @@ export const getCertificationImageUrl = (certificationId, imageId) => {
   const baseURL = axiosInstance.defaults.baseURL || '';
   const url = `${baseURL}/material-certification/image/${certId}/${imgId}`;
   
-  console.log('Generated image URL:', url);
   return url;
 };
 
-// Get all images for a certification - IMPROVED VERSION
 export const listCertificationImages = async (certificationId) => {
   try {
     if (!certificationId) {
@@ -35,11 +32,9 @@ export const listCertificationImages = async (certificationId) => {
     
     console.log('Images list response:', response.data);
     
-    // Ensure images array exists and has proper URLs
     if (response.data && response.data.images) {
       response.data.images = response.data.images.map(image => ({
         ...image,
-        // Ensure URL is properly formatted
         url: image.url || getCertificationImageUrl(certificationId, image.id || image.imageId)
       }));
     }
@@ -51,7 +46,6 @@ export const listCertificationImages = async (certificationId) => {
   }
 };
 
-// Delete specific image by imageId
 export const deleteCertificationImage = async (certificationId, imageId) => {
   try {
     if (!certificationId || !imageId) {
@@ -67,7 +61,6 @@ export const deleteCertificationImage = async (certificationId, imageId) => {
   }
 };
 
-// Test image URL accessibility - NEW HELPER FUNCTION
 export const testImageUrl = async (imageUrl) => {
   try {
     const response = await fetch(imageUrl, { 
@@ -81,20 +74,14 @@ export const testImageUrl = async (imageUrl) => {
   }
 };
 
-// Fetch certification detail with better image handling
 export const fetchMaterialCertificationDetail = async (id) => {
   try {
     if (!id) {
       throw new Error('ID không hợp lệ');
     }
-    
-    console.log('Fetching certification detail for ID:', id);
     const response = await axiosInstance.get(`/material-certification/${id}`);
-    
     console.log('Certification detail response:', response.data);
-    
-    // If response includes images, ensure they have proper URLs
-    if (response.data && response.data.images) {
+        if (response.data && response.data.images) {
       response.data.images = response.data.images.map(image => ({
         ...image,
         url: image.url || getCertificationImageUrl(id, image.id || image.imageId)
@@ -108,14 +95,19 @@ export const fetchMaterialCertificationDetail = async (id) => {
   }
 };
 
-// Keep all other existing functions unchanged
 export const fetchMaterialCertificationList = async (params = {}) => {
   try {
     console.log('[FE][UL-CERT][LIST] params:', params);
+    // Pass all params through to backend so filters (e.g. PROGRESS) are handled server-side
     const response = await axiosInstance.get('/material-certification/list-ul', {
       params: {
         page: params.page || 1,
         pageSize: params.pageSize || 20,
+        // spread any additional filters (e.g. PROGRESS, MATERIAL_NAME, etc.)
+        ...Object.keys(params).reduce((acc, key) => {
+          if (key !== 'page' && key !== 'pageSize') acc[key] = params[key];
+          return acc;
+        }, {})
       }
     });
     return response.data;
@@ -134,10 +126,6 @@ export const fetchMaterialCertificationOptions = async () => {
     throw error;
   }
 };
-
-// ... (giữ nguyên tất cả code phía trên)
-
-// UPDATED: createMaterialCertification with debug logs
 export const createMaterialCertification = async (data) => {
   try {
     console.log('=== API: createMaterialCertification START ===');
@@ -153,19 +141,7 @@ export const createMaterialCertification = async (data) => {
       materialClassId: data.materialClassId ? Number(data.materialClassId) : null,
       reliabilityLevelId: data.reliabilityLevelId ? Number(data.reliabilityLevelId) : null,
     };
-
-    console.log('📤 API: Formatted data:', formattedData);
-    console.log('⏳ API: Sending POST request...');
-    
     const response = await axiosInstance.post('/material-certification/create', formattedData);
-    
-    console.log('📥 API: Raw response:', response);
-    console.log('📥 API: Response status:', response.status);
-    console.log('📥 API: Response data:', response.data);
-    console.log('📥 API: Response data.success:', response.data?.success);
-    console.log('📥 API: Response data.data:', response.data?.data);
-    console.log('📥 API: Response data.data.id:', response.data?.data?.id);
-    
     // Validation
     if (!response.data) {
       console.error('❌ API: No response.data!');
@@ -182,9 +158,7 @@ export const createMaterialCertification = async (data) => {
       console.error('Full response.data:', JSON.stringify(response.data, null, 2));
       throw new Error('No certification ID returned from server');
     }
-    
-    console.log('✅ API: Success! Certification ID:', response.data.data.id);
-    console.log('=== API: createMaterialCertification END ===');
+
     
     return response.data;
     
@@ -206,17 +180,11 @@ export const createMaterialCertification = async (data) => {
   }
 };
 
-// UPDATED: uploadCertificationImages with better logs
 export const uploadCertificationImages = async (certificationId, files) => {
   try {
     if (!certificationId || !files || files.length === 0) {
       throw new Error('Thiếu ID hoặc file để upload');
     }
-    
-    console.log('=== API: uploadCertificationImages START ===');
-    console.log('📤 API: Certification ID:', certificationId);
-    console.log('📤 API: Number of files:', files.length);
-    
     const formData = new FormData();
     Array.from(files).forEach((file, index) => {
       console.log(`📎 API: File ${index + 1}:`, {
@@ -240,15 +208,9 @@ export const uploadCertificationImages = async (certificationId, files) => {
       }
     );
     
-    console.log('📥 API: Upload response:', response.data);
-    console.log('✅ API: Upload success:', response.data?.success);
-    console.log('📊 API: Uploaded count:', response.data?.count || response.data?.images?.length || 0);
-    console.log('=== API: uploadCertificationImages END ===');
-    
     return response.data;
     
   } catch (error) {
-    console.error('❌ API: Error uploading certification images');
     console.error('Error:', error);
     
     if (error.response) {
@@ -258,8 +220,6 @@ export const uploadCertificationImages = async (certificationId, files) => {
     throw error;
   }
 };
-
-// ... (giữ nguyên tất cả các function còn lại)
 
 export const updateMaterialCertification = async (id, data) => {
   try {
@@ -276,9 +236,34 @@ export const updateMaterialCertification = async (id, data) => {
       ulStatusId: data.ulStatusId ? Number(data.ulStatusId) : null,
       materialClassId: data.materialClassId ? Number(data.materialClassId) : null,
       reliabilityLevelId: data.reliabilityLevelId ? Number(data.reliabilityLevelId) : null,
+      progress: data.PROGRESS_ID ?? data.progress,
+      departmentInCharge: data.DEPARTMENT_IN_CHARGE ?? data.departmentInCharge,
+      personInCharge: data.PERSON_IN_CHARGE ?? data.personInCharge,
+      startDate: data.START_DATE ?? data.startDate,
+      pd5ReportDeadline: data.PD5_REPORT_DEADLINE ?? data.pd5ReportDeadline,
+      completionDeadline: data.COMPLETION_DEADLINE ?? data.completionDeadline,
+      actualCompletionDate: data.ACTUAL_COMPLETION_DATE ?? data.actualCompletionDate,
+      pd5ReportActualDate: data.PD5_REPORT_ACTUAL_DATE ?? data.pd5ReportActualDate,
+      factoryCertReady: data.FACTORY_CERT_READY ?? data.factoryCertReady,
+      factoryCertStatus: data.FACTORY_CERT_STATUS ?? data.factoryCertStatus,
+      factoryLevel: data.FACTORY_LEVEL ?? data.factoryLevel,
+      priceRequest: data.PRICE_REQUEST ?? data.priceRequest,
+      reportLink: data.REPORT_LINK ?? data.reportLink,
+      materialName: data.MATERIAL_NAME ?? data.materialName,
+      layerStructure: data.LAYER_STRUCTURE ?? data.layerStructure,
+      notes1: data.NOTES_1 ?? data.notes1,
     };
 
-    const response = await axiosInstance.put(`/material-certification/update/${id}`, formattedData);
+    const cleanData = {};
+    Object.keys(formattedData).forEach(key => {
+      if (key !== key.toUpperCase()) { 
+        cleanData[key] = formattedData[key];
+      }
+    });
+
+    console.log('🔄 Formatted data for update:', cleanData);
+
+    const response = await axiosInstance.put(`/material-certification/update/${id}`, cleanData);
     return response.data;
   } catch (error) {
     console.error('Error updating UL certification:', error);
@@ -349,6 +334,95 @@ export const updateCertificationTotalTime = async (certificationId, totalTime) =
     return response.data;
   } catch (error) {
     console.error('Error updating certification total time:', error);
+    throw error;
+  }
+};
+
+/**
+ * Lấy lịch sử thay đổi của một certification
+ */
+export const fetchCertificationHistory = async (certificationId) => {
+  try {
+    if (!certificationId) {
+      throw new Error('ID certification không hợp lệ');
+    }
+    
+    console.log('📜 Fetching history for certification:', certificationId);
+    
+    const response = await axiosInstance.get(
+      `/material-certification/${certificationId}/history`
+    );
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Lỗi khi lấy lịch sử');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching certification history:', error);
+    if (error.response) {
+      throw new Error(error.response.data?.message || 'Lỗi khi lấy lịch sử');
+    }
+    throw error;
+  }
+};
+
+// Thêm vào utils/material-certification-api.js
+
+/**
+ * TKSX phê duyệt yêu cầu
+ * Chuyển từ "Đang xác nhận yêu cầu" (1) -> "Đang lập kế hoạch" (2)
+ */
+export const tksxApproveCertification = async (certificationId) => {
+  try {
+    if (!certificationId) {
+      throw new Error('ID certification không hợp lệ');
+    }
+    
+    console.log('📝 TKSX approving certification:', certificationId);
+    
+    const response = await axiosInstance.post(
+      `/material-certification/approve/${certificationId}/tksx`
+    );
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Lỗi khi phê duyệt');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error in TKSX approval:', error);
+    if (error.response) {
+      throw new Error(error.response.data?.message || 'Lỗi khi phê duyệt');
+    }
+    throw error;
+  }
+};
+
+/**
+ * QL2 phê duyệt kế hoạch
+ * Chuyển từ "Đang lập kế hoạch" (2) -> "Đang đánh giá" (3)
+ */
+export const ql2ApproveCertification = async (certificationId) => {
+  try {
+    if (!certificationId) {
+      throw new Error('ID certification không hợp lệ');
+    }
+        
+    const response = await axiosInstance.post(
+      `/material-certification/approve/${certificationId}/ql2`
+    );
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Lỗi khi phê duyệt');
+    }
+    
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error in QL2 approval:', error);
+    if (error.response) {
+      throw new Error(error.response.data?.message || 'Lỗi khi phê duyệt');
+    }
     throw error;
   }
 };
