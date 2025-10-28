@@ -161,7 +161,7 @@ const handleCreate = async (values) => {
 
  const handleExport = () => {
   try {
-    const loadingToast = toast.loading("Đang xuất dữ liệu...");
+
 
     // ✅ Lấy toàn bộ dữ liệu từ state data
     const exportData = data.map((row) => {
@@ -211,20 +211,83 @@ const handleCreate = async (values) => {
       .split("T")[0]}.xlsx`;
 
     saveAs(blob, filename);
-
-    toast.dismiss(loadingToast);
     toast.success("Xuất file thành công!");
   } catch (error) {
     console.error("Export error:", error);
     toast.error("Lỗi khi xuất file!");
   }
 };
+const handleExportLateReport = () => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const lateData = data.filter((row) => {
+      const deadline = row.PD5_REPORT_DEADLINE ? new Date(row.PD5_REPORT_DEADLINE) : null;
+      const actualDate = row.PD5_REPORT_ACTUAL_DATE ? new Date(row.PD5_REPORT_ACTUAL_DATE) : null;
+      
+      // ✅ Chậm muộn khi:
+      // 1. Có deadline
+      // 2. Deadline < hôm nay
+      // 3. Chưa có ngày gửi thực tế (PD5_REPORT_ACTUAL_DATE)
+      // 4. Hoặc đã gửi nhưng sau deadline
+      const isLate = deadline && deadline < today && (
+        !actualDate || actualDate > deadline
+      );
+      
+      return isLate;
+    });
+
+    if (lateData.length === 0) {
+      toast.warning('Không có báo cáo chậm muộn nào!');
+      return;
+    }
+
+    const exportData = lateData.map((row, index) => {
+      const deadline = row.PD5_REPORT_DEADLINE ? new Date(row.PD5_REPORT_DEADLINE) : null;
+      const actualDate = row.PD5_REPORT_ACTUAL_DATE ? new Date(row.PD5_REPORT_ACTUAL_DATE) : null;
+      
+      // ✅ Tính số ngày trễ
+      let daysLate = 0;
+      if (deadline) {
+        const compareDate = actualDate || today;
+        daysLate = Math.floor((compareDate - deadline) / (1000 * 60 * 60 * 24));
+      }
+
+      return {
+        STT: index + 1,
+        'Tên vật liệu': row.MATERIAL_NAME ?? "-",
+        'Loại vật liệu': row.MATERIAL_CLASS ?? "-",
+        'Bộ phận phụ trách': row.DEPARTMENT_CODE ?? "-",
+        'Người phụ trách': row.PERSON_IN_CHARGE ?? "-",
+        'Kỳ hạn gửi báo cáo tới PD5': deadline ? deadline.toLocaleDateString("vi-VN") : "-",
+        'Ngày gửi báo cáo tới PD5': actualDate 
+          ? actualDate.toLocaleDateString("vi-VN") 
+          : "-",
+        'Trạng thái': row.PROGRESS_STATUS_NAME || row.PROGRESS || "-",
+        'Số ngày trễ': daysLate > 0 ? `${daysLate} ngày` : "-",
+        'Ghi chú': row.NOTES_1 ?? "-",
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "BaoCaoChamMuon");
+    const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    const blob = new Blob([wbout], { type: "application/octet-stream" });
+    const filename = `BaoCaoChamMuon_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+    saveAs(blob, filename);
+    toast.success(`Xuất báo cáo thành công! (${lateData.length} bản ghi chậm muộn)`);
+  } catch (error) {
+    console.error("Export late report error:", error);
+    toast.error("Lỗi khi xuất báo cáo chậm muộn!");
+  }
+};
 
   const getColumnSearchProps = dataIndex => ({
     filterDropdown: ({ setSelectedKeys, selectedKeys, clearFilters, close }) => {
-      // initialize selectedKeys from searchFilters when dropdown opens
       const initialValue = searchFilters[dataIndex] ?? '';
-      // If selectedKeys is empty but we have a filter in state, set it
       if ((!selectedKeys || selectedKeys.length === 0) && initialValue) {
         setSelectedKeys([initialValue]);
       }
@@ -321,7 +384,6 @@ const handleCreate = async (values) => {
       ...prev,
       current: 1
     }));
-    // Call server with new filters (if your API expects different keys, map them in your API util)
     fetchData(1, pagination.pageSize, newFilters);
   };
 
@@ -330,7 +392,6 @@ const handleCreate = async (values) => {
     if (dataIndex) {
       delete newFilters[dataIndex];
     } else {
-      // reset all
       Object.keys(newFilters).forEach(k => delete newFilters[k]);
     }
     setSearchFilters(newFilters);
@@ -377,7 +438,7 @@ const handleCreate = async (values) => {
     }
   };
 
-  // Columns definition
+  
   const columns = [
     {
       title: 'No',
@@ -454,7 +515,7 @@ const handleCreate = async (values) => {
         ? options.progress.map(p => ({ text: p.status_name, value: String(p.status_id) }))
         : [],
       filteredValue: searchFilters.PROGRESS || null,
-      filterMultiple: true, // Cho phép chọn nhiều
+      filterMultiple: true,
       render: (v, record) => {
         if (v) return v;
         const progressId = record.PROGRESS_ID ?? record.PROGRESS;
@@ -632,16 +693,24 @@ const handleViewHistory = (record) => {
   };
 
   const exportMenu = (
-    <Menu>
-      <Menu.Item
-        key="export-excel"
-        icon={<FileExcelOutlined />}
-        onClick={handleExport}
-      >
-        Export Excel (.xlsx)
-      </Menu.Item>
-    </Menu>
-  );
+  <Menu>
+    <Menu.Item
+      key="export-excel"
+      icon={<FileExcelOutlined />}
+      onClick={handleExport}
+    >
+      Export Excel (.xlsx)
+    </Menu.Item>
+    <Menu.Item
+      key="export-late-report"
+      icon={<FileExcelOutlined style={{ color: '#ff4d4f' }} />}
+      onClick={handleExportLateReport}
+      style={{ color: '#ff4d4f' }}
+    >
+      Báo cáo chậm muộn
+    </Menu.Item>
+  </Menu>
+);
 
   return (
     <MainLayout>
@@ -687,7 +756,7 @@ const handleViewHistory = (record) => {
               onChange: (page, pageSize) => {
                 fetchData(page, pageSize, searchFilters);
               },
-              onShowSizeChange: (current, size) => {
+              onShowSizeChange: (size) => {
                 fetchData(1, size, searchFilters);
               }
             }}

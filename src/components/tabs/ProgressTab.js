@@ -1,4 +1,4 @@
-import { Form, Input, DatePicker, Select, Button, Row, Col, Divider, Alert, Space } from 'antd';
+import { Form, Input, DatePicker, Select, Button, Row, Col, Divider, Alert, Space, Card } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircleOutlined } from '@ant-design/icons';
 
@@ -10,9 +10,12 @@ const ProgressTab = ({
   loading, 
   options,
   currentProgressId,
-  onApprovalSuccess 
+  onApprovalSuccess,
+  personAccept,
+  personAcceptQL2 
 }) => {
   const navigate = useNavigate();
+  
   const handleCompletionDeadlineChange = (date) => {
     if (date) {
       const pd5Deadline = date.clone().subtract(1, 'month');
@@ -42,19 +45,92 @@ const ProgressTab = ({
       onFinish={onFinish}
       initialValues={{}}
     >
-      {/* Alert hiển thị trạng thái hiện tại và hướng dẫn */}
+      {/* ✅ PHẦN PHÊ DUYỆT - CHUYỂN LÊN ĐẦU */}
       {(showTKSXApproval || showQL2Approval) && (
-        <Alert
-          message={`Trạng thái hiện tại: ${currentProgressName}`}
-          description={
-            showTKSXApproval 
-              ? 'Yêu cầu đang chờ TKSX phê duyệt. Sau khi phê duyệt, trạng thái sẽ chuyển sang "Đang lập kế hoạch".'
-              : 'Kế hoạch đang chờ QL2 phê duyệt. Sau khi phê duyệt, trạng thái sẽ chuyển sang "Đang đánh giá".'
-          }
-          type="info"
-          showIcon
-          style={{ marginBottom: '24px' }}
-        />
+        <Card 
+          style={{ 
+            marginBottom: '24px',
+            borderColor: showTKSXApproval ? '#52c41a' : '#1890ff',
+            backgroundColor: showTKSXApproval ? '#f6ffed' : '#e6f7ff'
+          }}
+        >
+          <Alert
+            message={`Trạng thái hiện tại: ${currentProgressName}`}
+            description={
+              showTKSXApproval 
+                ? 'Yêu cầu đang chờ TKSX phê duyệt. Sau khi phê duyệt, trạng thái sẽ chuyển sang "Đang lập kế hoạch".'
+                : 'Kế hoạch đang chờ QL2 phê duyệt. Sau khi phê duyệt, trạng thái sẽ chuyển sang "Đang đánh giá".'
+            }
+            type="info"
+            showIcon
+            style={{ marginBottom: '16px' }}
+          />
+
+          <Row justify="center">
+            <Space size="large">
+              {/* Nút TKSX Phê duyệt */}
+              {showTKSXApproval && (
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => onApprovalSuccess && onApprovalSuccess('tksx')}
+                  style={{ 
+                    backgroundColor: '#52c41a', 
+                    borderColor: '#52c41a',
+                    height: '48px',
+                    fontSize: '16px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  TKSX Phê duyệt
+                </Button>
+              )}
+
+              {/* Nút QL2 Phê duyệt */}
+              {showQL2Approval && (
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => onApprovalSuccess && onApprovalSuccess('ql2')}
+                  style={{ 
+                    backgroundColor: '#1890ff', 
+                    borderColor: '#1890ff',
+                    height: '48px',
+                    fontSize: '16px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  QL2 Phê duyệt
+                </Button>
+              )}
+            </Space>
+          </Row>
+        </Card>
+      )}
+
+      {(personAccept || personAcceptQL2) && (
+        <div style={{ marginBottom: '24px' }}>
+          {personAccept && (
+            <Alert
+              message="QL2-PD5 đã phê duyệt"
+              description={`Người phê duyệt: ${personAccept}`}
+              type="success"
+              showIcon
+              style={{ marginBottom: personAcceptQL2 ? '12px' : '0' }}
+            />
+          )}
+          
+          {personAcceptQL2 && (
+            <Alert
+              message="QL2 đã phê duyệt"
+              description={`Người phê duyệt: ${personAcceptQL2}`}
+              type="success"
+              showIcon
+            />
+          )}
+        </div>
       )}
 
       {/* Progress Status Section */}
@@ -271,36 +347,9 @@ const ProgressTab = ({
         </Col>
         
         <Col>
-          <Space>
-            {/* Nút TKSX Phê duyệt */}
-            {showTKSXApproval && (
-              <Button
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                onClick={() => onApprovalSuccess && onApprovalSuccess('tksx')}
-                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-              >
-                TKSX Phê duyệt
-              </Button>
-            )}
-
-            {/* Nút QL2 Phê duyệt */}
-            {showQL2Approval && (
-              <Button
-                type="primary"
-                icon={<CheckCircleOutlined />}
-                onClick={() => onApprovalSuccess && onApprovalSuccess('ql2')}
-                style={{ backgroundColor: '#1890ff', borderColor: '#1890ff' }}
-              >
-                QL2 Phê duyệt
-              </Button>
-            )}
-
-            {/* Nút Lưu tiến độ */}
-            <Button type="primary" htmlType="submit" loading={loading}>
-              Lưu tiến độ
-            </Button>
-          </Space>
+          <Button type="primary" htmlType="submit" loading={loading}>
+            Lưu tiến độ
+          </Button>
         </Col>
       </Row>
     </Form>

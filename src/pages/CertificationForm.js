@@ -34,6 +34,8 @@ const CertificationForm = () => {
   const [imagesLoading, setImagesLoading] = useState(false);
   const [options, setOptions] = useState({});
   const [currentProgressId, setCurrentProgressId] = useState(null);
+  const [certificationData, setCertificationData] = useState(null); // ✅ THÊM STATE
+
 
 
   const certificationId = location.state?.certificationData?.ID || location.state?.certificationId;
@@ -73,6 +75,7 @@ const CertificationForm = () => {
       const response = await fetchMaterialCertificationDetail(certificationId);
       if (response.success && response.data) {
         const data = response.data;
+        setCertificationData(data);
         setCurrentProgressId(data.PROGRESS_ID);
         // Set certification form values
         const formValues = {
@@ -726,6 +729,8 @@ const CertificationForm = () => {
                 options={options}
                 certificationId={certificationId}
                 currentProgressId={currentProgressId}
+                personAccept={certificationData?.PERSON_ACCEPT} // ✅ TRUYỀN PROP
+                personAcceptQL2={certificationData?.PERSON_ACCEPT_QL2} // ✅ TRUYỀN PROP MỚI
                 onApprovalSuccess={handleApproval}
               />
             </TabPane>
