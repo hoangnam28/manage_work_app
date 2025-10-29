@@ -314,8 +314,7 @@ const DecideBoardDetail = () => {
               </Descriptions>
             </Card>
 
-            {/* Action Buttons - Inline with Status */}
-            {!record.CONFIRM_BY && canConfirm && (
+            {!record.CONFIRM_BY && canConfirm &&  !record.IS_DELETED === '0' && (
               <Space
                 direction="vertical"
                 size="middle"

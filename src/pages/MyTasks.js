@@ -86,14 +86,12 @@ const MyTasks = () => {
     }
   };
 
-  // Handle end task - show note modal
   const showEndModal = (taskId) => {
     setCurrentTaskId(taskId);
     setEndNote('');
     setNoteModalVisible(true);
   };
 
-  // Handle end task submission
   const handleEndTask = async () => {
     try {
       await taskApi.endTask(currentTaskId, endNote);
@@ -127,7 +125,6 @@ const MyTasks = () => {
 
   const isOverdue = (deadline, status) => {
     const normalized = normalizeStatus(status);
-    // Task is not overdue if it's completed or checked
     if (normalized === 'done' || normalized === 'checked') {
       return false;
     }
@@ -135,11 +132,9 @@ const MyTasks = () => {
     return new Date(deadline) < new Date();
   };
 
-  // Get deadline status
   const getDeadlineStatus = (deadline, status) => {
     if (!deadline) return null;
     
-    // Don't show deadline status for completed tasks
     const normalized = normalizeStatus(status);
     if (normalized === 'done' || normalized === 'checked') {
       return null;
@@ -154,14 +149,24 @@ const MyTasks = () => {
     return { type: 'success', text: `${Math.round(hoursLeft / 24)} ngày còn lại` };
   };
 
-  // View task details
   const viewTaskDetails = (task) => {
     setSelectedTask(task);
     setDrawerVisible(true);
   };
 
-  // Table columns
   const columns = [
+    {
+      title: 'Nghiệp vụ',
+      dataIndex: 'businessName',
+      key: 'businessName',
+      width: 150
+    },
+    {
+      title: 'Dự án',
+      dataIndex: 'projectName',
+      key: 'projectName',
+      width: 150
+    },
     {
       title: 'Tên Task',
       dataIndex: 'name',
@@ -178,20 +183,6 @@ const MyTasks = () => {
           <small style={{ color: '#666' }}>{record.projectName}</small>
         </div>
       )
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      render: (status) => {
-        const statusInfo = getStatusInfo(status);
-        return (
-          <Tag color={statusInfo.color} icon={statusInfo.icon}>
-            {statusInfo.text}
-          </Tag>
-        );
-      }
     },
     {
       title: 'Kỳ Hạn',
@@ -217,10 +208,18 @@ const MyTasks = () => {
       }
     },
     {
-      title: 'Nghiệp vụ',
-      dataIndex: 'businessName',
-      key: 'businessName',
-      width: 150
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      width: 120,
+      render: (status) => {
+        const statusInfo = getStatusInfo(status);
+        return (
+          <Tag color={statusInfo.color} icon={statusInfo.icon}>
+            {statusInfo.text}
+          </Tag>
+        );
+      }
     },
     {
       title: 'Thời gian',

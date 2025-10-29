@@ -114,7 +114,7 @@ const ProgressTab = ({
         <div style={{ marginBottom: '24px' }}>
           {personAccept && (
             <Alert
-              message="QL2-PD5 đã phê duyệt"
+              message="TKSX-PTSP đã phê duyệt"
               description={`Người phê duyệt: ${personAccept}`}
               type="success"
               showIcon

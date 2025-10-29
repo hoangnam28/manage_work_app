@@ -237,46 +237,48 @@ const CertificationForm = () => {
       setLoading(true);
       const certificationData = form.getFieldsValue();
 
-      const formattedValues = {
-        personInCharge: values.PERSON_IN_CHARGE,
-        departmentInCharge: values.DEPARTMENT_IN_CHARGE,
-        startDate: values.START_DATE ? values.START_DATE.format('YYYY-MM-DD') : null,
-        pd5ReportDeadline: values.PD5_REPORT_DEADLINE ? values.PD5_REPORT_DEADLINE.format('YYYY-MM-DD') : null,
-        completionDeadline: values.COMPLETION_DEADLINE ? values.COMPLETION_DEADLINE.format('YYYY-MM-DD') : null,
-        actualCompletionDate: values.ACTUAL_COMPLETION_DATE ? values.ACTUAL_COMPLETION_DATE.format('YYYY-MM-DD') : null,
-        pd5ReportActualDate: values.PD5_REPORT_ACTUAL_DATE ? values.PD5_REPORT_ACTUAL_DATE.format('YYYY-MM-DD') : null,
-        progress: values.PROGRESS_ID,
-        totalTime: values.TOTAL_TIME,
-        materialName: values.MATERIAL_NAME,
-        materialClassId: values.MATERIAL_CLASS_ID,
-        layerStructure: values.LAYER_STRUCTURE,
-        reliabilityLevelId: values.RELIABILITY_LEVEL_ID,
-        notes1: values.NOTES_1,
+      // 🆕 Chỉ gửi các trường có giá trị thực sự, không gửi null/undefined
+      const formattedValues = {};
+      
+      // Progress fields - chỉ gửi nếu có giá trị
+      if (values.PERSON_IN_CHARGE) formattedValues.personInCharge = values.PERSON_IN_CHARGE;
+      if (values.DEPARTMENT_IN_CHARGE) formattedValues.departmentInCharge = values.DEPARTMENT_IN_CHARGE;
+      if (values.START_DATE) formattedValues.startDate = values.START_DATE.format('YYYY-MM-DD');
+      if (values.PD5_REPORT_DEADLINE) formattedValues.pd5ReportDeadline = values.PD5_REPORT_DEADLINE.format('YYYY-MM-DD');
+      if (values.COMPLETION_DEADLINE) formattedValues.completionDeadline = values.COMPLETION_DEADLINE.format('YYYY-MM-DD');
+      if (values.ACTUAL_COMPLETION_DATE) formattedValues.actualCompletionDate = values.ACTUAL_COMPLETION_DATE.format('YYYY-MM-DD');
+      if (values.PD5_REPORT_ACTUAL_DATE) formattedValues.pd5ReportActualDate = values.PD5_REPORT_ACTUAL_DATE.format('YYYY-MM-DD');
+      if (values.PROGRESS_ID) formattedValues.progress = values.PROGRESS_ID;
+      if (values.TOTAL_TIME) formattedValues.totalTime = values.TOTAL_TIME;
+      if (values.MATERIAL_NAME) formattedValues.materialName = values.MATERIAL_NAME;
+      if (values.MATERIAL_CLASS_ID) formattedValues.materialClassId = values.MATERIAL_CLASS_ID;
+      if (values.LAYER_STRUCTURE) formattedValues.layerStructure = values.LAYER_STRUCTURE;
+      if (values.RELIABILITY_LEVEL_ID) formattedValues.reliabilityLevelId = values.RELIABILITY_LEVEL_ID;
+      if (values.NOTES_1) formattedValues.notes1 = values.NOTES_1;
 
-        // 🆕 Các field mới
-        factoryCertReady: values.FACTORY_CERT_READY,
-        factoryCertStatus: values.FACTORY_CERT_STATUS,
-        factoryLevel: values.FACTORY_LEVEL,
-        priceRequest: values.PRICE_REQUEST,
-        reportLink: values.REPORT_LINK,
+      // Factory fields - chỉ gửi nếu có giá trị
+      if (values.FACTORY_CERT_READY !== undefined) formattedValues.factoryCertReady = values.FACTORY_CERT_READY;
+      if (values.FACTORY_CERT_STATUS) formattedValues.factoryCertStatus = values.FACTORY_CERT_STATUS;
+      if (values.FACTORY_LEVEL) formattedValues.factoryLevel = values.FACTORY_LEVEL;
+      if (values.PRICE_REQUEST !== undefined) formattedValues.priceRequest = values.PRICE_REQUEST;
+      if (values.REPORT_LINK) formattedValues.reportLink = values.REPORT_LINK;
 
-        // Certification data
-        releaseDate: certificationData.RELEASE_DATE ? certificationData.RELEASE_DATE.format('YYYY-MM-DD') : null,
-        factoryName: certificationData.FACTORY_NAME,
-        requestReason: certificationData.REQUEST_REASON,
-        usage: certificationData.USAGE,
-        expectedProductionQty: certificationData.EXPECTED_PRODUCTION_QTY,
-        massProductionDate: certificationData.MASS_PRODUCTION_DATE ? certificationData.MASS_PRODUCTION_DATE.format('YYYY-MM-DD') : null,
-        materialCertExpected: certificationData.MATERIAL_CERT_EXPECTED ? certificationData.MATERIAL_CERT_EXPECTED.format('YYYY-MM-DD') : null,
-        manufacturerName: certificationData.MANUFACTURER_NAME,
-        factoryLocation: certificationData.FACTORY_LOCATION,
-        materialProperty1Id: certificationData.MATERIAL_PROPERTY1_ID,
-        materialProperty2Id: certificationData.MATERIAL_PROPERTY2_ID,
-        materialProperty3Id: certificationData.MATERIAL_PROPERTY3_ID,
-        materialStatusId: certificationData.MATERIAL_STATUS,
-        ulStatusId: certificationData.UL_CERT_STATUS,
-        notes2: certificationData.NOTES_2,
-      };
+      // Certification data - chỉ gửi nếu có giá trị
+      if (certificationData.RELEASE_DATE) formattedValues.releaseDate = certificationData.RELEASE_DATE.format('YYYY-MM-DD');
+      if (certificationData.FACTORY_NAME) formattedValues.factoryName = certificationData.FACTORY_NAME;
+      if (certificationData.REQUEST_REASON) formattedValues.requestReason = certificationData.REQUEST_REASON;
+      if (certificationData.USAGE) formattedValues.usage = certificationData.USAGE;
+      if (certificationData.EXPECTED_PRODUCTION_QTY) formattedValues.expectedProductionQty = certificationData.EXPECTED_PRODUCTION_QTY;
+      if (certificationData.MASS_PRODUCTION_DATE) formattedValues.massProductionDate = certificationData.MASS_PRODUCTION_DATE.format('YYYY-MM-DD');
+      if (certificationData.MATERIAL_CERT_EXPECTED) formattedValues.materialCertExpected = certificationData.MATERIAL_CERT_EXPECTED.format('YYYY-MM-DD');
+      if (certificationData.MANUFACTURER_NAME) formattedValues.manufacturerName = certificationData.MANUFACTURER_NAME;
+      if (certificationData.FACTORY_LOCATION) formattedValues.factoryLocation = certificationData.FACTORY_LOCATION;
+      if (certificationData.MATERIAL_PROPERTY1_ID) formattedValues.materialProperty1Id = certificationData.MATERIAL_PROPERTY1_ID;
+      if (certificationData.MATERIAL_PROPERTY2_ID) formattedValues.materialProperty2Id = certificationData.MATERIAL_PROPERTY2_ID;
+      if (certificationData.MATERIAL_PROPERTY3_ID) formattedValues.materialProperty3Id = certificationData.MATERIAL_PROPERTY3_ID;
+      if (certificationData.MATERIAL_STATUS) formattedValues.materialStatusId = certificationData.MATERIAL_STATUS;
+      if (certificationData.UL_CERT_STATUS) formattedValues.ulStatusId = certificationData.UL_CERT_STATUS;
+      if (certificationData.NOTES_2) formattedValues.notes2 = certificationData.NOTES_2;
 
       console.log('📤 Submitting progress data:', formattedValues);
 

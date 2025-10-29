@@ -38,17 +38,23 @@ const CertificationHistoryModal = ({ open, onClose, certificationId, certificati
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
-    return date.toLocaleString('vi-VN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
+  if (!dateString) return '-';
+  const match = dateString.match(/^(\d{2})-([A-Z]{3})-(\d{2})/);
+  if (!match) return '-';
+
+  const day = match[1];
+  const monthStr = match[2];
+  const year = '20' + match[3]; 
+  const monthMap = {
+    JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
+    JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12'
   };
+
+  const month = monthMap[monthStr] || '01';
+
+  return `${day}/${month}/${year}`;
+};
+
 
   const getActionIcon = (actionType) => {
     switch (actionType) {
@@ -107,17 +113,21 @@ const CertificationHistoryModal = ({ open, onClose, certificationId, certificati
     departmentInCharge: 'Bộ phận phụ trách',
     personInCharge: 'Người phụ trách',
     startDate: 'Ngày bắt đầu',
-    pd5ReportDeadline: 'Kỳ hạn báo cáo PD5',
+    pd5ReportDeadline: 'Kỳ hạn gửi báo cáo tới PD5',
     completionDeadline: 'Kỳ hạn hoàn thành',
     actualCompletionDate: 'Ngày hoàn thành thực tế',
-    pd5ReportActualDate: 'Ngày báo cáo PD5 thực tế',
+    pd5ReportActualDate: 'Ngày gửi báo cáo tới PD5 thực tế',
     progress: 'Tiến độ',
     factoryCertReady: 'Chứng nhận ở nhà máy khác',
     factoryCertStatus: 'Nhà máy chứng nhận',
     factoryLevel: 'Cấp độ ở nhà máy khác',
     priceRequest: 'Yêu cầu báo cáo đánh giá',
     reportLink: 'Link gửi báo cáo đánh giá',
-    totalTime: 'Tổng thời gian'
+    totalTime: 'Tổng thời gian',
+    personDo: 'Người làm',
+    personCheck: 'Người check',
+    timeDo: 'Thời gian làm (phút)',
+    timeCheck: 'Thời gian check (phút)'
   };
 
   const formatValue = (value) => {
@@ -201,7 +211,7 @@ const CertificationHistoryModal = ({ open, onClose, certificationId, certificati
                     {getActionText(history.actionType)}
                   </Tag>
                   <Tag icon={<CalendarOutlined />}>
-                    {formatDate(history.actionDate)}
+                    {formatDate(history.actionDate || history.createdAt || history.timestamp)}
                   </Tag>
                 </div>
 

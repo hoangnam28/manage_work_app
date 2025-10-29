@@ -70,7 +70,14 @@ axiosInstance.interceptors.response.use(
       return Promise.reject(error);
     }
 
+    // 401: Unauthorized
     if (error.response?.status === 401 && !originalRequest._retry) {
+      const code = error.response?.data?.code;
+      // If there is no token at all, treat as hard logout
+      if (code === 'NO_TOKEN') {
+        onRefreshError(error);
+        return Promise.reject(error);
+      }
       if (isRefreshing) {
         try {
           const token = await new Promise((resolve, reject) => {
@@ -144,9 +151,12 @@ axiosInstance.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
-
-    // 403: permission denied. Keep user logged in, just show a message.
     if (error.response?.status === 403) {
+      const code = error.response?.data?.code;
+      if (code === 'INVALID_TOKEN') {
+        onRefreshError(error);
+        return Promise.reject(error);
+      }
       const msg = error.response?.data?.message || 'Bạn không có quyền truy cập';
       toast.error(msg);
       return Promise.reject(error);
