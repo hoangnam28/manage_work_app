@@ -36,6 +36,7 @@ const CreateUlCertificationModal = ({
   const [layerStructureImage, setLayerStructureImage] = useState(null);
   const [catalogPreview, setCatalogPreview] = useState(null);
   const [layerStructurePreview, setLayerStructurePreview] = useState(null);
+  
 
   const handleCancel = () => {
     form.resetFields();
@@ -45,68 +46,71 @@ const CreateUlCertificationModal = ({
   const isViewMode = mode === 'view';
   const isEditMode = mode === 'edit';
   const handleImageUpload = (file, imageType) => {
-  console.log('handleImageUpload called:', imageType, file.name, file.size, file.type);
+  console.log('handleImageUpload called:', imageType, file.name);
   
-  // Kiểm tra file type
   const isImage = file.type.startsWith('image/');
   if (!isImage) {
     message.error('Chỉ có thể upload file hình ảnh!');
     return false;
   }
 
-  // Kiểm tra size (5MB)
   const isLt5M = file.size / 1024 / 1024 < 5;
   if (!isLt5M) {
     message.error('Hình ảnh phải nhỏ hơn 5MB!');
     return false;
   }
 
-  // Tạo preview
   const reader = new FileReader();
   reader.onload = (e) => {
-    console.log('Image loaded for preview:', imageType);
     if (imageType === 'catalog') {
       setCatalogPreview(e.target.result);
+      setCatalogImage(file);
+      // Trigger validation
+      form.setFieldsValue({ catalogImage: file.name });
+      form.validateFields(['catalogImage']);
     } else {
       setLayerStructurePreview(e.target.result);
+      setLayerStructureImage(file);
+      // Trigger validation
+      form.setFieldsValue({ layerStructureImage: file.name });
+      form.validateFields(['layerStructureImage']);
     }
   };
   reader.readAsDataURL(file);
 
-  // Lưu file
-  if (imageType === 'catalog') {
-    setCatalogImage(file);
-    console.log('Catalog image set:', file.name);
-  } else {
-    setLayerStructureImage(file);
-    console.log('Layer structure image set:', file.name);
-  }
-
   message.success('Đã chọn hình ' + (imageType === 'catalog' ? 'Catalog' : 'Cấu trúc lớp'));
-  return false; // Prevent auto upload
+  return false;
 };
-  const removeImage = (imageType) => {
-    if (imageType === 'catalog') {
-      setCatalogImage(null);
-      setCatalogPreview(null);
-    } else {
-      setLayerStructureImage(null);
-      setLayerStructurePreview(null);
-    }
-  };
+const removeImage = (imageType) => {
+  if (imageType === 'catalog') {
+    setCatalogImage(null);
+    setCatalogPreview(null);
+    form.setFieldsValue({ catalogImage: null });
+    form.validateFields(['catalogImage']);
+  } else {
+    setLayerStructureImage(null);
+    setLayerStructurePreview(null);
+    form.setFieldsValue({ layerStructureImage: null });
+    form.validateFields(['layerStructureImage']);
+  }
+};
 useEffect(() => {
   if (open) {
     if (editingRecord) {
-      // Map field names từ backend sang form
+      // Map đầy đủ tất cả field names từ backend sang form
       const formData = {
+        // Thông tin cơ bản
         releaseDate: editingRecord.RELEASE_DATE
           ? dayjs(editingRecord.RELEASE_DATE)
           : null,
         factoryName: editingRecord.FACTORY_NAME,
+        DEPARTMENT_IN_CHARGE: editingRecord.DEPARTMENT_IN_CHARGE,
         requestReason: editingRecord.REQUEST_REASON,
+        
+        // Thông tin sản phẩm sử dụng
         layerStructure: editingRecord.LAYER_STRUCTURE,
-        usage: editingRecord.USAGE,
         RELIABILITY_LEVEL_ID: editingRecord.RELIABILITY_LEVEL_ID || editingRecord.reliabilityLevelId,
+        usage: editingRecord.USAGE,
         expectedProductionQty: editingRecord.EXPECTED_PRODUCTION_QTY,
         massProductionDate: editingRecord.MASS_PRODUCTION_DATE
           ? dayjs(editingRecord.MASS_PRODUCTION_DATE)
@@ -114,6 +118,8 @@ useEffect(() => {
         materialCertExpected: editingRecord.MATERIAL_CERT_EXPECTED
           ? dayjs(editingRecord.MATERIAL_CERT_EXPECTED)
           : null,
+        
+        // Thông tin vật liệu
         manufacturerName: editingRecord.MANUFACTURER_NAME,
         factoryLocation: editingRecord.FACTORY_LOCATION,
         materialName: editingRecord.MATERIAL_NAME,
@@ -123,17 +129,33 @@ useEffect(() => {
         materialProperty3Id: editingRecord.MATERIAL_PROPERTY3_ID,
         materialStatusId: editingRecord.MATERIAL_STATUS,
         ulStatusId: editingRecord.UL_CERT_STATUS,
+        
+        // Ghi chú
         notes1: editingRecord.NOTES_1,
       };
       
-      console.log('Setting form values for edit:', formData);
+      console.log('🔄 Setting form values for edit:', formData);
       form.setFieldsValue(formData);
 
+      // Reset images (sẽ load từ server nếu cần)
       setCatalogImage(null);
       setLayerStructureImage(null);
       setCatalogPreview(null);
       setLayerStructurePreview(null);
+      
+      // Nếu có URL ảnh từ server, set preview
+      if (editingRecord.CATALOG_IMAGE_URL) {
+        setCatalogPreview(editingRecord.CATALOG_IMAGE_URL);
+        // Set giá trị để pass validation
+        form.setFieldsValue({ catalogImage: 'existing' });
+      }
+      if (editingRecord.LAYER_STRUCTURE_IMAGE_URL) {
+        setLayerStructurePreview(editingRecord.LAYER_STRUCTURE_IMAGE_URL);
+        // Set giá trị để pass validation
+        form.setFieldsValue({ layerStructureImage: 'existing' });
+      }
     } else {
+      // Mode create - set default values
       const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
       form.setFieldsValue({
         releaseDate: dayjs(), 
@@ -142,6 +164,8 @@ useEffect(() => {
         DEPARTMENT_IN_CHARGE: userInfo.derpartment,
         START_DATE: dayjs()
       });
+      
+      // Reset tất cả images
       setCatalogImage(null);
       setLayerStructureImage(null);
       setCatalogPreview(null);
@@ -157,16 +181,29 @@ const handleSubmit = async (values) => {
   try {
     const submitData = {
       ...values,
+      // Format dates
       releaseDate: values.releaseDate ? values.releaseDate.format('YYYY-MM-DD') : null,
       massProductionDate: values.massProductionDate ? values.massProductionDate.format('YYYY-MM-DD') : null,
       materialCertExpected: values.materialCertExpected ? values.materialCertExpected.format('YYYY-MM-DD') : null,
+      
+      // Map field names
       materialClassId: values.MATERIAL_CLASS_ID,
       reliabilityLevelId: values.RELIABILITY_LEVEL_ID,
-      departmentInCharge: values.DEPARTMENT_IN_CHARGE, 
+      departmentInCharge: values.DEPARTMENT_IN_CHARGE,
+      
+      // Thêm các field còn lại nếu backend cần
+      materialProperty1Id: values.materialProperty1Id,
+      materialProperty2Id: values.materialProperty2Id,
+      materialProperty3Id: values.materialProperty3Id,
+      materialStatus: values.materialStatusId,
+      ulCertStatus: values.ulStatusId,
     };
     
+    console.log('📤 Submitting data:', submitData);
+    
     const result = await onSubmit(submitData);
-    const certificationId = result.data?.id;
+    const certificationId = isEditMode ? editingRecord.id : result.data?.id;
+    
     if (mode === 'create') {
       const hasImages = catalogImage || layerStructureImage;      
       if (hasImages) {
@@ -187,6 +224,7 @@ const handleSubmit = async (values) => {
           });
           imagesToUpload.push(file);
         }  
+        
         try {
           const uploadResult = await uploadCertificationImages(certificationId, imagesToUpload);
           if (uploadResult.success) {
@@ -196,26 +234,54 @@ const handleSubmit = async (values) => {
             message.warning('⚠️ Tạo thành công nhưng upload hình thất bại: ' + uploadResult.message);
           }
         } catch (uploadError) {
+          console.error('Upload error:', uploadError);
           message.warning('⚠️ Tạo certification thành công nhưng upload hình thất bại');
         }
       } else {
         message.success('✅ Tạo certification thành công!');
       }
-    } else {
-      message.success('✅ ' + (result.message || 'Cập nhật thành công!'));
+    } else if (mode === 'edit') {
+      // Nếu có ảnh mới, upload chúng
+      const hasNewImages = catalogImage || layerStructureImage;
+      if (hasNewImages) {
+        const imagesToUpload = [];
+        
+        if (catalogImage) {
+          const ext = catalogImage.type.split('/')[1] || 'jpg';
+          const file = new File([catalogImage], `catalog.${ext}`, { 
+            type: catalogImage.type 
+          });
+          imagesToUpload.push(file);
+        }
+        
+        if (layerStructureImage) {
+          const ext = layerStructureImage.type.split('/')[1] || 'jpg';
+          const file = new File([layerStructureImage], `layer_structure.${ext}`, { 
+            type: layerStructureImage.type 
+          });
+          imagesToUpload.push(file);
+        }
+        
+        try {
+          await uploadCertificationImages(certificationId, imagesToUpload);
+          message.success('✅ Cập nhật thành công!');
+        } catch (uploadError) {
+          message.warning('⚠️ Cập nhật thành công nhưng upload hình mới thất bại');
+        }
+      } else {
+        message.success('✅ Cập nhật thành công!');
+      }
     }
     
     if (onSuccess) {
       onSuccess(mode === 'create' ? certificationId : null);
-    } else {
-      console.warn('⚠️ MODAL: No onSuccess callback provided');
     }
     handleCancel();
   } catch (error) {
+    console.error('Submit error:', error);
     message.error(error.message || 'Có lỗi xảy ra');
   } finally {
     setLoading(false);
-    console.log('🏁 MODAL: Loading state reset\n');
   }
 };
 
@@ -338,18 +404,11 @@ const handleSubmit = async (values) => {
               name="requestReason"
               label="Lý do yêu cầu"
               rules={[
-                {
-                  max: 500,
-                  message: 'Lý do yêu cầu không được vượt quá 500 ký tự',
-                },
+                { required: true, message: 'Vui lòng nhập lý do yêu cầu' },
+                { max: 500, message: 'Lý do yêu cầu không được vượt quá 500 ký tự' },
               ]}
             >
-              <TextArea
-                rows={1}
-                placeholder="Nhập lý do yêu cầu"
-                showCount
-                maxLength={500}
-              />
+              <TextArea rows={1} placeholder="Nhập lý do yêu cầu" showCount maxLength={500} />
             </Form.Item>
           </Col>
         </Row>
@@ -364,10 +423,8 @@ const handleSubmit = async (values) => {
               name="layerStructure"
               label="Cấu tạo lớp"
               rules={[
-                {
-                  max: 50,
-                  message: 'Cấu tạo lớp không được vượt quá 50 ký tự',
-                },
+                { required: true, message: 'Vui lòng nhập cấu tạo lớp' },
+                { max: 200, message: 'Cấu tạo lớp không được vượt quá 200 ký tự' },
               ]}
             >
               <Input placeholder="Nhập cấu tạo lớp" />
@@ -397,18 +454,11 @@ const handleSubmit = async (values) => {
               name="usage"
               label="Ứng dụng"
               rules={[
-                {
-                  max: 500,
-                  message: 'Ứng dụng không được vượt quá 500 ký tự',
-                },
+                { required: true, message: 'Vui lòng nhập ứng dụng' },
+                { max: 500, message: 'Ứng dụng không được vượt quá 500 ký tự' },
               ]}
             >
-              <TextArea
-                rows={1}
-                placeholder="Nhập ứng dụng"
-                showCount
-                maxLength={500}
-              />
+              <TextArea rows={1} placeholder="Nhập ứng dụng" showCount maxLength={500} />
             </Form.Item>
           </Col>
 
@@ -417,10 +467,8 @@ const handleSubmit = async (values) => {
               name="expectedProductionQty"
               label="Sản lượng dự kiến"
               rules={[
-                {
-                  max: 100,
-                  message: 'Sản lượng dự kiến không được vượt quá 100 ký tự',
-                },
+                { required: true, message: 'Vui lòng nhập sản lượng dự kiến' },
+                { pattern: /^[0-9,.\s]+$/, message: 'Sản lượng chỉ được nhập số' },
               ]}
             >
               <Input placeholder="Nhập sản lượng dự kiến" />
@@ -428,7 +476,13 @@ const handleSubmit = async (values) => {
           </Col>
 
           <Col span={8}>
-            <Form.Item name="massProductionDate" label="Ngày sản xuất hàng loạt">
+            <Form.Item 
+              name="massProductionDate" 
+              label="Ngày sản xuất hàng loạt"
+              rules={[
+                { required: true, message: 'Vui lòng chọn ngày sản xuất hàng loạt' },
+              ]}
+            >
               <DatePicker
                 style={{ width: '100%' }}
                 format="DD/MM/YYYY"
@@ -441,6 +495,9 @@ const handleSubmit = async (values) => {
             <Form.Item
               name="materialCertExpected"
               label="Ngày mong muốn nhận chứng nhận vật liệu"
+              rules={[
+                { required: true, message: 'Vui lòng chọn ngày mong muốn nhận chứng nhận vật liệu' },
+              ]}
             >
               <DatePicker
                 style={{ width: '100%' }}
@@ -457,14 +514,14 @@ const handleSubmit = async (values) => {
         </Divider>
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item
+              <Form.Item
               name="manufacturerName"
               label="Tên nhà sản xuất"
               rules={[
+                { required: true, message: 'Vui lòng nhập tên nhà sản xuất' },
                 {
                   max: 200,
-                  message:
-                    'Tên nhà sản xuất không được vượt quá 200 ký tự',
+                  message: 'Tên nhà sản xuất không được vượt quá 200 ký tự',
                 },
               ]}
             >
@@ -477,6 +534,7 @@ const handleSubmit = async (values) => {
               name="factoryLocation"
               label="Nhà máy sản xuất"
               rules={[
+                { required: true, message: 'Vui lòng nhập nhà máy sản xuất' },
                 {
                   max: 200,
                   message: 'Nhà máy sản xuất không được vượt quá 200 ký tự',
@@ -492,6 +550,7 @@ const handleSubmit = async (values) => {
               name="materialName"
               label="Tên vật liệu"
               rules={[
+                { required: true, message: 'Vui lòng nhập tên vật liệu' },
                 {
                   max: 200,
                   message: 'Tên vật liệu không được vượt quá 200 ký tự',
@@ -506,6 +565,9 @@ const handleSubmit = async (values) => {
             <Form.Item
               name="MATERIAL_CLASS_ID"
               label="Phân loại vật liệu"
+              rules={[
+                { required: true, message: 'Vui lòng chọn phân loại vật liệu' },
+              ]}
             >
               <Select placeholder="Chọn phân loại vật liệu">
                 {options?.materialClass?.map(materialClassId => (
@@ -521,6 +583,9 @@ const handleSubmit = async (values) => {
             <Form.Item
               name="materialProperty1Id"
               label="Thuộc tính 1"
+              rules={[
+                { required: true, message: 'Vui lòng chọn Thuộc tính 1' },
+              ]}
             >
               <Select placeholder="Chọn Thuộc tính 1" allowClear showSearch>
                 {options.materialProperty1?.map((item) => (
@@ -536,6 +601,9 @@ const handleSubmit = async (values) => {
             <Form.Item
               name="materialProperty2Id"
               label="Thuộc tính 2"
+              rules={[
+                { required: true, message: 'Vui lòng chọn Thuộc tính 2' },
+              ]}
             >
               <Select placeholder="Chọn Thuộc tính 2" allowClear showSearch>
                 {options.materialProperty2?.map((item) => (
@@ -551,6 +619,9 @@ const handleSubmit = async (values) => {
             <Form.Item
               name="materialProperty3Id"
               label="Thuộc tính 3"
+              rules={[
+                { required: true, message: 'Vui lòng chọn Thuộc tính 3' },
+              ]}
             >
               <Select placeholder="Chọn Thuộc tính 3" allowClear showSearch>
                 {options.materialProperty3?.map((item) => (
@@ -563,7 +634,9 @@ const handleSubmit = async (values) => {
           </Col>
 
           <Col span={12}>
-            <Form.Item name="materialStatusId" label="Mới hoặc thêm nhà máy">
+            <Form.Item name="materialStatusId" label="Mới hoặc thêm nhà máy" rules={[
+                { required: true, message: 'Vui lòng chọn trạng thái vật liệu' },
+              ]}>
               <Select placeholder="Chọn trạng thái vật liệu" allowClear showSearch>
                 {options.materialStatus?.map((item) => (
                   <Option key={item.id} value={item.id}>
@@ -575,7 +648,9 @@ const handleSubmit = async (values) => {
           </Col>
 
           <Col span={12}>
-            <Form.Item name="ulStatusId" label="Cấu trúc lớp đạt chứng nhận">
+            <Form.Item name="ulStatusId" label="Cấu trúc lớp đạt chứng nhận" rules={[
+                { required: true, message: 'Vui lòng chọn trạng thái UL' },
+              ]}>
               <Select placeholder="Chọn trạng thái UL" allowClear showSearch>
                 {options.ulStatus?.map((item) => (
                   <Option key={item.id} value={item.id}>
@@ -617,7 +692,7 @@ const handleSubmit = async (values) => {
         </Divider>
         <Row gutter={16}>
           <Col span={12}>
-            <Form.Item label="Catalog">
+            <Form.Item label={<span>Catalog <span style={{color: 'red'}}>*</span></span>}>
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Upload
                   beforeUpload={(file) => handleImageUpload(file, 'catalog')}
@@ -629,6 +704,26 @@ const handleSubmit = async (values) => {
                     Chọn hình Catalog
                   </Button>
                 </Upload>
+                <Form.Item
+                  name="catalogImage"
+                  noStyle
+                  rules={[
+                    {
+                      validator: () => {
+                        // Nếu đang edit và đã có preview (ảnh cũ), không cần validate
+                        if (isEditMode && catalogPreview) {
+                          return Promise.resolve();
+                        }
+                        // Nếu mode create hoặc chưa có ảnh, phải upload
+                        if (!catalogImage && !catalogPreview) {
+                          return Promise.reject('Vui lòng upload hình Catalog');
+                        }
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
+                >
+                </Form.Item>
                 {catalogPreview && (
                   <div style={{ position: 'relative', display: 'inline-block' }}>
                     <Image
@@ -665,6 +760,26 @@ const handleSubmit = async (values) => {
                     Chọn hình Cấu trúc lớp
                   </Button>
                 </Upload>
+                <Form.Item
+                    name="layerStructureImage"
+                    noStyle
+                    rules={[
+                      {
+                        validator: () => {
+                          // Nếu đang edit và đã có preview (ảnh cũ), không cần validate
+                          if (isEditMode && layerStructurePreview) {
+                            return Promise.resolve();
+                          }
+                          // Nếu mode create hoặc chưa có ảnh, phải upload
+                          if (!layerStructureImage && !layerStructurePreview) {
+                            return Promise.reject('Vui lòng upload hình Cấu trúc lớp');
+                          }
+                          return Promise.resolve();
+                        },
+                      },
+                    ]}
+                  >
+                  </Form.Item>
                 {layerStructurePreview && (
                   <div style={{ position: 'relative', display: 'inline-block' }}>
                     <Image

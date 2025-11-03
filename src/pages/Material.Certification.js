@@ -18,7 +18,7 @@ import {
   fetchMaterialCertificationList,
   createMaterialCertification,
   updateMaterialCertification,
-  deleteMaterialCertification,
+  softDeleteCertification,
   fetchMaterialCertificationOptions
 } from '../utils/material-certification-api';
 import CreateUlCertificationModal from '../components/modal/CreateUlCertificationModal';
@@ -150,7 +150,7 @@ const handleCreate = async (values) => {
         toast.error('ID không hợp lệ, không thể xóa!');
         return;
       }
-      await deleteMaterialCertification(id);
+      await softDeleteCertification(id);
       toast.success('Xóa thành công');
       fetchData(pagination.current, pagination.pageSize);
     } catch (error) {
@@ -438,229 +438,224 @@ const handleExportLateReport = () => {
     }
   };
   const columns = [
-    {
-      title: 'No',
-      dataIndex: 'ID',
-      key: 'id',
-      width: 80,
-      fixed: 'left',
-      align: 'center',
+  {
+    title: 'No',
+    dataIndex: 'ID',
+    key: 'id',
+    width: 60,
+    fixed: 'left',
+    align: 'center',
+  },
+  {
+    title: 'Tên vật liệu',
+    dataIndex: 'MATERIAL_NAME',
+    key: 'material_name',
+    width: 120,
+    ...getColumnSearchProps('MATERIAL_NAME'),
+    render: (text, record) => (
+      <button 
+        onClick={() => handleViewCertificationForm(record)}
+        style={{ 
+          color: '#1890ff', 
+          cursor: 'pointer',
+          border: 'none',
+          background: 'none',
+          padding: 0,
+          textDecoration: 'underline',
+          font: 'inherit',
+          textAlign: 'left',
+          width: '100%',
+          whiteSpace: 'normal',
+          wordBreak: 'break-word',
+          lineHeight: '1.4'
+        }}
+      >
+        {text}
+      </button>
+    )
+  },
+  {
+    title: 'Loại VL',
+    dataIndex: 'MATERIAL_CLASS',
+    key: 'material_class',
+    width: 80,
+    ...getColumnSearchProps('MATERIAL_CLASS'),
+    render: (text) => {
+      if (!text) return '';
+      const matches = text.match(/\b[A-Z]{2,}\b/g); 
+      return matches ? matches.join(', ') : text;
     },
-    {
-      title: 'Tên vật liệu',
-      dataIndex: 'MATERIAL_NAME',
-      key: 'material_name',
-      width: 150,
-      ...getColumnSearchProps('MATERIAL_NAME'),
-      render: (text, record) => (
-        <button 
-          onClick={() => handleViewCertificationForm(record)}
-          style={{ 
-            color: '#1890ff', 
-            cursor: 'pointer',
-            border: 'none',
-            background: 'none',
-            padding: 0,
-            textDecoration: 'underline',
-            font: 'inherit'
-          }}
+    align: 'center'
+  },
+  {
+    title: 'Cấu trúc',
+    dataIndex: 'UL_CERT_STATUS',
+    key: 'ul_cert_status',
+    width: 90,
+    align: 'center',
+    render: (status) => status ? (
+      <Tag color={getStatusColor(status)} style={{ fontSize: '11px', padding: '0 4px' }}>
+        {status}
+      </Tag>
+    ) : '-'
+  },
+  {
+    title: 'Tin cậy',
+    dataIndex: 'RELIABILITY_LEVEL',
+    key: 'reliability_level',
+    width: 70,
+    ...getColumnSearchProps('RELIABILITY_LEVEL'),
+    render: (text) => {
+      if (!text) return '';
+      const match = text.match(/\d+/);
+      return match ? `Cấp ${match[0]}` : text;
+    },
+    align: 'center'
+  },
+  {
+    title: 'Tiến độ',
+    dataIndex: 'PROGRESS',
+    key: 'progress',
+    width: 100,
+    filters: Array.isArray(options.progress)
+      ? options.progress.map(p => ({ text: p.status_name, value: String(p.status_id) }))
+      : [],
+    filteredValue: searchFilters.PROGRESS || null,
+    filterMultiple: true,
+    render: (v, record) => {
+      if (v) return <div style={{ fontSize: '12px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{v}</div>;
+      const progressId = record.PROGRESS_ID ?? record.PROGRESS;
+      if (options && Array.isArray(options.progress) && (progressId !== undefined && progressId !== null)) {
+        const found = options.progress.find(p => String(p.status_id) === String(progressId));
+        if (found) return <div style={{ fontSize: '12px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{found.status_name}</div>;
+      }
+      return '-';
+    },
+    align: 'center'
+  },
+  {
+    title: 'Bộ phận',
+    dataIndex: 'DEPARTMENT_CODE',
+    key: 'department_code',
+    width: 70,
+    render: (v) => v || '-',            
+    align: 'center'
+  },
+  {
+    title: 'Người PT',
+    dataIndex: 'PERSON_IN_CHARGE',
+    key: 'person_in_charge',
+    width: 100,
+    render: v => (
+      <div style={{ 
+        whiteSpace: 'normal',
+        wordBreak: 'break-word',
+        lineHeight: '1.4'
+      }}>
+        {v || '-'}
+      </div>
+    ),
+    align: 'center'
+  },
+  {
+    title: 'Bắt đầu',
+    dataIndex: 'START_DATE',
+    key: 'start_date',
+    width: 85,
+    render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
+    align: 'center'
+  },
+  {
+    title: 'KH gửi PD5',
+    dataIndex: 'PD5_REPORT_DEADLINE',
+    key: 'pd5_report_deadline',
+    width: 85,
+    render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
+    align: 'center'
+  },
+  {
+    title: 'KH hoàn thành',
+    dataIndex: 'COMPLETION_DEADLINE',
+    key: 'completion_deadline',
+    width: 95,
+    render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
+    align: 'center'
+  },
+  {
+    title: 'TT gửi PD5',
+    dataIndex: 'PD5_REPORT_ACTUAL_DATE',
+    key: 'pd5_report_actual_date',
+    width: 85,
+    render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
+    align: 'center'
+  },
+  {
+    title: 'TT hoàn thành',
+    dataIndex: 'ACTUAL_COMPLETION_DATE',
+    key: 'actual_completion_date',
+    width: 95,
+    render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
+    align: 'center'
+  },
+  {
+    title: 'Ghi chú',
+    dataIndex: 'NOTES_1',
+    key: 'notes_1',
+    width: 120,
+    align: 'left',
+    render: (text) => (
+      <div style={{ 
+        whiteSpace: 'normal',
+        wordBreak: 'break-word',
+        lineHeight: '1.4'
+      }}>
+        {text || '-'}
+      </div>
+    )
+  },
+  {
+    title: 'Thao tác',
+    key: 'action',
+    fixed: 'right',
+    width: 130,
+    align: 'center',
+    render: (_, record) => (
+      <Space size="small">
+        <Tooltip title="Lịch sử">
+          <Button
+            type="default"
+            icon={<ClockCircleOutlined />}
+            onClick={() => handleViewHistory(record)}
+            size="small"
+          />
+        </Tooltip>
+        <Tooltip title="Sửa">
+          <Button
+            type="primary"
+            icon={<EditOutlined />}
+            onClick={() => handleEdit(record)}
+            size="small"
+          />
+        </Tooltip>
+        <Popconfirm
+          title="Xác nhận xóa?"
+          onConfirm={() => handleDelete(record)}
+          okText="Có"
+          cancelText="Không"
         >
-          {text}
-        </button>
-      )
-    },
-    {
-      title: 'Loại vật liệu',
-      dataIndex: 'MATERIAL_CLASS',
-      key: 'material_class',
-      width: 150,
-      ...getColumnSearchProps('MATERIAL_CLASS'),
-      render: (text) => {
-        if (!text) return '';
-        const matches = text.match(/\b[A-Z]{2,}\b/g); 
-        return matches ? matches.join(', ') : text;
-      },
-      align: 'center'
-    },
-    {
-      title: 'Cấu trúc',
-      dataIndex: 'UL_CERT_STATUS',
-      key: 'ul_cert_status',
-      width: 120,
-      align: 'center',
-      render: (status) => status ? (
-        <Tag color={getStatusColor(status)}>{status}</Tag>
-      ) : '-'
-    },
-    {
-      title: 'Mức độ tin cậy',
-      dataIndex: 'RELIABILITY_LEVEL',
-      key: 'reliability_level',
-      width: 150,
-      ...getColumnSearchProps('RELIABILITY_LEVEL'),
-      render: (text) => {
-        if (!text) return '';
-        const match = text.match(/Cấp độ\s*\d+/i);
-        return match ? match[0] : text;
-      },
-    },
-   {
-      title: 'Tiến độ',
-      dataIndex: 'PROGRESS',
-      key: 'progress',
-      width: 100,
-      filters: Array.isArray(options.progress)
-        ? options.progress.map(p => ({ text: p.status_name, value: String(p.status_id) }))
-        : [],
-      filteredValue: searchFilters.PROGRESS || null,
-      filterMultiple: true,
-      render: (v, record) => {
-        if (v) return v;
-        const progressId = record.PROGRESS_ID ?? record.PROGRESS;
-        if (options && Array.isArray(options.progress) && (progressId !== undefined && progressId !== null)) {
-          const found = options.progress.find(p => String(p.status_id) === String(progressId));
-          if (found) return found.status_name;
-        }
-        return '-';
-      },
-      align: 'center'
-    },
-    {
-      title: <>Bộ phận<br />phụ trách</>,
-      dataIndex: 'DEPARTMENT_CODE',
-      key: 'department_code',
-      width: 100,
-      render: (v) => v || '-',            
-      align: 'center'
-    },
-    {
-      title: 'Người phụ trách',
-      dataIndex: 'PERSON_IN_CHARGE',
-      key: 'person_in_charge',
-      width: 150,
-      render: v => v || '-',
-      align: 'center'
-    },
-    {
-      title: 'Ngày bắt đầu',
-      dataIndex: 'START_DATE',
-      key: 'start_date',
-      width: 120,
-      render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
-    },
-    {
-      title: <>Kỳ hạn<br/>gửi báo cáo<br/>tới PD5</>,
-      dataIndex: 'PD5_REPORT_DEADLINE',
-      key: 'pd5_report_deadline',
-      width: 100,
-      render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
-    },
-    {
-      title: <>Kỳ hạn<br/>hoàn thành</>,
-      dataIndex: 'COMPLETION_DEADLINE',
-      key: 'completion_deadline',
-      width: 100,
-      render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
-    },
-    {
-      title: <>Ngày gửi<br/>báo cáo<br/>tới PD5<br/>thực tế</>,
-      dataIndex: 'PD5_REPORT_ACTUAL_DATE',
-      key: 'pd5_report_actual_date',
-      width: 100,
-      render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
-    },
-    {
-      title: <>Ngày<br/>hoàn thành<br/>thực tế</>,
-      dataIndex: 'ACTUAL_COMPLETION_DATE',
-      key: 'actual_completion_date',
-      width: 100,
-      render: v => v ? new Date(v).toLocaleDateString('vi-VN') : '-',
-    },
-    {
-      title: 'Ghi chú',
-      dataIndex: 'NOTES_1',
-      key: 'notes_1',
-      width: 200,
-      align: 'center'
-    },
-    {
-      title: 'Người làm',
-      dataIndex: 'PERSON_DO',
-      key: 'person_do',
-      width: 120,
-      render: v => v || '-',
-    },
-    {
-      title: 'Người check',
-      dataIndex: 'PERSON_CHECK',
-      key: 'person_check',
-      width: 120,
-      render: v => v || '-',
-    },
-    {
-      title: 'Thời gian làm (phút)',
-      dataIndex: 'TIME_DO',
-      key: 'time_do',
-      width: 150,
-      render: v => v || '-',
-    },
-    {
-      title: 'Thời gian check (phút)',
-      dataIndex: 'TIME_CHECK',
-      key: 'time_check',
-      width: 170,
-      render: v => v || '-',
-    },
-    {
-      title: 'Tổng thời gian (phút)',
-      dataIndex: 'TOTAL_TIME',
-      key: 'total_time',
-      width: 190,
-      render: v => v || '-',
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      fixed: 'right',
-      width: 180,
-      align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="Xem lịch sử">
-            <Button
-              type="default"
-              icon={<ClockCircleOutlined />}
-              onClick={() => handleViewHistory(record)}
-              size="small"
-            />
-          </Tooltip>
-          <Tooltip title="Chỉnh sửa">
+          <Tooltip title="Xóa">
             <Button
               type="primary"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record)}
+              danger
+              icon={<DeleteOutlined />}
               size="small"
             />
           </Tooltip>
-          <Popconfirm
-            title="Xác nhận xóa?"
-            onConfirm={() => handleDelete(record)}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Tooltip title="Xóa">
-              <Button
-                type="primary"
-                danger
-                icon={<DeleteOutlined />}
-                size="small"
-              />
-            </Tooltip>
-          </Popconfirm>
-        </Space>
-      ),
-    },
-  ];
+        </Popconfirm>
+      </Space>
+    ),
+  },
+];
 
 const handleViewHistory = (record) => {
   setSelectedCertification(record);
@@ -746,11 +741,16 @@ const handleViewHistory = (record) => {
             dataSource={data}
             loading={loading}
             rowKey={(record) => record.ID || record.id}
-            scroll={{ x: 'max-content', y: 'calc(100vh - 280px)' }}
-            size="middle"
+             size="small"  // ✅ Thêm size="small" để thu gọn padding
+            scroll={{ 
+              x: 1400,  // ✅ Giảm từ max xuống cố định
+              y: 'calc(100vh - 320px)'  // ✅ Chiều cao động theo màn hình
+            }}
+            style={{ fontSize: '12px' }} 
             sticky
             pagination={{
               ...pagination,
+              size: 'small',
               onChange: (page, pageSize) => {
                 fetchData(page, pageSize, searchFilters);
               },

@@ -38,23 +38,21 @@ const CertificationHistoryModal = ({ open, onClose, certificationId, certificati
   };
 
   const formatDate = (dateString) => {
-  if (!dateString) return '-';
-  const match = dateString.match(/^(\d{2})-([A-Z]{3})-(\d{2})/);
-  if (!match) return '-';
+    if (!dateString) return '-';
+    const match = dateString.match(/^(\d{2})-([A-Z]{3})-(\d{2})/);
+    if (!match) return '-';
 
-  const day = match[1];
-  const monthStr = match[2];
-  const year = '20' + match[3]; 
-  const monthMap = {
-    JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
-    JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12'
+    const day = match[1];
+    const monthStr = match[2];
+    const year = '20' + match[3]; 
+    const monthMap = {
+      JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06',
+      JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12'
+    };
+
+    const month = monthMap[monthStr] || '01';
+    return `${day}/${month}/${year}`;
   };
-
-  const month = monthMap[monthStr] || '01';
-
-  return `${day}/${month}/${year}`;
-};
-
 
   const getActionIcon = (actionType) => {
     switch (actionType) {
@@ -73,6 +71,10 @@ const CertificationHistoryModal = ({ open, onClose, certificationId, certificati
         return 'green';
       case 'UPDATE':
         return 'blue';
+      case 'APPROVE':
+        return 'purple';
+      case 'DELETE':
+        return 'red';
       default:
         return 'default';
     }
@@ -84,6 +86,10 @@ const CertificationHistoryModal = ({ open, onClose, certificationId, certificati
         return 'Tạo mới';
       case 'UPDATE':
         return 'Cập nhật';
+      case 'APPROVE':
+        return 'Phê duyệt';
+      case 'DELETE':
+        return 'Xóa';
       default:
         return actionType;
     }
@@ -118,6 +124,7 @@ const CertificationHistoryModal = ({ open, onClose, certificationId, certificati
     actualCompletionDate: 'Ngày hoàn thành thực tế',
     pd5ReportActualDate: 'Ngày gửi báo cáo tới PD5 thực tế',
     progress: 'Tiến độ',
+    PROGRESS_ID: 'Tiến độ',
     factoryCertReady: 'Chứng nhận ở nhà máy khác',
     factoryCertStatus: 'Nhà máy chứng nhận',
     factoryLevel: 'Cấp độ ở nhà máy khác',
@@ -127,7 +134,12 @@ const CertificationHistoryModal = ({ open, onClose, certificationId, certificati
     personDo: 'Người làm',
     personCheck: 'Người check',
     timeDo: 'Thời gian làm (phút)',
-    timeCheck: 'Thời gian check (phút)'
+    timeCheck: 'Thời gian check (phút)',
+    datePd5Hq: 'Ngày PD5 gửi HQ',
+    datePd5GetReport: 'Ngày PD5 tổng hợp báo cáo',
+    PERSON_ACCEPT: 'Người phê duyệt TKSX',
+    PERSON_ACCEPT_QL2: 'Người phê duyệt QL2',
+    IS_DELETED: 'Trạng thái xóa',
   };
 
   const formatValue = (value) => {
@@ -138,44 +150,127 @@ const CertificationHistoryModal = ({ open, onClose, certificationId, certificati
   };
 
   const renderChangedFields = (history) => {
-    if (history.actionType === 'CREATE') {
-      // Hiển thị tất cả giá trị mới khi tạo
-      const newValues = history.newValues || {};
-      return (
-        <Descriptions bordered size="small" column={1}>
-          {Object.keys(newValues).map(key => (
-            <Descriptions.Item 
-              key={key} 
-              label={fieldLabels[key] || key}
-            >
-              <Tag color="green">{formatValue(newValues[key])}</Tag>
-            </Descriptions.Item>
-          ))}
-        </Descriptions>
-      );
-    }
+  if (history.actionType === 'CREATE') {
+    const newValues = history.newValues || {};
+    const entries = Object.entries(newValues);
 
-    if (history.actionType === 'UPDATE' && history.changedFields && history.changedFields.length > 0) {
-      return (
-        <Descriptions bordered size="small" column={1}>
-          {history.changedFields.map(field => (
-            <Descriptions.Item 
-              key={field} 
-              label={fieldLabels[field] || field}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Tag color="red">{formatValue(history.oldValues?.[field])}</Tag>
-                <span>→</span>
-                <Tag color="green">{formatValue(history.newValues?.[field])}</Tag>
-              </div>
-            </Descriptions.Item>
-          ))}
-        </Descriptions>
-      );
-    }
+    return (
+      <Descriptions bordered size="small" column={1}>
+        {entries.map(([key, value]) => (
+          <Descriptions.Item
+            key={key}
+            label={
+              <span
+                style={{
+                  fontSize: '12px',
+                  whiteSpace: 'nowrap',
+                  display: 'block',
+                  maxWidth: '200px'
+                }}
+              >
+                {fieldLabels[key] || key}
+              </span>
+            }
+            contentStyle={{
+              fontSize: '12px',
+              wordBreak: 'break-word'
+            }}
+          >
+            <Tag color="green" style={{ margin: 0 }}>
+              {formatValue(value)}
+            </Tag>
+          </Descriptions.Item>
+        ))}
+      </Descriptions>
+    );
+  }
 
-    return <Empty description="Không có thay đổi" image={Empty.PRESENTED_IMAGE_SIMPLE} />;
-  };
+  if (history.actionType === 'UPDATE' && history.changedFields?.length > 0) {
+    const entries = history.changedFields.map(field => ({
+      field,
+      oldValue: history.oldValues?.[field],
+      newValue: history.newValues?.[field]
+    }));
+
+    return (
+      <Descriptions bordered size="small" column={1}>
+        {entries.map(({ field, oldValue, newValue }) => (
+          <Descriptions.Item
+            key={field}
+            label={
+              <span
+                style={{
+                  fontSize: '12px',
+                  whiteSpace: 'nowrap',
+                  display: 'block',
+                  maxWidth: '200px'
+                }}
+              >
+                {fieldLabels[field] || field}
+              </span>
+            }
+            contentStyle={{
+              fontSize: '12px',
+              wordBreak: 'break-word'
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                flexWrap: 'wrap'
+              }}
+            >
+              <Tag color="red" style={{ margin: 0 }}>
+                {formatValue(oldValue)}
+              </Tag>
+              <span style={{ fontSize: '12px' }}>→</span>
+              <Tag color="green" style={{ margin: 0 }}>
+                {formatValue(newValue)}
+              </Tag>
+            </div>
+          </Descriptions.Item>
+        ))}
+      </Descriptions>
+    );
+  }
+
+  if (history.actionType === 'APPROVE') {
+    return (
+      <Descriptions bordered size="small" column={1}>
+        {history.changedFields?.map(field => (
+          <Descriptions.Item
+            key={field}
+            label={
+              <span style={{ fontSize: '12px' }}>
+                {fieldLabels[field] || field}
+              </span>
+            }
+            contentStyle={{ fontSize: '12px' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Tag color="red" style={{ margin: 0 }}>
+                {formatValue(history.oldValues?.[field])}
+              </Tag>
+              <span>→</span>
+              <Tag color="green" style={{ margin: 0 }}>
+                {formatValue(history.newValues?.[field])}
+              </Tag>
+            </div>
+          </Descriptions.Item>
+        ))}
+      </Descriptions>
+    );
+  }
+
+  return (
+    <Empty
+      description="Không có thay đổi"
+      image={Empty.PRESENTED_IMAGE_SIMPLE}
+    />
+  );
+};
 
   return (
     <Modal
@@ -188,7 +283,7 @@ const CertificationHistoryModal = ({ open, onClose, certificationId, certificati
       open={open}
       onCancel={onClose}
       footer={null}
-      width={800}
+      width={1000}
       style={{ top: 20 }}
     >
       {loading ? (

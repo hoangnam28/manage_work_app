@@ -1,6 +1,7 @@
 import { Form, Input, DatePicker, Select, Button, Row, Col, Divider, Alert, Space, Card } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircleOutlined } from '@ant-design/icons';
+import { useState, useEffect } from 'react';
 
 const { TextArea } = Input;
 
@@ -14,6 +15,7 @@ const ProgressTab = ({
   personAcceptQL2 
 }) => {
   const navigate = useNavigate();
+  const [canApprove, setCanApprove] = useState(false);
   
   const handleCompletionDeadlineChange = (date) => {
     if (date) {
@@ -28,6 +30,29 @@ const ProgressTab = ({
     }
   };
 
+  const checkRequiredFields = () => {
+    const values = form.getFieldsValue([
+      'FACTORY_CERT_READY',
+      'FACTORY_CERT_STATUS',
+      'FACTORY_LEVEL',
+      'PRICE_REQUEST',
+      'COMPLETION_DEADLINE'
+    ]);
+
+    const allFilled = values.FACTORY_CERT_READY && 
+                      values.FACTORY_CERT_STATUS && 
+                      values.FACTORY_LEVEL && 
+                      values.PRICE_REQUEST && 
+                      values.COMPLETION_DEADLINE;
+    
+    setCanApprove(!!allFilled);
+  };
+
+  useEffect(() => {
+    checkRequiredFields();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form]);
+
   const showTKSXApproval = currentProgressId === 1; 
   const showQL2Approval = currentProgressId === 2; 
 
@@ -41,6 +66,7 @@ const ProgressTab = ({
       layout="vertical"
       onFinish={onFinish}
       initialValues={{}}
+      onValuesChange={checkRequiredFields}
     >
       {(showTKSXApproval || showQL2Approval) && (
         <Card 
@@ -61,6 +87,17 @@ const ProgressTab = ({
             showIcon
             style={{ marginBottom: '16px' }}
           />
+          
+          {!canApprove && showQL2Approval && (
+            <Alert
+              message="Chưa thể phê duyệt"
+              description="Vui lòng điền đầy đủ các trường: Chứng nhận ở nhà máy khác, Nhà máy đã chứng nhận, Cấp độ ở nhà máy khác, Yêu cầu báo cáo đánh giá, và Kỳ hạn hoàn thành trước khi phê duyệt."
+              type="warning"
+              showIcon
+              style={{ marginBottom: '16px' }}
+            />
+          )}
+          
           <Row justify="center">
             <Space size="large">
               {showQL2Approval && (
@@ -69,9 +106,10 @@ const ProgressTab = ({
                   size="large"
                   icon={<CheckCircleOutlined />}
                   onClick={() => onApprovalSuccess && onApprovalSuccess('ql2')}
+                  disabled={!canApprove}
                   style={{ 
-                    backgroundColor: '#1890ff', 
-                    borderColor: '#1890ff',
+                    backgroundColor: canApprove ? '#1890ff' : undefined, 
+                    borderColor: canApprove ? '#1890ff' : undefined,
                     height: '48px',
                     fontSize: '16px',
                     fontWeight: 'bold'
@@ -199,7 +237,10 @@ const ProgressTab = ({
           </Form.Item>
         </Col>
         <Col span={12}>
-          <Form.Item name="FACTORY_CERT_READY" label="Chứng nhận ở nhà máy khác">
+          <Form.Item 
+            name="FACTORY_CERT_READY" 
+            label={<span>Chứng nhận ở nhà máy khác <span style={{color: 'red'}}>*</span></span>}
+          >
             <Select placeholder="Chọn trạng thái chứng nhận">
               <Select.Option value="yes">Yes</Select.Option>
               <Select.Option value="no">No</Select.Option>
@@ -208,26 +249,35 @@ const ProgressTab = ({
         </Col>
 
         <Col span={12}>
-          <Form.Item name="FACTORY_CERT_STATUS" label="Nhà máy đã chứng nhận">
+          <Form.Item 
+            name="FACTORY_CERT_STATUS" 
+            label={<span>Nhà máy đã chứng nhận <span style={{color: 'red'}}>*</span></span>}
+          >
             <Input placeholder="Nhập tên nhà máy hoặc mô tả" />
           </Form.Item>
         </Col>
 
         <Col span={12}>
-          <Form.Item name="FACTORY_LEVEL" label="Cấp độ ở nhà máy khác">
+          <Form.Item 
+            name="FACTORY_LEVEL" 
+            label={<span>Cấp độ ở nhà máy khác <span style={{color: 'red'}}>*</span></span>}
+          >
             <Select placeholder="Chọn cấp độ">
               <Select.Option value="level1">1</Select.Option>
               <Select.Option value="level2">2</Select.Option>
               <Select.Option value="level3">3</Select.Option>
               <Select.Option value="level4">4</Select.Option>
-              <Select.Option value="level4">5</Select.Option>
-              <Select.Option value="level4">6</Select.Option>
+              <Select.Option value="level5">5</Select.Option>
+              <Select.Option value="level6">6</Select.Option>
             </Select>
           </Form.Item>
         </Col>
 
         <Col span={12}>
-          <Form.Item name="PRICE_REQUEST" label="Yêu cầu báo cáo đánh giá">
+          <Form.Item 
+            name="PRICE_REQUEST" 
+            label={<span>Yêu cầu báo cáo đánh giá <span style={{color: 'red'}}>*</span></span>}
+          >
             <Select placeholder="Chọn cấp độ">
               <Select.Option value="Gia công">Gia công</Select.Option>
               <Select.Option value="Tin cậy">Tin cậy</Select.Option>
@@ -240,7 +290,7 @@ const ProgressTab = ({
           <Form.Item 
             name="REPORT_LINK" 
             label="Link gửi báo cáo đánh giá"
-            extra="Khi điền link và lưu, trạng thái sẽ tự động chuyển sang 'Đang tổng hợp báo cáo'"
+            extra="Khi điền link và lưu, sẽ tự động cập nhật 'Ngày gửi báo cáo tới PD5 thực tế'"
           >
             <Input placeholder="https://example.com/bao-cao" />
           </Form.Item>
@@ -258,7 +308,7 @@ const ProgressTab = ({
         }}
       >
         <Col span={8}>
-          <Form.Item name="COMPLETION_DEADLINE" label="Kỳ hạn hoàn thành">
+          <Form.Item name="COMPLETION_DEADLINE" label={<span>Kỳ hạn hoàn thành <span style={{color: 'red'}}>*</span></span>}>
             <DatePicker
               style={{ width: '100%' }}
               format="DD/MM/YYYY"
@@ -282,15 +332,17 @@ const ProgressTab = ({
           <Form.Item 
             name="PD5_REPORT_ACTUAL_DATE" 
             label="Ngày gửi báo cáo tới PD5 thực tế"
-            extra="Khi điền ngày và lưu, trạng thái sẽ tự động chuyển sang 'HQ đang phê duyệt'"
+            extra="Tự động cập nhật khi điền Link gửi báo cáo đánh giá"
           >
-            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" disabled />
           </Form.Item>
         </Col>
+
         <Col span={8}>
           <Form.Item 
             name="DATE_PD5_HQ" 
             label="Ngày PD5 gửi tổng"
+            extra="Khi điền ngày và lưu, trạng thái sẽ tự động chuyển sang 'HQ đang phê duyệt'"
           >
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
           </Form.Item>

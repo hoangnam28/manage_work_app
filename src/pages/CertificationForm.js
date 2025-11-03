@@ -16,7 +16,7 @@ import {
   ql2ApproveCertification
 } from '../utils/material-certification-api';
 import ProgressTab from '../components/tabs/ProgressTab';
-import TimeTrackingTab from '../components/tabs/TimeTrackingTab';
+// import TimeTrackingTab from '../components/tabs/TimeTrackingTab';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -34,7 +34,7 @@ const CertificationForm = () => {
   const [imagesLoading, setImagesLoading] = useState(false);
   const [options, setOptions] = useState({});
   const [currentProgressId, setCurrentProgressId] = useState(null);
-  const [certificationData, setCertificationData] = useState(null); // ✅ THÊM STATE
+  const [certificationData, setCertificationData] = useState(null); 
 
 
 
@@ -249,6 +249,17 @@ const CertificationForm = () => {
 
       const formattedValues = {};
       
+      // ✅ XỬ LÝ LOGIC MỚI: Khi có REPORT_LINK -> tự động set PD5_REPORT_ACTUAL_DATE
+      if (values.REPORT_LINK && !values.PD5_REPORT_ACTUAL_DATE) {
+        const today = moment();
+        formattedValues.pd5ReportActualDate = today.format('YYYY-MM-DD');
+        
+        // Cập nhật lại form để hiển thị
+        progressForm.setFieldsValue({
+          PD5_REPORT_ACTUAL_DATE: today
+        });
+      }
+      
       // Existing fields
       if (values.PERSON_IN_CHARGE) formattedValues.personInCharge = values.PERSON_IN_CHARGE;
       if (values.DEPARTMENT_IN_CHARGE) formattedValues.departmentInCharge = values.DEPARTMENT_IN_CHARGE;
@@ -258,10 +269,9 @@ const CertificationForm = () => {
       if (values.ACTUAL_COMPLETION_DATE) formattedValues.actualCompletionDate = values.ACTUAL_COMPLETION_DATE.format('YYYY-MM-DD');
       if (values.PD5_REPORT_ACTUAL_DATE) formattedValues.pd5ReportActualDate = values.PD5_REPORT_ACTUAL_DATE.format('YYYY-MM-DD');
       
-      // ✅ THÊM 2 TRƯỜNG MỚI
+      // ✅ 2 TRƯỜNG QUAN TRỌNG
       if (values.DATE_PD5_HQ) formattedValues.datePd5Hq = values.DATE_PD5_HQ.format('YYYY-MM-DD');
       if (values.DATE_PD5_GET_REPORT) formattedValues.datePd5GetReport = values.DATE_PD5_GET_REPORT.format('YYYY-MM-DD');
-      
       if (values.PROGRESS_ID) formattedValues.progress = values.PROGRESS_ID;
       if (values.TOTAL_TIME) formattedValues.totalTime = values.TOTAL_TIME;
       if (values.MATERIAL_NAME) formattedValues.materialName = values.MATERIAL_NAME;
@@ -274,7 +284,7 @@ const CertificationForm = () => {
       if (values.FACTORY_LEVEL) formattedValues.factoryLevel = values.FACTORY_LEVEL;
       if (values.PRICE_REQUEST !== undefined) formattedValues.priceRequest = values.PRICE_REQUEST;
       if (values.REPORT_LINK) formattedValues.reportLink = values.REPORT_LINK;
-      
+    
       // Certification data
       if (certificationData.RELEASE_DATE) formattedValues.releaseDate = certificationData.RELEASE_DATE.format('YYYY-MM-DD');
       if (certificationData.FACTORY_NAME) formattedValues.factoryName = certificationData.FACTORY_NAME;
@@ -789,8 +799,7 @@ const CertificationForm = () => {
               />
             </TabPane>
 
-            {/* Tab 3: Thời gian thao tác QL2 */}
-            <TabPane
+            {/* <TabPane
               tab={
                 <span style={{
                   backgroundColor: activeTab === 'pd5-time' ? '#e29a51ff' : '#ddd',
@@ -807,7 +816,7 @@ const CertificationForm = () => {
               <TimeTrackingTab
                 certificationId={certificationId}
               />
-            </TabPane>
+            </TabPane> */}
           </Tabs>
         </div>
         </div>

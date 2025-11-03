@@ -271,15 +271,6 @@ export const updateMaterialCertification = async (id, data) => {
   }
 };
 
-export const deleteMaterialCertification = async (id) => {
-  try {
-    const response = await axiosInstance.delete(`/material-certification/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error('Error deleting UL certification:', error);
-    throw error;
-  }
-};
 
 export const exportMaterialCertification = async () => {
   try {
@@ -423,6 +414,34 @@ export const ql2ApproveCertification = async (certificationId) => {
     if (error.response) {
       throw new Error(error.response.data?.message || 'Lỗi khi phê duyệt');
     }
+    throw error;
+  }
+};
+
+export const softDeleteCertification = async (id) => {
+  try {
+    if (!id) {
+      throw new Error('ID không hợp lệ');
+    }
+
+    console.log('🗑️ Soft deleting certification:', id);
+
+    const response = await axiosInstance.delete(`/material-certification/${id}`);
+
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Lỗi khi xóa certification');
+    }
+
+    console.log('✅ Soft delete successful:', response.data);
+
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error soft deleting certification:', error);
+    
+    if (error.response) {
+      throw new Error(error.response.data?.message || 'Lỗi khi xóa certification');
+    }
+    
     throw error;
   }
 };
