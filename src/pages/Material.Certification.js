@@ -437,8 +437,6 @@ const handleExportLateReport = () => {
       default: return 'default';
     }
   };
-
-  
   const columns = [
     {
       title: 'No',

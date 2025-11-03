@@ -155,7 +155,6 @@ const handleSubmit = async (values) => {
   setLoading(true);
   
   try {
-    // Prepare data
     const submitData = {
       ...values,
       releaseDate: values.releaseDate ? values.releaseDate.format('YYYY-MM-DD') : null,
@@ -163,6 +162,7 @@ const handleSubmit = async (values) => {
       materialCertExpected: values.materialCertExpected ? values.materialCertExpected.format('YYYY-MM-DD') : null,
       materialClassId: values.MATERIAL_CLASS_ID,
       reliabilityLevelId: values.RELIABILITY_LEVEL_ID,
+      departmentInCharge: values.DEPARTMENT_IN_CHARGE, 
     };
     
     const result = await onSubmit(submitData);
@@ -309,7 +309,30 @@ const handleSubmit = async (values) => {
               <Input placeholder="Nhập tên nhà máy" />
             </Form.Item>
           </Col>
-
+          <Col span={8}>
+            <Form.Item
+              name="DEPARTMENT_IN_CHARGE"
+              label="Bộ phận phụ trách"
+              rules={[
+                { required: true, message: 'Vui lòng chọn bộ phận phụ trách' }
+              ]}
+            >
+              <Select 
+                placeholder="Chọn bộ phận phụ trách" 
+                allowClear 
+                showSearch
+                filterOption={(input, option) =>
+                  option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                }
+              >
+                {options.department?.map(item => (
+                  <Option key={item.dept_id} value={item.dept_id}>
+                    {item.dept_code}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
           <Col span={8}>
             <Form.Item
               name="requestReason"

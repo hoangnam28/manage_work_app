@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Form, Input, DatePicker, Select, Button, Row, Col, Typography, Divider, Tabs
+  Form, Input, DatePicker, Select, Button, Row, Col, Typography, Divider, Tabs, Space, Alert
 } from 'antd';
-import { FileExcelOutlined } from '@ant-design/icons';
+import { FileExcelOutlined, CheckCircleOutlined} from '@ant-design/icons';
 import moment from 'moment';
 import MainLayout from '../components/layout/MainLayout';
 import { Toaster, toast } from 'sonner';
@@ -104,6 +104,9 @@ const CertificationForm = () => {
           REPORT_LINK: data.REPORT_LINK,
           NOTES_1: data.NOTES_1,
           NOTES_2: data.NOTES_2,
+          DEPARTMENT_IN_CHARGE: data.DEPT_ID || data.DEPARTMENT_IN_CHARGE || undefined,
+          DATE_PD5_HQ: data.DATE_PD5_HQ ? moment(data.DATE_PD5_HQ) : null, 
+          DATE_PD5_GET_REPORT: data.DATE_PD5_GET_REPORT ? moment(data.DATE_PD5_GET_REPORT) : null, 
         };
         form.setFieldsValue(formValues);
 
@@ -160,6 +163,8 @@ const CertificationForm = () => {
           FACTORY_LEVEL: data.FACTORY_LEVEL || undefined,
           PRICE_REQUEST: data.PRICE_REQUEST || undefined,
           REPORT_LINK: data.REPORT_LINK || undefined,
+          DATE_PD5_HQ: data.DATE_PD5_HQ ? moment(data.DATE_PD5_HQ) : null,
+          DATE_PD5_GET_REPORT: data.DATE_PD5_GET_REPORT ? moment(data.DATE_PD5_GET_REPORT) : null
         };
         progressForm.setFieldsValue(progressFormValues);
       }
@@ -207,6 +212,8 @@ const CertificationForm = () => {
         pd5ReportActualDate: progressData.PD5_REPORT_ACTUAL_DATE ? progressData.PD5_REPORT_ACTUAL_DATE.format('YYYY-MM-DD') : null,
         progress: progressData.PROGRESS_ID,
         totalTime: progressData.TOTAL_TIME,
+        datePd5Hq: progressData.DATE_PD5_HQ,
+        datePd5GetReport: progressData.DATE_PD5_GET_REPORT
       };
 
       const response = await updateMaterialCertification(certificationId, formattedValues);
@@ -219,6 +226,9 @@ const CertificationForm = () => {
           MATERIAL_CLASS_ID: values.MATERIAL_CLASS_ID,
           LAYER_STRUCTURE: values.LAYER_STRUCTURE,
           RELIABILITY_LEVEL_ID: values.RELIABILITY_LEVEL_ID,
+          DEPARTMENT_IN_CHARGE: values.DEPARTMENT_IN_CHARGE,
+          DATE_PD5_HQ: values.DATE_PD5_HQ,
+          DATE_PD5_GET_REPORT: values.DATE_PD5_GET_REPORT,
           NOTES_1: values.NOTES_1,
         });
       } else {
@@ -237,10 +247,9 @@ const CertificationForm = () => {
       setLoading(true);
       const certificationData = form.getFieldsValue();
 
-      // 🆕 Chỉ gửi các trường có giá trị thực sự, không gửi null/undefined
       const formattedValues = {};
       
-      // Progress fields - chỉ gửi nếu có giá trị
+      // Existing fields
       if (values.PERSON_IN_CHARGE) formattedValues.personInCharge = values.PERSON_IN_CHARGE;
       if (values.DEPARTMENT_IN_CHARGE) formattedValues.departmentInCharge = values.DEPARTMENT_IN_CHARGE;
       if (values.START_DATE) formattedValues.startDate = values.START_DATE.format('YYYY-MM-DD');
@@ -248,6 +257,11 @@ const CertificationForm = () => {
       if (values.COMPLETION_DEADLINE) formattedValues.completionDeadline = values.COMPLETION_DEADLINE.format('YYYY-MM-DD');
       if (values.ACTUAL_COMPLETION_DATE) formattedValues.actualCompletionDate = values.ACTUAL_COMPLETION_DATE.format('YYYY-MM-DD');
       if (values.PD5_REPORT_ACTUAL_DATE) formattedValues.pd5ReportActualDate = values.PD5_REPORT_ACTUAL_DATE.format('YYYY-MM-DD');
+      
+      // ✅ THÊM 2 TRƯỜNG MỚI
+      if (values.DATE_PD5_HQ) formattedValues.datePd5Hq = values.DATE_PD5_HQ.format('YYYY-MM-DD');
+      if (values.DATE_PD5_GET_REPORT) formattedValues.datePd5GetReport = values.DATE_PD5_GET_REPORT.format('YYYY-MM-DD');
+      
       if (values.PROGRESS_ID) formattedValues.progress = values.PROGRESS_ID;
       if (values.TOTAL_TIME) formattedValues.totalTime = values.TOTAL_TIME;
       if (values.MATERIAL_NAME) formattedValues.materialName = values.MATERIAL_NAME;
@@ -255,15 +269,13 @@ const CertificationForm = () => {
       if (values.LAYER_STRUCTURE) formattedValues.layerStructure = values.LAYER_STRUCTURE;
       if (values.RELIABILITY_LEVEL_ID) formattedValues.reliabilityLevelId = values.RELIABILITY_LEVEL_ID;
       if (values.NOTES_1) formattedValues.notes1 = values.NOTES_1;
-
-      // Factory fields - chỉ gửi nếu có giá trị
       if (values.FACTORY_CERT_READY !== undefined) formattedValues.factoryCertReady = values.FACTORY_CERT_READY;
       if (values.FACTORY_CERT_STATUS) formattedValues.factoryCertStatus = values.FACTORY_CERT_STATUS;
       if (values.FACTORY_LEVEL) formattedValues.factoryLevel = values.FACTORY_LEVEL;
       if (values.PRICE_REQUEST !== undefined) formattedValues.priceRequest = values.PRICE_REQUEST;
       if (values.REPORT_LINK) formattedValues.reportLink = values.REPORT_LINK;
-
-      // Certification data - chỉ gửi nếu có giá trị
+      
+      // Certification data
       if (certificationData.RELEASE_DATE) formattedValues.releaseDate = certificationData.RELEASE_DATE.format('YYYY-MM-DD');
       if (certificationData.FACTORY_NAME) formattedValues.factoryName = certificationData.FACTORY_NAME;
       if (certificationData.REQUEST_REASON) formattedValues.requestReason = certificationData.REQUEST_REASON;
@@ -286,9 +298,7 @@ const CertificationForm = () => {
 
       if (response.success) {
         toast.success('Lưu tiến độ thành công!');
-
         await loadCertificationData();
-
       } else {
         toast.error(response.message || 'Lưu tiến độ thất bại');
       }
@@ -311,9 +321,7 @@ const CertificationForm = () => {
         response = await ql2ApproveCertification(certificationId);
         toast.success('QL2 đã phê duyệt thành công!');
       }
-
       if (response && response.success) {
-        // Reload data để cập nhật UI
         await loadCertificationData();
       }
     } catch (error) {
@@ -347,24 +355,40 @@ const CertificationForm = () => {
     <MainLayout>
       <Toaster position="top-right" richColors />
       <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-          <Title level={2} style={{ margin: 0 }}>
-            Quản lý chứng nhận vật liệu
-          </Title>
-          <Button
-            type="primary"
-            icon={<FileExcelOutlined />}
-            onClick={handleExportExcel}
-            loading={exportLoading}
-            style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
-          >
-            Xuất Excel
-          </Button>
-        </div>
-
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+            <Title level={2} style={{ margin: 0 }}>
+              Quản lý chứng nhận vật liệu
+            </Title>
+            <Space>
+              {currentProgressId === 1 && (
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<CheckCircleOutlined />}
+                  onClick={() => handleApproval('tksx')}
+                  loading={loading}
+                  style={{ 
+                    backgroundColor: '#1a1dc4ff', 
+                    borderColor: '#1a1dc4ff',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  TKSX Phê duyệt
+                </Button>
+              )}
+              <Button
+                type="primary"
+                icon={<FileExcelOutlined />}
+                onClick={handleExportExcel}
+                loading={exportLoading}
+                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+              >
+                Xuất Excel
+              </Button>
+            </Space>
+          </div>
         <div style={{ background: 'white', padding: '24px', borderRadius: '8px' }}>
           <Tabs activeKey={activeTab} onChange={setActiveTab} style={{ marginBottom: '24px' }}>
-            {/* Tab 1: Biểu yêu cầu chứng nhận */}
             <TabPane
               tab={
                 <span style={{
@@ -377,14 +401,42 @@ const CertificationForm = () => {
                   Biểu yêu cầu chứng nhận
                 </span>
               }
+              
               key="certification"
             >
+            {certificationData?.PERSON_ACCEPT && (
+              <Alert
+                message="TKSX-PTSP đã phê duyệt"
+                description={`Người phê duyệt: ${certificationData.PERSON_ACCEPT}`}
+                type="success"
+                showIcon
+                style={{ marginBottom: '24px' }}
+              />
+            )}
               <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{}}>
                 <Divider orientation="left">Thông tin yêu cầu</Divider>
                 <Row gutter={16}>
                   <Col span={8}>
                     <Form.Item name="RELEASE_DATE" label="Ngày phát hành" rules={[{ required: true, message: 'Vui lòng chọn ngày phát hành' }]}>
                       <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+                    </Form.Item>
+                  </Col>
+                  <Col span={8}>
+                    <Form.Item name="DEPARTMENT_IN_CHARGE" label="Bộ phận phụ trách">
+                      <Select 
+                        placeholder="Chọn bộ phận phụ trách" 
+                        allowClear 
+                        showSearch
+                        filterOption={(input, option) =>
+                          option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                        }
+                      >
+                        {options.department?.map(item => (
+                          <Select.Option key={item.dept_id} value={item.dept_id}>
+                            {item.dept_code}
+                          </Select.Option>
+                        ))}
+                      </Select>
                     </Form.Item>
                   </Col>
                   <Col span={8}>
@@ -731,8 +783,8 @@ const CertificationForm = () => {
                 options={options}
                 certificationId={certificationId}
                 currentProgressId={currentProgressId}
-                personAccept={certificationData?.PERSON_ACCEPT} // ✅ TRUYỀN PROP
-                personAcceptQL2={certificationData?.PERSON_ACCEPT_QL2} // ✅ TRUYỀN PROP MỚI
+                personAccept={certificationData?.PERSON_ACCEPT} 
+                personAcceptQL2={certificationData?.PERSON_ACCEPT_QL2}
                 onApprovalSuccess={handleApproval}
               />
             </TabPane>
@@ -758,7 +810,7 @@ const CertificationForm = () => {
             </TabPane>
           </Tabs>
         </div>
-      </div>
+        </div>
     </MainLayout>
   );
 };

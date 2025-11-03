@@ -330,7 +330,6 @@ const BussinessList = () => {
             layout="vertical"
             onFinish={handleSubmit}
           >
-            {/* Template Selector - Chỉ hiển thị khi tạo mới */}
             {!editingBusiness && businessTemplates.length > 0 && (
               <>
                 <Form.Item
@@ -350,7 +349,10 @@ const BussinessList = () => {
                     showSearch
                     optionFilterProp="children"
                     filterOption={(input, option) =>
-                      option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+                      option?.children
+                        ?.toString()
+                        ?.toLowerCase()
+                        ?.includes(input.toLowerCase())
                     }
                   >
                     {businessTemplates.map(template => (

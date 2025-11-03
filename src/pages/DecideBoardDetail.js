@@ -97,7 +97,6 @@ const DecideBoardDetail = () => {
   }, [id, navigate]);
 
   const handleConfirm = async (requestValue = 'TRUE') => {
-    // Kiểm tra lại ID trước khi thực hiện action
     if (!detectIdChange() || !validateId(id) || id !== validId) {
       message.error('Phiên làm việc không hợp lệ!');
       navigate('/decide-use', { replace: true });
@@ -313,8 +312,7 @@ const DecideBoardDetail = () => {
                 </Descriptions.Item>
               </Descriptions>
             </Card>
-
-            {!record.CONFIRM_BY && canConfirm &&  !record.IS_DELETED === '0' && (
+            {!record.CONFIRM_BY && canConfirm && !record.IS_CANCELED && (
               <Space
                 direction="vertical"
                 size="middle"

@@ -11,7 +11,6 @@ const ProgressTab = ({
   options,
   currentProgressId,
   onApprovalSuccess,
-  personAccept,
   personAcceptQL2 
 }) => {
   const navigate = useNavigate();
@@ -29,11 +28,9 @@ const ProgressTab = ({
     }
   };
 
-  // Kiểm tra điều kiện hiển thị nút phê duyệt
-  const showTKSXApproval = currentProgressId === 1; // Đang xác nhận yêu cầu
-  const showQL2Approval = currentProgressId === 2; // Đang lập kế hoạch
+  const showTKSXApproval = currentProgressId === 1; 
+  const showQL2Approval = currentProgressId === 2; 
 
-  // Lấy status name để hiển thị
   const currentProgressName = options.progress?.find(
     p => p.status_id === currentProgressId
   )?.status_name || '';
@@ -45,7 +42,6 @@ const ProgressTab = ({
       onFinish={onFinish}
       initialValues={{}}
     >
-      {/* ✅ PHẦN PHÊ DUYỆT - CHUYỂN LÊN ĐẦU */}
       {(showTKSXApproval || showQL2Approval) && (
         <Card 
           style={{ 
@@ -65,29 +61,8 @@ const ProgressTab = ({
             showIcon
             style={{ marginBottom: '16px' }}
           />
-
           <Row justify="center">
             <Space size="large">
-              {/* Nút TKSX Phê duyệt */}
-              {showTKSXApproval && (
-                <Button
-                  type="primary"
-                  size="large"
-                  icon={<CheckCircleOutlined />}
-                  onClick={() => onApprovalSuccess && onApprovalSuccess('tksx')}
-                  style={{ 
-                    backgroundColor: '#52c41a', 
-                    borderColor: '#52c41a',
-                    height: '48px',
-                    fontSize: '16px',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  TKSX Phê duyệt
-                </Button>
-              )}
-
-              {/* Nút QL2 Phê duyệt */}
               {showQL2Approval && (
                 <Button
                   type="primary"
@@ -110,21 +85,11 @@ const ProgressTab = ({
         </Card>
       )}
 
-      {(personAccept || personAcceptQL2) && (
+      {(personAcceptQL2) && (
         <div style={{ marginBottom: '24px' }}>
-          {personAccept && (
-            <Alert
-              message="TKSX-PTSP đã phê duyệt"
-              description={`Người phê duyệt: ${personAccept}`}
-              type="success"
-              showIcon
-              style={{ marginBottom: personAcceptQL2 ? '12px' : '0' }}
-            />
-          )}
-          
           {personAcceptQL2 && (
             <Alert
-              message="QL2 đã phê duyệt"
+              message="QL2-(PD5) đã phê duyệt"
               description={`Người phê duyệt: ${personAcceptQL2}`}
               type="success"
               showIcon
@@ -132,8 +97,6 @@ const ProgressTab = ({
           )}
         </div>
       )}
-
-      {/* Progress Status Section */}
       <div style={{ backgroundColor: '#f0f8ff', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
         <Row gutter={16}>
           <Col span={8}>
@@ -209,8 +172,6 @@ const ProgressTab = ({
           </Col>
         </Row>
       </div>
-
-      {/* Department and Person Section */}
       <Divider orientation="left">Phân công thực hiện</Divider>
       <Row
         gutter={16}
@@ -259,13 +220,19 @@ const ProgressTab = ({
               <Select.Option value="level2">2</Select.Option>
               <Select.Option value="level3">3</Select.Option>
               <Select.Option value="level4">4</Select.Option>
+              <Select.Option value="level4">5</Select.Option>
+              <Select.Option value="level4">6</Select.Option>
             </Select>
           </Form.Item>
         </Col>
 
         <Col span={12}>
           <Form.Item name="PRICE_REQUEST" label="Yêu cầu báo cáo đánh giá">
-            <Input placeholder="Nhập yêu cầu báo cáo đánh giá" />
+            <Select placeholder="Chọn cấp độ">
+              <Select.Option value="Gia công">Gia công</Select.Option>
+              <Select.Option value="Tin cậy">Tin cậy</Select.Option>
+              <Select.Option value="Gia công & Tin cậy">Gia công & Tin cậy</Select.Option>
+            </Select>
           </Form.Item>
         </Col>
 
@@ -316,6 +283,22 @@ const ProgressTab = ({
             name="PD5_REPORT_ACTUAL_DATE" 
             label="Ngày gửi báo cáo tới PD5 thực tế"
             extra="Khi điền ngày và lưu, trạng thái sẽ tự động chuyển sang 'HQ đang phê duyệt'"
+          >
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+          </Form.Item>
+        </Col>
+        <Col span={8}>
+          <Form.Item 
+            name="DATE_PD5_HQ" 
+            label="Ngày PD5 gửi tổng"
+          >
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+          </Form.Item>
+        </Col>
+        <Col span={8}>
+          <Form.Item 
+            name="DATE_PD5_GET_REPORT" 
+            label="Ngày PD5 tổng hợp báo cáo"
           >
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
           </Form.Item>
