@@ -45,7 +45,7 @@ export const taskApi = {
     }
   },
 
-  // Bắt đầu task
+  // Bắt đầu session làm việc
   startTask: async (taskId) => {
     try {
       const response = await axios.post(`/tasks/${taskId}/start`);
@@ -59,13 +59,52 @@ export const taskApi = {
     }
   },
 
-  // Kết thúc task
-  endTask: async (taskId, note) => {
+  // Tạm dừng session hiện tại
+  pauseTask: async (taskId, note) => {
+    try {
+      const response = await axios.post(`/tasks/${taskId}/pause`, { note });
+      return response.data;
+    } catch (error) {
+      console.error('Error pausing task:', error);
+      if (error.response) {
+        throw error.response.data;
+      }
+      throw error;
+    }
+  },
+
+  // Hoàn thành task (đánh dấu done)
+  completeTask: async (taskId, note) => {
     try {
       const response = await axios.post(`/tasks/${taskId}/complete`, { note });
       return response.data;
     } catch (error) {
-      console.error('Error ending task:', error);
+      console.error('Error completing task:', error);
+      if (error.response) {
+        throw error.response.data;
+      }
+      throw error;
+    }
+  },
+
+  // Lấy lịch sử các session làm việc
+  getTaskSessions: async (taskId) => {
+    try {
+      const response = await axios.get(`/tasks/${taskId}/sessions`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching task sessions:', error);
+      throw error;
+    }
+  },
+
+  // Lấy tất cả logs của task (cho dashboard)
+  getTaskLogs: async (taskId) => {
+    try {
+      const response = await axios.get(`/tasks/${taskId}/all-logs`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching task logs:', error);
       throw error;
     }
   },
@@ -84,7 +123,7 @@ export const taskApi = {
   // Lấy tasks cần kiểm tra
   getCheckTasks: async () => {
     try {
-      const response = await axios.get('tasks/check-tasks');
+      const response = await axios.get('/tasks/check-tasks');
       return response.data;
     } catch (error) {
       console.error('Error fetching check tasks:', error);
@@ -101,6 +140,12 @@ export const taskApi = {
       console.error('Error fetching task details:', error);
       throw error;
     }
+  },
+
+  // Legacy support - giữ tên cũ để tương thích
+  endTask: async (taskId, note) => {
+    // Redirect to completeTask
+    return taskApi.completeTask(taskId, note);
   }
 };
 

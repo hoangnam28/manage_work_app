@@ -15,7 +15,9 @@ import {
   Tooltip,
   Badge,
   Drawer,
-  Divider
+  Divider,
+  Timeline,
+  Empty
 } from 'antd';
 import {
   PlayCircleOutlined,
@@ -24,7 +26,10 @@ import {
   FileTextOutlined,
   CalendarOutlined,
   BarsOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  PauseCircleOutlined,
+  HistoryOutlined,
+  CheckOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import { taskApi } from '../utils/task-api';
@@ -37,76 +42,108 @@ const MyTasks = () => {
   const [loading, setLoading] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [drawerVisible, setDrawerVisible] = useState(false);
-  const [noteModalVisible, setNoteModalVisible] = useState(false);
-  const [endNote, setEndNote] = useState('');
+  const [pauseModalVisible, setPauseModalVisible] = useState(false);
+  const [completeModalVisible, setCompleteModalVisible] = useState(false);
+  const [sessionsModalVisible, setSessionsModalVisible] = useState(false);
+  const [note, setNote] = useState('');
   const [currentTaskId, setCurrentTaskId] = useState(null);
+  const [sessions, setSessions] = useState([]);
+  const [loadingSessions, setLoadingSessions] = useState(false);
 
-  // Normalize status to lowercase for consistent comparison
+  // Normalize status
   const normalizeStatus = (status) => {
     return status ? status.toLowerCase() : 'pending';
   };
 
-  // Load my tasks
- const loadMyTasks = useCallback(async () => {
-  setLoading(true);
-  try {
-    const data = await taskApi.getMyTasks();
-    setTasks(data || []);
-  } catch {
-    message.error('Lỗi khi tải danh sách task của tôi');
-  } finally {
-    setLoading(false);
-  }
-}, []); // <-- Không phụ thuộc gì
-
+  // Load tasks
+  const loadMyTasks = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await taskApi.getMyTasks();
+      setTasks(data || []);
+    } catch {
+      message.error('Lỗi khi tải danh sách task');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-  loadMyTasks();
-  const interval = setInterval(() => {
     loadMyTasks();
-  }, 30000);
+    const interval = setInterval(loadMyTasks, 30000);
+    return () => clearInterval(interval);
+  }, [loadMyTasks]);
 
-  return () => clearInterval(interval);
-// eslint-disable-next-line react-hooks/exhaustive-deps
-}, []); // <-- Chỉ chạy 1 lần
-
-
+  // Start task/session
   const handleStartTask = async (taskId) => {
     try {
       await taskApi.startTask(taskId);
-      message.success('Bắt đầu task thành công');
+      message.success('Bắt đầu làm việc thành công');
       await loadMyTasks();
     } catch (error) {
-      if (error.response && error.response.data) {
-        message.error(error.response.data.message || 'Có lỗi xảy ra khi bắt đầu task');
-      } else {
-        message.error('Có lỗi xảy ra khi bắt đầu task');
-      }
-      console.error('Error starting task:', error);
+      message.error(error?.message || 'Có lỗi xảy ra');
     }
   };
 
-  const showEndModal = (taskId) => {
+  // Show pause modal
+  const showPauseModal = (taskId) => {
     setCurrentTaskId(taskId);
-    setEndNote('');
-    setNoteModalVisible(true);
+    setNote('');
+    setPauseModalVisible(true);
   };
 
-  const handleEndTask = async () => {
+  // Handle pause
+  const handlePauseTask = async () => {
     try {
-      await taskApi.endTask(currentTaskId, endNote);
-      message.success('Kết thúc task thành công');
-      setNoteModalVisible(false);
-      setEndNote('');
+      await taskApi.pauseTask(currentTaskId, note);
+      message.success('Tạm dừng thành công');
+      setPauseModalVisible(false);
+      setNote('');
       setCurrentTaskId(null);
       await loadMyTasks();
     } catch (error) {
-      message.error('Có lỗi xảy ra khi kết thúc task');
-      console.error('Error ending task:', error);
+      message.error(error?.message || 'Có lỗi xảy ra');
     }
   };
 
-  // Get status color and icon
+  // Show complete modal
+  const showCompleteModal = (taskId) => {
+    setCurrentTaskId(taskId);
+    setNote('');
+    setCompleteModalVisible(true);
+  };
+
+  // Handle complete
+  const handleCompleteTask = async () => {
+    try {
+      await taskApi.completeTask(currentTaskId, note);
+      message.success('Hoàn thành task thành công');
+      setCompleteModalVisible(false);
+      setNote('');
+      setCurrentTaskId(null);
+      await loadMyTasks();
+    } catch (error) {
+      message.error(error?.message || 'Có lỗi xảy ra');
+    }
+  };
+
+  // Show sessions history
+  const showSessionsHistory = async (taskId) => {
+    setCurrentTaskId(taskId);
+    setSessionsModalVisible(true);
+    setLoadingSessions(true);
+    try {
+      const data = await taskApi.getTaskSessions(taskId);
+      setSessions(data || []);
+    } catch (error) {
+      message.error('Không thể tải lịch sử làm việc');
+      setSessions([]);
+    } finally {
+      setLoadingSessions(false);
+    }
+  };
+
+  // Get status info
   const getStatusInfo = (status) => {
     const normalized = normalizeStatus(status);
     switch (normalized) {
@@ -125,20 +162,15 @@ const MyTasks = () => {
 
   const isOverdue = (deadline, status) => {
     const normalized = normalizeStatus(status);
-    if (normalized === 'done' || normalized === 'checked') {
-      return false;
-    }
+    if (normalized === 'done' || normalized === 'checked') return false;
     if (!deadline) return false;
     return new Date(deadline) < new Date();
   };
 
   const getDeadlineStatus = (deadline, status) => {
     if (!deadline) return null;
-    
     const normalized = normalizeStatus(status);
-    if (normalized === 'done' || normalized === 'checked') {
-      return null;
-    }
+    if (normalized === 'done' || normalized === 'checked') return null;
 
     const now = new Date();
     const deadlineDate = new Date(deadline);
@@ -159,7 +191,7 @@ const MyTasks = () => {
       title: 'Nghiệp vụ',
       dataIndex: 'businessName',
       key: 'businessName',
-      width: 150
+      width: 120
     },
     {
       title: 'Dự án',
@@ -179,8 +211,10 @@ const MyTasks = () => {
             onClick={() => viewTaskDetails(record)}
           >
             {text}
+            {record.isRunning && (
+              <Badge status="processing" style={{ marginLeft: 8 }} />
+            )}
           </div>
-          <small style={{ color: '#666' }}>{record.projectName}</small>
         </div>
       )
     },
@@ -188,7 +222,7 @@ const MyTasks = () => {
       title: 'Kỳ Hạn',
       dataIndex: 'deadline',
       key: 'deadline',
-      width: 150,
+      width: 140,
       render: (deadline, record) => {
         const deadlineStatus = getDeadlineStatus(deadline, record.status);
         const isOver = isOverdue(deadline, record.status);
@@ -226,46 +260,69 @@ const MyTasks = () => {
       dataIndex: 'duration',
       key: 'duration',
       width: 100,
-      render: (duration) => (
-        <span>
-          {duration ? `${Math.round(duration)} phút` : '-'}
-        </span>
+      render: (duration, record) => (
+        <Tooltip title="Xem lịch sử làm việc">
+          <span 
+            style={{ cursor: 'pointer', color: duration > 0 ? '#1890ff' : 'inherit' }} 
+            onClick={() => duration > 0 && showSessionsHistory(record.id)}
+          >
+            {duration ? `${Math.round(duration)} phút` : '0 phút'}
+            {duration > 0 && <HistoryOutlined style={{ marginLeft: 4 }} />}
+          </span>
+        </Tooltip>
       )
     },
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 200,
+      width: 280,
       fixed: 'right',
       render: (_, record) => {
         const normalized = normalizeStatus(record.status);
+        const isRunning = record.isRunning;
+        
         return (
           <Space size="small" wrap>
-            {normalized === 'pending' && (
-              <Tooltip title="Bắt đầu thực hiện task">
+            {normalized === 'pending' && !isRunning && (
+              <Tooltip title={record.duration > 0 ? "Tiếp tục làm việc" : "Bắt đầu làm việc"}>
                 <Button
                   type="primary"
                   icon={<PlayCircleOutlined />}
                   size="small"
                   onClick={() => handleStartTask(record.id)}
                 >
-                  Bắt đầu
+                  {record.duration > 0 ? 'Tiếp tục' : 'Bắt đầu'}
                 </Button>
               </Tooltip>
             )}
-            {normalized === 'in_progress' && (
-              <Tooltip title="Kết thúc task">
+            
+            {normalized === 'in_progress' && isRunning && (
+              <Tooltip title="Tạm dừng">
+                <Button
+                  type="default"
+                  icon={<PauseCircleOutlined />}
+                  size="small"
+                  onClick={() => showPauseModal(record.id)}
+                >
+                  Tạm dừng
+                </Button>
+              </Tooltip>
+            )}
+            
+            {(normalized === 'pending' || normalized === 'in_progress') && !isRunning && (
+              <Tooltip title="Đánh dấu hoàn thành">
                 <Button
                   type="primary"
                   danger
-                  icon={<CheckCircleOutlined />}
+                  icon={<CheckOutlined />}
                   size="small"
-                  onClick={() => showEndModal(record.id)}
+                  onClick={() => showCompleteModal(record.id)}
                 >
-                  Kết thúc
+                  Hoàn thành
                 </Button>
               </Tooltip>
             )}
+            
             <Button
               type="default"
               icon={<FileTextOutlined />}
@@ -389,7 +446,12 @@ const MyTasks = () => {
             <div>
               <div style={{ marginBottom: 24 }}>
                 <Text strong>Tên task:</Text>
-                <div style={{ fontSize: 16, marginTop: 8 }}>{selectedTask.name}</div>
+                <div style={{ fontSize: 16, marginTop: 8 }}>
+                  {selectedTask.name}
+                  {selectedTask.isRunning && (
+                    <Badge status="processing" text="Đang chạy" style={{ marginLeft: 8 }} />
+                  )}
+                </div>
               </div>
 
               <Row gutter={16} style={{ marginBottom: 24 }}>
@@ -407,9 +469,17 @@ const MyTasks = () => {
                   </div>
                 </Col>
                 <Col span={12}>
-                  <Text strong>Thời gian:</Text>
-                  <div style={{ marginTop: 8 }}>
-                    {selectedTask.duration ? `${Math.round(selectedTask.duration)} phút` : 'Chưa bắt đầu'}
+                  <Text strong>Tổng thời gian:</Text>
+                  <div 
+                    style={{ 
+                      marginTop: 8, 
+                      cursor: selectedTask.duration > 0 ? 'pointer' : 'default', 
+                      color: selectedTask.duration > 0 ? '#1890ff' : 'inherit' 
+                    }} 
+                    onClick={() => selectedTask.duration > 0 && showSessionsHistory(selectedTask.id)}
+                  >
+                    {selectedTask.duration ? `${Math.round(selectedTask.duration)} phút` : '0 phút'}
+                    {selectedTask.duration > 0 && <HistoryOutlined style={{ marginLeft: 4 }} />}
                   </div>
                 </Col>
               </Row>
@@ -444,57 +514,170 @@ const MyTasks = () => {
               <Divider />
 
               <div style={{ textAlign: 'center', marginTop: 24 }}>
-                {normalizeStatus(selectedTask.status) === 'pending' && (
-                  <Button
-                    type="primary"
-                    size="large"
-                    icon={<PlayCircleOutlined />}
-                    onClick={() => {
-                      handleStartTask(selectedTask.id);
-                      setDrawerVisible(false);
-                    }}
-                  >
-                    Bắt đầu thực hiện
-                  </Button>
-                )}
-                {normalizeStatus(selectedTask.status) === 'in_progress' && (
-                  <Button
-                    type="primary"
-                    danger
-                    size="large"
-                    icon={<CheckCircleOutlined />}
-                    onClick={() => {
-                      showEndModal(selectedTask.id);
-                      setDrawerVisible(false);
-                    }}
-                  >
-                    Kết thúc task
-                  </Button>
-                )}
+                <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                  {normalizeStatus(selectedTask.status) === 'pending' && !selectedTask.isRunning && (
+                    <Button
+                      type="primary"
+                      size="large"
+                      icon={<PlayCircleOutlined />}
+                      onClick={() => {
+                        handleStartTask(selectedTask.id);
+                        setDrawerVisible(false);
+                      }}
+                      block
+                    >
+                      {selectedTask.duration > 0 ? 'Tiếp tục làm việc' : 'Bắt đầu làm việc'}
+                    </Button>
+                  )}
+                  
+                  {normalizeStatus(selectedTask.status) === 'in_progress' && selectedTask.isRunning && (
+                    <Button
+                      type="default"
+                      size="large"
+                      icon={<PauseCircleOutlined />}
+                      onClick={() => {
+                        showPauseModal(selectedTask.id);
+                        setDrawerVisible(false);
+                      }}
+                      block
+                    >
+                      Tạm dừng
+                    </Button>
+                  )}
+                  
+                  {(normalizeStatus(selectedTask.status) === 'pending' || 
+                    normalizeStatus(selectedTask.status) === 'in_progress') && 
+                    !selectedTask.isRunning && (
+                    <Button
+                      type="primary"
+                      danger
+                      size="large"
+                      icon={<CheckOutlined />}
+                      onClick={() => {
+                        showCompleteModal(selectedTask.id);
+                        setDrawerVisible(false);
+                      }}
+                      block
+                    >
+                      Hoàn thành task
+                    </Button>
+                  )}
+                </Space>
               </div>
             </div>
           )}
         </Drawer>
 
-        {/* End Task Note Modal */}
+        {/* Pause Modal */}
         <Modal
-          title="Kết thúc Công Việc"
-          open={noteModalVisible}
-          onOk={handleEndTask}
-          onCancel={() => setNoteModalVisible(false)}
+          title="Tạm dừng làm việc"
+          open={pauseModalVisible}
+          onOk={handlePauseTask}
+          onCancel={() => setPauseModalVisible(false)}
           okText="Xác nhận"
           cancelText="Hủy"
         >
           <div style={{ marginBottom: 16 }}>
-            <Text strong>Ghi chú khi kết thúc (tùy chọn):</Text>
+            <Text strong>Ghi chú (tùy chọn):</Text>
             <TextArea
               rows={4}
-              placeholder="Mô tả kết quả hoặc ghi chú về công việc vừa hoàn thành..."
-              value={endNote}
-              onChange={(e) => setEndNote(e.target.value)}
+              placeholder="Mô tả công việc đã làm trong session này..."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
               style={{ marginTop: 8 }}
             />
           </div>
+        </Modal>
+
+        {/* Complete Task Modal */}
+        <Modal
+          title="Hoàn thành Công Việc"
+          open={completeModalVisible}
+          onOk={handleCompleteTask}
+          onCancel={() => setCompleteModalVisible(false)}
+          okText="Xác nhận hoàn thành"
+          cancelText="Hủy"
+        >
+          <div style={{ marginBottom: 16 }}>
+            <Text type="warning" strong>
+              Bạn có chắc chắn muốn đánh dấu task này là hoàn thành?
+            </Text>
+            <div style={{ marginTop: 16 }}>
+              <Text strong>Ghi chú kết thúc (tùy chọn):</Text>
+              <TextArea
+                rows={4}
+                placeholder="Tóm tắt kết quả công việc..."
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                style={{ marginTop: 8 }}
+              />
+            </div>
+          </div>
+        </Modal>
+
+        {/* Sessions History Modal */}
+        <Modal
+          title="Lịch sử làm việc"
+          open={sessionsModalVisible}
+          onCancel={() => setSessionsModalVisible(false)}
+          footer={[
+            <Button key="close" onClick={() => setSessionsModalVisible(false)}>
+              Đóng
+            </Button>
+          ]}
+          width={600}
+        >
+          {loadingSessions ? (
+            <div style={{ textAlign: 'center', padding: '40px 0' }}>
+              <Text>Đang tải...</Text>
+            </div>
+          ) : sessions.length === 0 ? (
+            <Empty description="Chưa có lịch sử làm việc" />
+          ) : (
+            <Timeline>
+              {sessions.map((session) => (
+                <Timeline.Item
+                  key={session.id}
+                  color={session.isRunning ? 'blue' : 'green'}
+                  dot={session.isRunning ? <ClockCircleOutlined /> : <CheckCircleOutlined />}
+                >
+                  <div>
+                    <div style={{ fontWeight: 'bold' }}>
+                      {session.userName || 'Unknown User'}
+                      {session.isRunning && (
+                        <Tag color="blue" style={{ marginLeft: 8 }}>Đang chạy</Tag>
+                      )}
+                    </div>
+                    <div style={{ color: '#666', fontSize: '12px' }}>
+                      Bắt đầu: {new Date(session.startTime).toLocaleString('vi-VN')}
+                      {session.endTime && (
+                        <>
+                          <br />
+                          Kết thúc: {new Date(session.endTime).toLocaleString('vi-VN')}
+                        </>
+                      )}
+                    </div>
+                    {session.duration && (
+                      <div style={{ color: '#1890ff', marginTop: 4 }}>
+                        Thời gian: {Math.round(session.duration)} phút
+                      </div>
+                    )}
+                    {session.note && (
+                      <div style={{ 
+                        marginTop: 8, 
+                        padding: '8px 12px', 
+                        backgroundColor: '#f5f5f5', 
+                        borderRadius: 4,
+                        fontSize: '13px'
+                      }}>
+                        {session.note}
+                      </div>
+                    )}
+                  </div>
+                </Timeline.Item>
+              ))}
+            </Timeline>
+          )}
         </Modal>
       </div>
     </MainLayout>

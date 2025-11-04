@@ -17,8 +17,8 @@ import {
   Statistic,
   Tag,
   Tooltip,
-  Divider,
   Alert,
+  Tabs,
 } from 'antd';
 import {
   PlusOutlined,
@@ -29,7 +29,6 @@ import {
   UserOutlined,
   ClockCircleOutlined,
   ThunderboltOutlined,
-  CheckSquareOutlined,
   FireOutlined,
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
@@ -52,16 +51,19 @@ const TaskList = () => {
   // Debug log để kiểm tra projectId
   console.log('🔍 TaskList - businessId:', businessId, 'projectId:', projectId);
   const [tasks, setTasks] = useState([]);
+  const [filteredTasks, setFilteredTasks] = useState([]);
   const [project, setProject] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
+  const [statusFilter, setStatusFilter] = useState('all'); // Filter trạng thái
 
   // Template states - Chỉ cần task templates
   const [taskTemplates, setTaskTemplates] = useState([]);
-  const [selectedTaskTemplate, setSelectedTaskTemplate] = useState(null);
+  const [selectedTaskTemplates, setSelectedTaskTemplates] = useState({}); // Object: { templateId: { assignedTo, supporterId, checkerId } }
+  const [showManualForm, setShowManualForm] = useState(false); // Hiển thị form tạo thủ công
   const [loadingTemplates, setLoadingTemplates] = useState(false);
 
   // Load tasks
@@ -83,6 +85,7 @@ const TaskList = () => {
       }));
       
       setTasks(formattedTasks);
+      setFilteredTasks(formattedTasks);
     } catch (error) {
       message.error('Lỗi khi tải danh sách task');
       console.error('Error loading tasks:', error);
@@ -90,6 +93,15 @@ const TaskList = () => {
       setLoading(false);
     }
   }, [projectId]);
+
+  // Filter tasks theo trạng thái
+  useEffect(() => {
+    if (statusFilter === 'all') {
+      setFilteredTasks(tasks);
+    } else {
+      setFilteredTasks(tasks.filter(task => task.status === statusFilter));
+    }
+  }, [statusFilter, tasks]);
 
   // Load project info
   const loadProject = useCallback(async () => {
@@ -160,33 +172,86 @@ useEffect(() => {
 }, [modalVisible, editingTask, loadTaskTemplates, loadUsers]);
 
 
-  // Handle task template selection
-  const handleTaskTemplateSelect = (templateId) => {
-    setSelectedTaskTemplate(templateId);
-    
-    if (templateId) {
-      const template = taskTemplates.find(t => t.ID === templateId);
-      if (template) {
-        form.setFieldsValue({
+  // Handle task template selection - cho phép chọn nhiều templates
+  const handleTemplateUserChange = (templateId, field, value) => {
+    setSelectedTaskTemplates(prev => ({
+      ...prev,
+      [templateId]: {
+        ...prev[templateId],
+        [field]: value
+      }
+    }));
+  };
+
+  // Tạo tasks từ selected templates
+  const handleCreateTasksFromTemplates = async () => {
+    try {
+      const tasksToCreate = [];
+      
+      // Lấy deadline từ form nếu có
+      const deadline = form.getFieldValue('deadline');
+      const deadlineStr = deadline ? deadline.format('YYYY-MM-DD HH:mm:ss') : null;
+
+      for (const [templateId, users] of Object.entries(selectedTaskTemplates)) {
+        const template = taskTemplates.find(t => t.ID === parseInt(templateId));
+        if (template && users.assignedTo) {
+          // Tính deadline dựa trên estimated duration nếu không có deadline chung
+          let taskDeadline = deadlineStr;
+          if (!taskDeadline && template.ESTIMATED_DURATION) {
+            taskDeadline = moment().add(template.ESTIMATED_DURATION, 'hours').format('YYYY-MM-DD HH:mm:ss');
+          }
+
+          tasksToCreate.push({
           name: template.NAME,
-          description: template.DESCRIPTION || ''
-        });
-        
-        // Auto set deadline based on estimated duration (if exists)
-        if (template.ESTIMATED_DURATION) {
-          const deadline = moment().add(template.ESTIMATED_DURATION, 'hours');
-          form.setFieldsValue({
-            deadline: deadline
+            description: template.DESCRIPTION || '',
+            assigned_to: users.assignedTo,
+            supporter_id: users.supporterId || null,
+            checker_id: users.checkerId || null,
+            deadline: taskDeadline,
+            project_id: projectId
           });
         }
-        
-        message.success(`Đã áp dụng template: ${template.NAME}`);
       }
-    } else {
-      form.setFieldsValue({
-        name: '',
-        description: ''
-      });
+
+      if (tasksToCreate.length === 0) {
+        message.warning('Vui lòng chọn ít nhất một template và người thực hiện');
+        return;
+      }
+
+      // Tạo tất cả tasks
+      for (const taskData of tasksToCreate) {
+        await taskApi.createTask(taskData);
+      }
+
+      message.success(`Đã tạo ${tasksToCreate.length} task thành công`);
+      handleModalCancel();
+      await loadTasks();
+    } catch (error) {
+      message.error('Có lỗi xảy ra khi tạo tasks');
+      console.error('Error creating tasks:', error);
+    }
+  };
+
+  // Handle manual task creation
+  const handleManualSubmit = async (values) => {
+    try {
+      const taskData = {
+        name: values.name,
+        description: values.description,
+        assigned_to: values.assignedTo,
+        supporter_id: values.supporterId || null,
+        checker_id: values.checkerId || null,
+        deadline: values.deadline ? values.deadline.format('YYYY-MM-DD HH:mm:ss') : null,
+        project_id: projectId
+      };
+
+      await taskApi.createTask(taskData);
+      message.success('Tạo task thành công');
+      handleModalCancel();
+      await loadTasks();
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Có lỗi xảy ra khi tạo task');
+      console.error('Error creating task:', error);
     }
   };
 
@@ -200,8 +265,8 @@ useEffect(() => {
     return config[priority] || config['MEDIUM'];
   };
 
-  // Handle create/update task
-  const handleSubmit = async (values) => {
+  // Handle update task (chỉ dùng khi edit)
+  const handleUpdateTask = async (values) => {
     try {
       const taskData = {
         name: values.name,
@@ -213,19 +278,14 @@ useEffect(() => {
         project_id: projectId
       };
 
-      if (editingTask) {
         await taskApi.updateTask(editingTask.ID || editingTask.id, taskData);
         message.success('Cập nhật task thành công');
-      } else {
-        await taskApi.createTask(taskData);
-        message.success('Tạo task thành công');
-      }
       
       handleModalCancel();
       await loadTasks();
     } catch (error) {
-      message.error(error.response?.data?.message || 'Có lỗi xảy ra khi lưu task');
-      console.error('Error saving task:', error);
+      message.error(error.response?.data?.message || 'Có lỗi xảy ra khi cập nhật task');
+      console.error('Error updating task:', error);
     }
   };
 
@@ -283,7 +343,8 @@ useEffect(() => {
   const handleModalCancel = () => {
     setModalVisible(false);
     setEditingTask(null);
-    setSelectedTaskTemplate(null);
+    setSelectedTaskTemplates({});
+    setShowManualForm(false);
     form.resetFields();
   };
 
@@ -476,7 +537,8 @@ useEffect(() => {
                       icon={<PlusOutlined />}
                       onClick={() => {
                         setEditingTask(null);
-                        setSelectedTaskTemplate(null);
+                        setSelectedTaskTemplates({});
+                        setShowManualForm(false);
                         form.resetFields();
                         setModalVisible(true);
                       }}
@@ -530,9 +592,28 @@ useEffect(() => {
         </Row>
 
         <Card>
+          <div style={{ marginBottom: 16 }}>
+            <Space>
+              <span>Lọc theo trạng thái:</span>
+              <Select
+                value={statusFilter}
+                onChange={setStatusFilter}
+                style={{ width: 200 }}
+              >
+                <Option value="all">Tất cả</Option>
+                <Option value="pending">Chờ thực hiện</Option>
+                <Option value="in_progress">Đang thực hiện</Option>
+                <Option value="done">Hoàn thành</Option>
+                <Option value="checked">Đã kiểm tra</Option>
+              </Select>
+              <span style={{ color: '#8c8c8c' }}>
+                Hiển thị: {filteredTasks.length} / {tasks.length} tasks
+              </span>
+            </Space>
+          </div>
           <Table
             columns={columns}
-            dataSource={tasks}
+            dataSource={filteredTasks}
             loading={loading}
             rowKey="id"
             pagination={{
@@ -560,98 +641,271 @@ useEffect(() => {
           open={modalVisible}
           onCancel={handleModalCancel}
           footer={null}
-          width={800}
+          width={1000}
         >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-          >
-            {/* Template Selector - Chỉ Task Templates - Chỉ hiển thị khi tạo mới */}
-            {!editingTask && taskTemplates.length > 0 && (
+          {editingTask ? (
+            // Form edit task
+            <Form form={form} layout="vertical" onFinish={handleUpdateTask}>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    name="name"
+                    label="Tên task"
+                    rules={[
+                      { required: true, message: 'Vui lòng nhập tên task' },
+                      { min: 3, message: 'Tên task phải có ít nhất 3 ký tự' }
+                    ]}
+                  >
+                    <Input placeholder="Nhập tên task" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    name="deadline"
+                    label="Kỳ Hạn"
+                    rules={[{ required: true, message: 'Vui lòng chọn kỳ hạn' }]}
+                  >
+                    <DatePicker 
+                      style={{ width: '100%' }}
+                      placeholder="Chọn kỳ hạn"
+                      showTime
+                      format="DD/MM/YYYY HH:mm"
+                    />
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Form.Item
+                name="description"
+                label="Mô tả"
+                rules={[
+                  { required: true, message: 'Vui lòng nhập mô tả' },
+                  { min: 10, message: 'Mô tả phải có ít nhất 10 ký tự' }
+                ]}
+              >
+                <TextArea rows={4} placeholder="Nhập mô tả chi tiết về task" />
+              </Form.Item>
+              <Row gutter={16}>
+                <Col span={8}>
+                  <Form.Item
+                    name="assignedTo"
+                    label="Người thực hiện"
+                    rules={[{ required: true, message: 'Vui lòng chọn người thực hiện' }]}
+                  >
+                    <Select placeholder="Chọn người thực hiện" showSearch>
+                      {users.map(user => (
+                        <Option key={user.USER_ID} value={user.USER_ID}>
+                          {user.USERNAME}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item name="supporterId" label="Người hỗ trợ">
+                    <Select placeholder="Chọn người hỗ trợ" allowClear showSearch>
+                      {users.map(user => (
+                        <Option key={user.USER_ID} value={user.USER_ID}>
+                          {user.USERNAME}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={8}>
+                  <Form.Item name="checkerId" label="Người kiểm tra">
+                    <Select placeholder="Chọn người kiểm tra" allowClear showSearch>
+                      {users.map(user => (
+                        <Option key={user.USER_ID} value={user.USER_ID}>
+                          {user.USERNAME}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+              <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+                <Space>
+                  <Button onClick={handleModalCancel}>Hủy</Button>
+                  <Button type="primary" htmlType="submit">Cập nhật</Button>
+                </Space>
+              </Form.Item>
+            </Form>
+          ) : (
+            // Tabs cho tạo mới
+            <Tabs
+              defaultActiveKey={taskTemplates.length > 0 ? "template" : "manual"}
+              items={[
+                {
+                  key: 'template',
+                  label: (
+                    <Space>
+                      <ThunderboltOutlined />
+                      <span>Từ Template ({taskTemplates.length})</span>
+                    </Space>
+                  ),
+                  disabled: taskTemplates.length === 0,
+                  children: (
+                    <div>
+                      {taskTemplates.length > 0 ? (
               <>
                 <Alert
-                  message="Sử dụng Task Template"
-                  description={`Chọn task template có sẵn cho dự án "${project?.name}" để tự động điền thông tin và ước tính thời gian.`}
+                            message="Chọn Task Templates và gán người thực hiện"
+                            description={`Chọn các task template có sẵn và gán người làm, người hỗ trợ, người kiểm tra cho mỗi template. Có thể tạo nhiều tasks cùng lúc.`}
                   type="info"
                   showIcon
-                  icon={<ThunderboltOutlined />}
                   style={{ marginBottom: 16 }}
                 />
 
                 <Form.Item
-                  label={
-                    <Space>
-                      <CheckSquareOutlined style={{ color: '#1890ff' }} />
-                      <span>Chọn Task Template</span>
-                      <Tag color="purple">{taskTemplates.length} template có sẵn</Tag>
-                    </Space>
-                  }
-                >
-                  <Select
-                    placeholder="-- Chọn task template hoặc nhập thủ công --"
-                    value={selectedTaskTemplate}
-                    onChange={handleTaskTemplateSelect}
-                    loading={loadingTemplates}
-                    allowClear
-                    showSearch
-                    optionFilterProp="children"
-                    size="large"
-                  >
-                    {taskTemplates.map(template => {
-                      const priorityInfo = getPriorityBadge(template.PRIORITY);
+                            label="Deadline chung (tùy chọn - sẽ dùng cho tất cả tasks)"
+                            style={{ marginBottom: 16 }}
+                          >
+                            <DatePicker 
+                              style={{ width: '100%' }}
+                              placeholder="Chọn deadline chung (hoặc để trống để tự tính)"
+                              showTime
+                              format="DD/MM/YYYY HH:mm"
+                              onChange={(date) => form.setFieldValue('deadline', date)}
+                            />
+                          </Form.Item>
+
+                          <Table
+                            dataSource={taskTemplates}
+                            rowKey="ID"
+                            pagination={false}
+                            size="small"
+                            scroll={{ y: 400 }}
+                            columns={[
+                              {
+                                title: 'Tên Task',
+                                dataIndex: 'NAME',
+                                key: 'name',
+                                width: 200,
+                                render: (text, record) => {
+                                  const priorityInfo = getPriorityBadge(record.PRIORITY);
                       return (
-                        <Option key={template.ID} value={template.ID}>
-                          <Space>
-                            <CheckSquareOutlined style={{ color: '#13c2c2' }} />
-                            <strong>{template.NAME}</strong>
-                            {template.ESTIMATED_DURATION && (
-                              <Tag color="cyan">
-                                <ClockCircleOutlined /> {template.ESTIMATED_DURATION}h
+                                    <div>
+                                      <div><strong>{text}</strong></div>
+                                      {record.ESTIMATED_DURATION && (
+                                        <Tag color="cyan" style={{ marginTop: 4 }}>
+                                          <ClockCircleOutlined /> {record.ESTIMATED_DURATION}h
                               </Tag>
                             )}
-                            <Tag color={priorityInfo.color} icon={priorityInfo.icon}>
+                                      {record.PRIORITY && (
+                                        <Tag color={priorityInfo.color} icon={priorityInfo.icon} style={{ marginTop: 4 }}>
                               {priorityInfo.text}
                             </Tag>
-                          </Space>
-                        </Option>
-                      );
-                    })}
+                                      )}
+                                    </div>
+                                  );
+                                }
+                              },
+                              {
+                                title: 'Mô tả',
+                                dataIndex: 'DESCRIPTION',
+                                key: 'description',
+                                ellipsis: true,
+                                width: 200
+                              },
+                              {
+                                title: 'Người thực hiện *',
+                                key: 'assignedTo',
+                                width: 180,
+                                render: (_, record) => (
+                                  <Select
+                                    placeholder="Chọn người làm"
+                                    style={{ width: '100%' }}
+                                    value={selectedTaskTemplates[record.ID]?.assignedTo}
+                                    onChange={(value) => handleTemplateUserChange(record.ID, 'assignedTo', value)}
+                                    showSearch
+                                  >
+                                    {users.map(user => (
+                                      <Option key={user.USER_ID} value={user.USER_ID}>
+                                        {user.USERNAME}
+                                      </Option>
+                                    ))}
                   </Select>
-                  <div style={{ 
-                    marginTop: '8px', 
-                    fontSize: '12px', 
-                    color: '#8c8c8c',
-                    fontStyle: 'italic' 
-                  }}>
-                    💡 Template sẽ tự động điền tên, mô tả và tính deadline = hôm nay + thời gian ước tính
-                  </div>
-                </Form.Item>
-
-                <Divider style={{ margin: '16px 0' }}>
-                  <span style={{ color: '#8c8c8c', fontSize: '12px' }}>
-                    Thông tin task
-                  </span>
-                </Divider>
-              </>
-            )}
-
-            {!editingTask && taskTemplates.length === 0 && (
+                                )
+                              },
+                              {
+                                title: 'Người hỗ trợ',
+                                key: 'supporterId',
+                                width: 180,
+                                render: (_, record) => (
+                                  <Select
+                                    placeholder="Chọn người hỗ trợ"
+                                    style={{ width: '100%' }}
+                                    allowClear
+                                    value={selectedTaskTemplates[record.ID]?.supporterId}
+                                    onChange={(value) => handleTemplateUserChange(record.ID, 'supporterId', value)}
+                                    showSearch
+                                  >
+                                    {users.map(user => (
+                                      <Option key={user.USER_ID} value={user.USER_ID}>
+                                        {user.USERNAME}
+                                      </Option>
+                                    ))}
+                                  </Select>
+                                )
+                              },
+                              {
+                                title: 'Người kiểm tra',
+                                key: 'checkerId',
+                                width: 180,
+                                render: (_, record) => (
+                                  <Select
+                                    placeholder="Chọn người kiểm tra"
+                                    style={{ width: '100%' }}
+                                    allowClear
+                                    value={selectedTaskTemplates[record.ID]?.checkerId}
+                                    onChange={(value) => handleTemplateUserChange(record.ID, 'checkerId', value)}
+                                    showSearch
+                                  >
+                                    {users.map(user => (
+                                      <Option key={user.USER_ID} value={user.USER_ID}>
+                                        {user.USERNAME}
+                                      </Option>
+                                    ))}
+                                  </Select>
+                                )
+                              }
+                            ]}
+                          />
+                          
+                          <div style={{ marginTop: 16, textAlign: 'right' }}>
+                            <Space>
+                              <Button onClick={handleModalCancel}>Hủy</Button>
+                              <Button 
+                                type="primary" 
+                                onClick={handleCreateTasksFromTemplates}
+                                icon={<PlusOutlined />}
+                              >
+                                Tạo Tasks
+                              </Button>
+                            </Space>
+                          </div>
+                        </>
+                      ) : (
               <Alert
                 message="Chưa có Task Template"
-                description={
-                  <span>
-                    Dự án này chưa có task template nào. Bạn có thể{' '}
-                    <a href="/settings">tạo template mới</a> hoặc nhập thủ công bên dưới.
-                  </span>
-                }
+                          description="Vui lòng tạo task template trong Settings hoặc chuyển sang tab 'Tạo thủ công'."
                 type="warning"
                 showIcon
-                style={{ marginBottom: 16 }}
-                closable
-              />
-            )}
-
+                        />
+                      )}
+                    </div>
+                  )
+                },
+                {
+                  key: 'manual',
+                  label: (
+                    <Space>
+                      <EditOutlined />
+                      <span>Tạo thủ công</span>
+                    </Space>
+                  ),
+                  children: (
+                    <Form form={form} layout="vertical" onFinish={handleManualSubmit}>
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
@@ -662,19 +916,14 @@ useEffect(() => {
                     { min: 3, message: 'Tên task phải có ít nhất 3 ký tự' }
                   ]}
                 >
-                  <Input 
-                    placeholder="Nhập tên task" 
-                    prefix={<CheckSquareOutlined style={{ color: '#bfbfbf' }} />}
-                  />
+                            <Input placeholder="Nhập tên task" />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item
                   name="deadline"
                   label="Kỳ Hạn"
-                  rules={[
-                    { required: true, message: 'Vui lòng chọn kỳ hạn' }
-                  ]}
+                            rules={[{ required: true, message: 'Vui lòng chọn kỳ hạn' }]}
                 >
                   <DatePicker 
                     style={{ width: '100%' }}
@@ -685,7 +934,6 @@ useEffect(() => {
                 </Form.Item>
               </Col>
             </Row>
-
             <Form.Item
               name="description"
               label="Mô tả"
@@ -694,29 +942,16 @@ useEffect(() => {
                 { min: 10, message: 'Mô tả phải có ít nhất 10 ký tự' }
               ]}
             >
-              <TextArea
-                rows={4}
-                placeholder="Nhập mô tả chi tiết về task"
-              />
+                        <TextArea rows={4} placeholder="Nhập mô tả chi tiết về task" />
             </Form.Item>
-
             <Row gutter={16}>
             <Col span={8}>
               <Form.Item
                 name="assignedTo"
                 label="Người thực hiện"
-                rules={[
-                  { required: true, message: 'Vui lòng chọn người thực hiện' }
-                ]}
-              >
-                <Select
-                  placeholder="Chọn người thực hiện"
-                  showSearch
-                  optionFilterProp="children"
-                  filterOption={(input, option) =>
-                    option?.children?.toLowerCase().includes(input.toLowerCase())
-                  }
-                >
+                            rules={[{ required: true, message: 'Vui lòng chọn người thực hiện' }]}
+                          >
+                            <Select placeholder="Chọn người thực hiện" showSearch>
                   {users.map(user => (
                     <Option key={user.USER_ID} value={user.USER_ID}>
                       {user.USERNAME}
@@ -725,21 +960,9 @@ useEffect(() => {
                 </Select>
               </Form.Item>
             </Col>
-
             <Col span={8}>
-              <Form.Item
-                name="supporterId"
-                label="Người hỗ trợ"
-              >
-                <Select
-                  placeholder="Chọn người hỗ trợ"
-                  allowClear
-                  showSearch
-                  optionFilterProp="children"
-                  filterOption={(input, option) =>
-                    option?.children?.toLowerCase().includes(input.toLowerCase())
-                  }
-                >
+                          <Form.Item name="supporterId" label="Người hỗ trợ">
+                            <Select placeholder="Chọn người hỗ trợ" allowClear showSearch>
                   {users.map(user => (
                     <Option key={user.USER_ID} value={user.USER_ID}>
                       {user.USERNAME}
@@ -748,21 +971,9 @@ useEffect(() => {
                 </Select>
               </Form.Item>
             </Col>
-
             <Col span={8}>
-              <Form.Item
-                name="checkerId"
-                label="Người kiểm tra"
-              >
-                <Select
-                  placeholder="Chọn người kiểm tra"
-                  allowClear
-                  showSearch
-                  optionFilterProp="children"
-                  filterOption={(input, option) =>
-                    option?.children?.toLowerCase().includes(input.toLowerCase())
-                  }
-                >
+                          <Form.Item name="checkerId" label="Người kiểm tra">
+                            <Select placeholder="Chọn người kiểm tra" allowClear showSearch>
                   {users.map(user => (
                     <Option key={user.USER_ID} value={user.USER_ID}>
                       {user.USERNAME}
@@ -772,18 +983,18 @@ useEffect(() => {
               </Form.Item>
             </Col>
             </Row>
-
             <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
               <Space>
-                <Button onClick={handleModalCancel}>
-                  Hủy
-                </Button>
-                <Button type="primary" htmlType="submit">
-                  {editingTask ? 'Cập nhật' : 'Tạo mới'}
-                </Button>
+                          <Button onClick={handleModalCancel}>Hủy</Button>
+                          <Button type="primary" htmlType="submit">Tạo mới</Button>
               </Space>
             </Form.Item>
           </Form>
+                  )
+                }
+              ]}
+            />
+          )}
         </Modal>
       </div>
     </MainLayout>
