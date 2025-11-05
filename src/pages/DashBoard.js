@@ -42,6 +42,7 @@ const DashBoard = () => {
     const texts = {
       'pending': 'Chờ xử lý',
       'in_progress': 'Đang làm',
+      'pause': 'Tạm dừng công việc',
       'done': 'Hoàn thành',
       'checked': 'Đã kiểm tra'
     };
@@ -52,6 +53,7 @@ const DashBoard = () => {
     const texts = {
       'START': 'đã bắt đầu',
       'END': 'đã hoàn thành',
+      'PAUSE': 'đã tạm dừng',
       'ASSIGN': 'đã được giao',
       'CHECK': 'đã kiểm tra'
     };

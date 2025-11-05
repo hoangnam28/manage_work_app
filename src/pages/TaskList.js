@@ -47,9 +47,6 @@ const { Option } = Select;
 const TaskList = () => {
   const { businessId, projectId } = useParams();
   const navigate = useNavigate();
-  
-  // Debug log để kiểm tra projectId
-  console.log('🔍 TaskList - businessId:', businessId, 'projectId:', projectId);
   const [tasks, setTasks] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
   const [project, setProject] = useState(null);
@@ -58,20 +55,14 @@ const TaskList = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [form] = Form.useForm();
-  const [statusFilter, setStatusFilter] = useState('all'); // Filter trạng thái
-
-  // Template states - Chỉ cần task templates
+  const [statusFilter, setStatusFilter] = useState('all'); 
   const [taskTemplates, setTaskTemplates] = useState([]);
-  const [selectedTaskTemplates, setSelectedTaskTemplates] = useState({}); // Object: { templateId: { assignedTo, supporterId, checkerId } }
-  const [showManualForm, setShowManualForm] = useState(false); // Hiển thị form tạo thủ công
-  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [selectedTaskTemplates, setSelectedTaskTemplates] = useState({});
 
-  // Load tasks
   const loadTasks = useCallback(async () => {
     try {
       setLoading(true);
       const data = await taskApi.getTasksByProject(projectId);
-      
       const formattedTasks = (data || []).map(task => ({
         id: task.ID,
         name: task.NAME,
@@ -83,7 +74,7 @@ const TaskList = () => {
         deadline: task.DEADLINE,
         ...task
       }));
-      
+
       setTasks(formattedTasks);
       setFilteredTasks(formattedTasks);
     } catch (error) {
@@ -94,7 +85,6 @@ const TaskList = () => {
     }
   }, [projectId]);
 
-  // Filter tasks theo trạng thái
   useEffect(() => {
     if (statusFilter === 'all') {
       setFilteredTasks(tasks);
@@ -103,7 +93,6 @@ const TaskList = () => {
     }
   }, [statusFilter, tasks]);
 
-  // Load project info
   const loadProject = useCallback(async () => {
     try {
       if (projectId) {
@@ -129,47 +118,44 @@ const TaskList = () => {
 
 
 
-const loadTaskTemplates = useCallback(async () => {
-  try {
-    setLoadingTemplates(true);
+  const loadTaskTemplates = useCallback(async () => {
+    try {
 
-    const projectResult = await projectApi.getProjectById(projectId);
-    console.log('✅ projectResult:', projectResult);
+      const projectResult = await projectApi.getProjectById(projectId);
+      console.log('✅ projectResult:', projectResult);
 
-    const projectTemplateId = projectResult?.projectTemplateId;
+      const projectTemplateId = projectResult?.projectTemplateId;
 
-    if (!projectTemplateId) {
-      console.warn('⚠️ Project chưa gắn project_template_id, không thể load task templates.');
+      if (!projectTemplateId) {
+        console.warn('⚠️ Project chưa gắn project_template_id, không thể load task templates.');
+        setTaskTemplates([]);
+        return;
+      }
+
+      const taskResult = await settingApi.getTaskTemplates(projectTemplateId);
+      console.log('✅ Loaded task templates:', taskResult.data);
+      setTaskTemplates(taskResult.data || []);
+
+    } catch (error) {
+      console.error('❌ Error loading task templates:', error);
       setTaskTemplates([]);
-      return;
+    } 
+  }, [projectId]);
+
+  useEffect(() => {
+    if (projectId) {
+      loadProject();
+      loadTasks();
+      loadUsers();
     }
+  }, [projectId, loadProject, loadTasks, loadUsers]);
 
-    const taskResult = await settingApi.getTaskTemplates(projectTemplateId);
-    console.log('✅ Loaded task templates:', taskResult.data);
-    setTaskTemplates(taskResult.data || []);
-
-  } catch (error) {
-    console.error('❌ Error loading task templates:', error);
-    setTaskTemplates([]);
-  } finally {
-    setLoadingTemplates(false);
-  }
-}, [projectId]);
-
-useEffect(() => {
-  if (projectId) {
-    loadProject();
-    loadTasks();
-    loadUsers(); 
-  }
-}, [projectId, loadProject, loadTasks, loadUsers]);
-
-useEffect(() => {
-  if (modalVisible && !editingTask) {
-    loadTaskTemplates();
-    loadUsers(); // ✅ thêm lại dòng này
-  }
-}, [modalVisible, editingTask, loadTaskTemplates, loadUsers]);
+  useEffect(() => {
+    if (modalVisible && !editingTask) {
+      loadTaskTemplates();
+      loadUsers(); // ✅ thêm lại dòng này
+    }
+  }, [modalVisible, editingTask, loadTaskTemplates, loadUsers]);
 
 
   // Handle task template selection - cho phép chọn nhiều templates
@@ -187,7 +173,7 @@ useEffect(() => {
   const handleCreateTasksFromTemplates = async () => {
     try {
       const tasksToCreate = [];
-      
+
       // Lấy deadline từ form nếu có
       const deadline = form.getFieldValue('deadline');
       const deadlineStr = deadline ? deadline.format('YYYY-MM-DD HH:mm:ss') : null;
@@ -202,7 +188,7 @@ useEffect(() => {
           }
 
           tasksToCreate.push({
-          name: template.NAME,
+            name: template.NAME,
             description: template.DESCRIPTION || '',
             assigned_to: users.assignedTo,
             supporter_id: users.supporterId || null,
@@ -278,9 +264,9 @@ useEffect(() => {
         project_id: projectId
       };
 
-        await taskApi.updateTask(editingTask.ID || editingTask.id, taskData);
-        message.success('Cập nhật task thành công');
-      
+      await taskApi.updateTask(editingTask.ID || editingTask.id, taskData);
+      message.success('Cập nhật task thành công');
+
       handleModalCancel();
       await loadTasks();
     } catch (error) {
@@ -344,20 +330,19 @@ useEffect(() => {
     setModalVisible(false);
     setEditingTask(null);
     setSelectedTaskTemplates({});
-    setShowManualForm(false);
     form.resetFields();
   };
 
   // Get status color and icon
   const getStatusInfo = (status) => {
     switch (status) {
-      case 'pending':  
+      case 'pending':
         return { color: 'orange', icon: <ClockCircleOutlined />, text: 'Chờ thực hiện' };
-      case 'in_progress': 
+      case 'in_progress':
         return { color: 'blue', icon: <PlayCircleOutlined />, text: 'Đang thực hiện' };
-      case 'done':  
+      case 'done':
         return { color: 'green', icon: <CheckCircleOutlined />, text: 'Hoàn thành' };
-      case 'checked':  
+      case 'checked':
         return { color: 'purple', icon: <CheckCircleOutlined />, text: 'Đã kiểm tra' };
       default:
         return { color: 'default', icon: null, text: status };
@@ -445,8 +430,8 @@ useEffect(() => {
       key: 'deadline',
       width: 120,
       render: (deadline) => (
-        <span style={{ 
-          color: isOverdue(deadline, 'PENDING') ? '#ff4d4f' : 'inherit' 
+        <span style={{
+          color: isOverdue(deadline, 'PENDING') ? '#ff4d4f' : 'inherit'
         }}>
           {new Date(deadline).toLocaleDateString('vi-VN')}
         </span>
@@ -538,7 +523,6 @@ useEffect(() => {
                       onClick={() => {
                         setEditingTask(null);
                         setSelectedTaskTemplates({});
-                        setShowManualForm(false);
                         form.resetFields();
                         setModalVisible(true);
                       }}
@@ -665,7 +649,7 @@ useEffect(() => {
                     label="Kỳ Hạn"
                     rules={[{ required: true, message: 'Vui lòng chọn kỳ hạn' }]}
                   >
-                    <DatePicker 
+                    <DatePicker
                       style={{ width: '100%' }}
                       placeholder="Chọn kỳ hạn"
                       showTime
@@ -689,9 +673,18 @@ useEffect(() => {
                   <Form.Item
                     name="assignedTo"
                     label="Người thực hiện"
-                    rules={[{ required: true, message: 'Vui lòng chọn người thực hiện' }]}
+                    rules={[
+                      { required: true, message: 'Vui lòng chọn người thực hiện' }
+                    ]}
                   >
-                    <Select placeholder="Chọn người thực hiện" showSearch>
+                    <Select
+                      placeholder="Chọn người thực hiện"
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        option?.children?.toLowerCase().includes(input.toLowerCase())
+                      }
+                    >
                       {users.map(user => (
                         <Option key={user.USER_ID} value={user.USER_ID}>
                           {user.USERNAME}
@@ -701,8 +694,19 @@ useEffect(() => {
                   </Form.Item>
                 </Col>
                 <Col span={8}>
-                  <Form.Item name="supporterId" label="Người hỗ trợ">
-                    <Select placeholder="Chọn người hỗ trợ" allowClear showSearch>
+                  <Form.Item
+                    name="supporterId"
+                    label="Người hỗ trợ"
+                  >
+                    <Select
+                      placeholder="Chọn người hỗ trợ"
+                      allowClear
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        option?.children?.toLowerCase().includes(input.toLowerCase())
+                      }
+                    >
                       {users.map(user => (
                         <Option key={user.USER_ID} value={user.USER_ID}>
                           {user.USERNAME}
@@ -712,8 +716,19 @@ useEffect(() => {
                   </Form.Item>
                 </Col>
                 <Col span={8}>
-                  <Form.Item name="checkerId" label="Người kiểm tra">
-                    <Select placeholder="Chọn người kiểm tra" allowClear showSearch>
+                  <Form.Item
+                    name="checkerId"
+                    label="Người kiểm tra"
+                  >
+                    <Select
+                      placeholder="Chọn người kiểm tra"
+                      allowClear
+                      showSearch
+                      optionFilterProp="children"
+                      filterOption={(input, option) =>
+                        option?.children?.toLowerCase().includes(input.toLowerCase())
+                      }
+                    >
                       {users.map(user => (
                         <Option key={user.USER_ID} value={user.USER_ID}>
                           {user.USERNAME}
@@ -731,7 +746,6 @@ useEffect(() => {
               </Form.Item>
             </Form>
           ) : (
-            // Tabs cho tạo mới
             <Tabs
               defaultActiveKey={taskTemplates.length > 0 ? "template" : "manual"}
               items={[
@@ -747,20 +761,20 @@ useEffect(() => {
                   children: (
                     <div>
                       {taskTemplates.length > 0 ? (
-              <>
-                <Alert
+                        <>
+                          <Alert
                             message="Chọn Task Templates và gán người thực hiện"
                             description={`Chọn các task template có sẵn và gán người làm, người hỗ trợ, người kiểm tra cho mỗi template. Có thể tạo nhiều tasks cùng lúc.`}
-                  type="info"
-                  showIcon
-                  style={{ marginBottom: 16 }}
-                />
+                            type="info"
+                            showIcon
+                            style={{ marginBottom: 16 }}
+                          />
 
-                <Form.Item
+                          <Form.Item
                             label="Deadline chung (tùy chọn - sẽ dùng cho tất cả tasks)"
                             style={{ marginBottom: 16 }}
                           >
-                            <DatePicker 
+                            <DatePicker
                               style={{ width: '100%' }}
                               placeholder="Chọn deadline chung (hoặc để trống để tự tính)"
                               showTime
@@ -783,18 +797,18 @@ useEffect(() => {
                                 width: 200,
                                 render: (text, record) => {
                                   const priorityInfo = getPriorityBadge(record.PRIORITY);
-                      return (
+                                  return (
                                     <div>
                                       <div><strong>{text}</strong></div>
                                       {record.ESTIMATED_DURATION && (
                                         <Tag color="cyan" style={{ marginTop: 4 }}>
                                           <ClockCircleOutlined /> {record.ESTIMATED_DURATION}h
-                              </Tag>
-                            )}
+                                        </Tag>
+                                      )}
                                       {record.PRIORITY && (
                                         <Tag color={priorityInfo.color} icon={priorityInfo.icon} style={{ marginTop: 4 }}>
-                              {priorityInfo.text}
-                            </Tag>
+                                          {priorityInfo.text}
+                                        </Tag>
                                       )}
                                     </div>
                                   );
@@ -818,13 +832,17 @@ useEffect(() => {
                                     value={selectedTaskTemplates[record.ID]?.assignedTo}
                                     onChange={(value) => handleTemplateUserChange(record.ID, 'assignedTo', value)}
                                     showSearch
+                                    optionFilterProp="children"
+                                    filterOption={(input, option) =>
+                                      option?.children?.toLowerCase().includes(input.toLowerCase())
+                                    }
                                   >
                                     {users.map(user => (
                                       <Option key={user.USER_ID} value={user.USER_ID}>
                                         {user.USERNAME}
                                       </Option>
                                     ))}
-                  </Select>
+                                  </Select>
                                 )
                               },
                               {
@@ -839,6 +857,10 @@ useEffect(() => {
                                     value={selectedTaskTemplates[record.ID]?.supporterId}
                                     onChange={(value) => handleTemplateUserChange(record.ID, 'supporterId', value)}
                                     showSearch
+                                    optionFilterProp="children"
+                                    filterOption={(input, option) =>
+                                      option?.children?.toLowerCase().includes(input.toLowerCase())
+                                    }
                                   >
                                     {users.map(user => (
                                       <Option key={user.USER_ID} value={user.USER_ID}>
@@ -860,6 +882,10 @@ useEffect(() => {
                                     value={selectedTaskTemplates[record.ID]?.checkerId}
                                     onChange={(value) => handleTemplateUserChange(record.ID, 'checkerId', value)}
                                     showSearch
+                                    optionFilterProp="children"
+                                    filterOption={(input, option) =>
+                                      option?.children?.toLowerCase().includes(input.toLowerCase())
+                                    }
                                   >
                                     {users.map(user => (
                                       <Option key={user.USER_ID} value={user.USER_ID}>
@@ -871,12 +897,11 @@ useEffect(() => {
                               }
                             ]}
                           />
-                          
                           <div style={{ marginTop: 16, textAlign: 'right' }}>
                             <Space>
                               <Button onClick={handleModalCancel}>Hủy</Button>
-                              <Button 
-                                type="primary" 
+                              <Button
+                                type="primary"
                                 onClick={handleCreateTasksFromTemplates}
                                 icon={<PlusOutlined />}
                               >
@@ -886,11 +911,11 @@ useEffect(() => {
                           </div>
                         </>
                       ) : (
-              <Alert
-                message="Chưa có Task Template"
+                        <Alert
+                          message="Chưa có Task Template"
                           description="Vui lòng tạo task template trong Settings hoặc chuyển sang tab 'Tạo thủ công'."
-                type="warning"
-                showIcon
+                          type="warning"
+                          showIcon
                         />
                       )}
                     </div>
@@ -906,90 +931,113 @@ useEffect(() => {
                   ),
                   children: (
                     <Form form={form} layout="vertical" onFinish={handleManualSubmit}>
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  name="name"
-                  label="Tên task"
-                  rules={[
-                    { required: true, message: 'Vui lòng nhập tên task' },
-                    { min: 3, message: 'Tên task phải có ít nhất 3 ký tự' }
-                  ]}
-                >
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Form.Item
+                            name="name"
+                            label="Tên task"
+                            rules={[
+                              { required: true, message: 'Vui lòng nhập tên task' },
+                              { min: 3, message: 'Tên task phải có ít nhất 3 ký tự' }
+                            ]}
+                          >
                             <Input placeholder="Nhập tên task" />
-                </Form.Item>
-              </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="deadline"
-                  label="Kỳ Hạn"
+                          </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                          <Form.Item
+                            name="deadline"
+                            label="Kỳ Hạn"
                             rules={[{ required: true, message: 'Vui lòng chọn kỳ hạn' }]}
-                >
-                  <DatePicker 
-                    style={{ width: '100%' }}
-                    placeholder="Chọn kỳ hạn"
-                    showTime
-                    format="DD/MM/YYYY HH:mm"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-            <Form.Item
-              name="description"
-              label="Mô tả"
-              rules={[
-                { required: true, message: 'Vui lòng nhập mô tả' },
-                { min: 10, message: 'Mô tả phải có ít nhất 10 ký tự' }
-              ]}
-            >
+                          >
+                            <DatePicker
+                              style={{ width: '100%' }}
+                              placeholder="Chọn kỳ hạn"
+                              showTime
+                              format="DD/MM/YYYY HH:mm"
+                            />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                      <Form.Item
+                        name="description"
+                        label="Mô tả"
+                        rules={[
+                          { required: true, message: 'Vui lòng nhập mô tả' },
+                          { min: 10, message: 'Mô tả phải có ít nhất 10 ký tự' }
+                        ]}
+                      >
                         <TextArea rows={4} placeholder="Nhập mô tả chi tiết về task" />
-            </Form.Item>
-            <Row gutter={16}>
-            <Col span={8}>
-              <Form.Item
-                name="assignedTo"
-                label="Người thực hiện"
+                      </Form.Item>
+                      <Row gutter={16}>
+                        <Col span={8}>
+                          <Form.Item
+                            name="assignedTo"
+                            label="Người thực hiện"
                             rules={[{ required: true, message: 'Vui lòng chọn người thực hiện' }]}
                           >
-                            <Select placeholder="Chọn người thực hiện" showSearch>
-                  {users.map(user => (
-                    <Option key={user.USER_ID} value={user.USER_ID}>
-                      {user.USERNAME}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={8}>
+                            <Select
+                              placeholder="Chọn người thực hiện"
+                              showSearch
+                              optionFilterProp="children"
+                              filterOption={(input, option) =>
+                                option?.children?.toLowerCase().includes(input.toLowerCase())
+                              }
+                            >
+                              {users.map(user => (
+                                <Option key={user.USER_ID} value={user.USER_ID}>
+                                  {user.USERNAME}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Form.Item>
+                        </Col>
+                        <Col span={8}>
                           <Form.Item name="supporterId" label="Người hỗ trợ">
-                            <Select placeholder="Chọn người hỗ trợ" allowClear showSearch>
-                  {users.map(user => (
-                    <Option key={user.USER_ID} value={user.USER_ID}>
-                      {user.USERNAME}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            <Col span={8}>
+                            <Select
+                              placeholder="Chọn người hỗ trợ"
+                              allowClear
+                              showSearch
+                              optionFilterProp="children"
+                              filterOption={(input, option) =>
+                                option?.children?.toLowerCase().includes(input.toLowerCase())
+                              }
+                            >
+                              {users.map(user => (
+                                <Option key={user.USER_ID} value={user.USER_ID}>
+                                  {user.USERNAME}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Form.Item>
+                        </Col>
+                        <Col span={8}>
                           <Form.Item name="checkerId" label="Người kiểm tra">
-                            <Select placeholder="Chọn người kiểm tra" allowClear showSearch>
-                  {users.map(user => (
-                    <Option key={user.USER_ID} value={user.USER_ID}>
-                      {user.USERNAME}
-                    </Option>
-                  ))}
-                </Select>
-              </Form.Item>
-            </Col>
-            </Row>
-            <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-              <Space>
+                            <Select
+                              placeholder="Chọn người kiểm tra"
+                              allowClear
+                              showSearch
+                              optionFilterProp="children"
+                              filterOption={(input, option) =>
+                                option?.children?.toLowerCase().includes(input.toLowerCase())
+                              }
+                            >
+                              {users.map(user => (
+                                <Option key={user.USER_ID} value={user.USER_ID}>
+                                  {user.USERNAME}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                      <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+                        <Space>
                           <Button onClick={handleModalCancel}>Hủy</Button>
                           <Button type="primary" htmlType="submit">Tạo mới</Button>
-              </Space>
-            </Form.Item>
-          </Form>
+                        </Space>
+                      </Form.Item>
+                    </Form>
                   )
                 }
               ]}

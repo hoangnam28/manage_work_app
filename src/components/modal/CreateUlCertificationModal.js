@@ -16,7 +16,7 @@ import {
 } from 'antd';
 import { CloseOutlined, SaveOutlined, UploadOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { uploadCertificationImages } from '../../utils/material-certification-api';
+import { uploadCertificationImages, deleteCertificationImage  } from '../../utils/material-certification-api';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -94,87 +94,76 @@ const removeImage = (imageType) => {
     form.validateFields(['layerStructureImage']);
   }
 };
+
+
 useEffect(() => {
   if (open) {
     if (editingRecord) {
-      // Map đầy đủ tất cả field names từ backend sang form
       const formData = {
-        // Thông tin cơ bản
-        releaseDate: editingRecord.RELEASE_DATE
-          ? dayjs(editingRecord.RELEASE_DATE)
+        releaseDate: editingRecord.releaseDate || editingRecord.RELEASE_DATE
+          ? dayjs(editingRecord.releaseDate || editingRecord.RELEASE_DATE)
           : null,
-        factoryName: editingRecord.FACTORY_NAME,
-        DEPARTMENT_IN_CHARGE: editingRecord.DEPARTMENT_IN_CHARGE,
-        requestReason: editingRecord.REQUEST_REASON,
+        factoryName: editingRecord.factoryName || editingRecord.FACTORY_NAME,
+        DEPARTMENT_IN_CHARGE: editingRecord.departmentInCharge || editingRecord.DEPARTMENT_IN_CHARGE,
+        requestReason: editingRecord.requestReason || editingRecord.REQUEST_REASON,
         
-        // Thông tin sản phẩm sử dụng
-        layerStructure: editingRecord.LAYER_STRUCTURE,
-        RELIABILITY_LEVEL_ID: editingRecord.RELIABILITY_LEVEL_ID || editingRecord.reliabilityLevelId,
-        usage: editingRecord.USAGE,
-        expectedProductionQty: editingRecord.EXPECTED_PRODUCTION_QTY,
-        massProductionDate: editingRecord.MASS_PRODUCTION_DATE
-          ? dayjs(editingRecord.MASS_PRODUCTION_DATE)
+        layerStructure: editingRecord.layerStructure || editingRecord.LAYER_STRUCTURE,
+        RELIABILITY_LEVEL_ID: editingRecord.reliabilityLevelId || editingRecord.RELIABILITY_LEVEL,
+        usage: editingRecord.usage || editingRecord.USAGE,
+        expectedProductionQty: editingRecord.expectedProductionQty || editingRecord.EXPECTED_PRODUCTION_QTY,
+        massProductionDate: editingRecord.massProductionDate || editingRecord.MASS_PRODUCTION_DATE
+          ? dayjs(editingRecord.massProductionDate || editingRecord.MASS_PRODUCTION_DATE)
           : null,
-        materialCertExpected: editingRecord.MATERIAL_CERT_EXPECTED
-          ? dayjs(editingRecord.MATERIAL_CERT_EXPECTED)
+        materialCertExpected: editingRecord.materialCertExpected || editingRecord.MATERIAL_CERT_EXPECTED
+          ? dayjs(editingRecord.materialCertExpected || editingRecord.MATERIAL_CERT_EXPECTED)
           : null,
         
-        // Thông tin vật liệu
-        manufacturerName: editingRecord.MANUFACTURER_NAME,
-        factoryLocation: editingRecord.FACTORY_LOCATION,
-        materialName: editingRecord.MATERIAL_NAME,
-        MATERIAL_CLASS_ID: editingRecord.MATERIAL_CLASS_ID || editingRecord.materialClassId,
-        materialProperty1Id: editingRecord.MATERIAL_PROPERTY1_ID,
-        materialProperty2Id: editingRecord.MATERIAL_PROPERTY2_ID,
-        materialProperty3Id: editingRecord.MATERIAL_PROPERTY3_ID,
-        materialStatusId: editingRecord.MATERIAL_STATUS,
-        ulStatusId: editingRecord.UL_CERT_STATUS,
+        manufacturerName: editingRecord.manufacturerName || editingRecord.MANUFACTURER_NAME,
+        factoryLocation: editingRecord.factoryLocation || editingRecord.FACTORY_LOCATION,
+        materialName: editingRecord.materialName || editingRecord.MATERIAL_NAME,
+        MATERIAL_CLASS_ID: editingRecord.materialClassId || editingRecord.MATERIAL_CLASS,
+        materialProperty1Id: editingRecord.materialProperty1Id || editingRecord.MATERIAL_PROPERTY1,
+        materialProperty2Id: editingRecord.materialProperty2Id || editingRecord.MATERIAL_PROPERTY2,
+        materialProperty3Id: editingRecord.materialProperty3Id || editingRecord.MATERIAL_PROPERTY3,
+        materialStatusId: editingRecord.materialStatusId || editingRecord.materialStatus || editingRecord.MATERIAL_STATUS,
+        ulStatusId: editingRecord.ulStatusId || editingRecord.ulCertStatus || editingRecord.UL_CERT_STATUS,
         
-        // Ghi chú
-        notes1: editingRecord.NOTES_1,
+        notes1: editingRecord.notes1 || editingRecord.NOTES_1,
       };
       
       console.log('🔄 Setting form values for edit:', formData);
+      console.log('📥 Original editingRecord:', editingRecord);
       form.setFieldsValue(formData);
-
-      // Reset images (sẽ load từ server nếu cần)
       setCatalogImage(null);
       setLayerStructureImage(null);
       setCatalogPreview(null);
       setLayerStructurePreview(null);
       
       // Nếu có URL ảnh từ server, set preview
-      if (editingRecord.CATALOG_IMAGE_URL) {
-        setCatalogPreview(editingRecord.CATALOG_IMAGE_URL);
-        // Set giá trị để pass validation
-        form.setFieldsValue({ catalogImage: 'existing' });
+      if (editingRecord.IMAGES && editingRecord.IMAGES.length > 0) {
+        const catalogImg = editingRecord.IMAGES.find(img =>
+          (img.name || img.NAME || '').toLowerCase().includes('catalog')
+        );
+        const layerImg = editingRecord.IMAGES.find(img =>
+          (img.name || img.NAME || '').toLowerCase().includes('layer') ||
+          (img.name || img.NAME || '').toLowerCase().includes('structure')
+        );
+        
+        if (catalogImg) {
+          setCatalogPreview(catalogImg.url || catalogImg.URL);
+          form.setFieldsValue({ catalogImage: 'existing' });
+          editingRecord.CATALOG_IMAGE_ID = catalogImg.id || catalogImg.ID;
+        }
+        
+        if (layerImg) {
+          setLayerStructurePreview(layerImg.url || layerImg.URL);
+          form.setFieldsValue({ layerStructureImage: 'existing' });
+          editingRecord.LAYER_STRUCTURE_IMAGE_ID = layerImg.id || layerImg.ID;
+        }
       }
-      if (editingRecord.LAYER_STRUCTURE_IMAGE_URL) {
-        setLayerStructurePreview(editingRecord.LAYER_STRUCTURE_IMAGE_URL);
-        // Set giá trị để pass validation
-        form.setFieldsValue({ layerStructureImage: 'existing' });
-      }
-    } else {
-      // Mode create - set default values
-      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-      form.setFieldsValue({
-        releaseDate: dayjs(), 
-        factoryName: 'タクタット工場 (ベトナム)', 
-        PERSON_IN_CHARGE: userInfo.email || userInfo.username,
-        DEPARTMENT_IN_CHARGE: userInfo.derpartment,
-        START_DATE: dayjs()
-      });
-      
-      // Reset tất cả images
-      setCatalogImage(null);
-      setLayerStructureImage(null);
-      setCatalogPreview(null);
-      setLayerStructurePreview(null);
     }
   }
 }, [open, editingRecord, form]);
-
-
 const handleSubmit = async (values) => {
   setLoading(true);
   
@@ -241,38 +230,54 @@ const handleSubmit = async (values) => {
         message.success('✅ Tạo certification thành công!');
       }
     } else if (mode === 'edit') {
-      // Nếu có ảnh mới, upload chúng
+      // ✅ XÓA ẢNH CŨ NẾU CÓ ẢNH MỚI
       const hasNewImages = catalogImage || layerStructureImage;
+      
       if (hasNewImages) {
-        const imagesToUpload = [];
-        
-        if (catalogImage) {
-          const ext = catalogImage.type.split('/')[1] || 'jpg';
-          const file = new File([catalogImage], `catalog.${ext}`, { 
-            type: catalogImage.type 
-          });
-          imagesToUpload.push(file);
-        }
-        
-        if (layerStructureImage) {
-          const ext = layerStructureImage.type.split('/')[1] || 'jpg';
-          const file = new File([layerStructureImage], `layer_structure.${ext}`, { 
-            type: layerStructureImage.type 
-          });
-          imagesToUpload.push(file);
-        }
-        
         try {
+          // Xóa ảnh catalog cũ nếu có ảnh mới
+          if (catalogImage && editingRecord.CATALOG_IMAGE_ID) {
+            await deleteCertificationImage(certificationId, editingRecord.CATALOG_IMAGE_ID);
+            console.log('🗑️ Deleted old catalog image');
+          }
+          
+          // Xóa ảnh layer structure cũ nếu có ảnh mới
+          if (layerStructureImage && editingRecord.LAYER_STRUCTURE_IMAGE_ID) {
+            await deleteCertificationImage(certificationId, editingRecord.LAYER_STRUCTURE_IMAGE_ID);
+            console.log('🗑️ Deleted old layer structure image');
+          }
+          
+          // Upload ảnh mới
+          const imagesToUpload = [];
+          
+          if (catalogImage) {
+            const ext = catalogImage.type.split('/')[1] || 'jpg';
+            const file = new File([catalogImage], `catalog.${ext}`, { 
+              type: catalogImage.type 
+            });
+            imagesToUpload.push(file);
+          }
+          
+          if (layerStructureImage) {
+            const ext = layerStructureImage.type.split('/')[1] || 'jpg';
+            const file = new File([layerStructureImage], `layer_structure.${ext}`, { 
+              type: layerStructureImage.type 
+            });
+            imagesToUpload.push(file);
+          }
+          
           await uploadCertificationImages(certificationId, imagesToUpload);
-          message.success('✅ Cập nhật thành công!');
+          message.success('✅ Cập nhật ảnh thành công!');
+          
         } catch (uploadError) {
-          message.warning('⚠️ Cập nhật thành công nhưng upload hình mới thất bại');
+          console.error('Upload error:', uploadError);
+          message.warning('⚠️ Cập nhật thành công nhưng upload ảnh mới thất bại');
         }
       } else {
         message.success('✅ Cập nhật thành công!');
       }
     }
-    
+        
     if (onSuccess) {
       onSuccess(mode === 'create' ? certificationId : null);
     }

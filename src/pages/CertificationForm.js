@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Form, Input, DatePicker, Select, Button, Row, Col, Typography, Divider, Tabs, Space, Alert
+  Form, Input, DatePicker, Select, Button, Row, Col, Typography,
+  Divider, Tabs, Space, Alert, Upload, Popconfirm
 } from 'antd';
-import { FileExcelOutlined, CheckCircleOutlined} from '@ant-design/icons';
+import { FileExcelOutlined, CheckCircleOutlined, UploadOutlined, DeleteOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import MainLayout from '../components/layout/MainLayout';
 import { Toaster, toast } from 'sonner';
@@ -13,7 +14,9 @@ import {
   exportCertificationForm,
   fetchMaterialCertificationOptions,
   tksxApproveCertification,
-  ql2ApproveCertification
+  ql2ApproveCertification,
+  deleteCertificationImage,
+  uploadCertificationImages
 } from '../utils/material-certification-api';
 import ProgressTab from '../components/tabs/ProgressTab';
 // import TimeTrackingTab from '../components/tabs/TimeTrackingTab';
@@ -34,9 +37,8 @@ const CertificationForm = () => {
   const [imagesLoading, setImagesLoading] = useState(false);
   const [options, setOptions] = useState({});
   const [currentProgressId, setCurrentProgressId] = useState(null);
-  const [certificationData, setCertificationData] = useState(null); 
-
-
+  const [certificationData, setCertificationData] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const certificationId = location.state?.certificationData?.ID || location.state?.certificationId;
 
@@ -105,8 +107,8 @@ const CertificationForm = () => {
           NOTES_1: data.NOTES_1,
           NOTES_2: data.NOTES_2,
           DEPARTMENT_IN_CHARGE: data.DEPT_ID || data.DEPARTMENT_IN_CHARGE || undefined,
-          DATE_PD5_HQ: data.DATE_PD5_HQ ? moment(data.DATE_PD5_HQ) : null, 
-          DATE_PD5_GET_REPORT: data.DATE_PD5_GET_REPORT ? moment(data.DATE_PD5_GET_REPORT) : null, 
+          DATE_PD5_HQ: data.DATE_PD5_HQ ? moment(data.DATE_PD5_HQ) : null,
+          DATE_PD5_GET_REPORT: data.DATE_PD5_GET_REPORT ? moment(data.DATE_PD5_GET_REPORT) : null,
         };
         form.setFieldsValue(formValues);
 
@@ -248,18 +250,18 @@ const CertificationForm = () => {
       const certificationData = form.getFieldsValue();
 
       const formattedValues = {};
-      
+
       // ✅ XỬ LÝ LOGIC MỚI: Khi có REPORT_LINK -> tự động set PD5_REPORT_ACTUAL_DATE
       if (values.REPORT_LINK && !values.PD5_REPORT_ACTUAL_DATE) {
         const today = moment();
         formattedValues.pd5ReportActualDate = today.format('YYYY-MM-DD');
-        
+
         // Cập nhật lại form để hiển thị
         progressForm.setFieldsValue({
           PD5_REPORT_ACTUAL_DATE: today
         });
       }
-      
+
       // Existing fields
       if (values.PERSON_IN_CHARGE) formattedValues.personInCharge = values.PERSON_IN_CHARGE;
       if (values.DEPARTMENT_IN_CHARGE) formattedValues.departmentInCharge = values.DEPARTMENT_IN_CHARGE;
@@ -268,7 +270,7 @@ const CertificationForm = () => {
       if (values.COMPLETION_DEADLINE) formattedValues.completionDeadline = values.COMPLETION_DEADLINE.format('YYYY-MM-DD');
       if (values.ACTUAL_COMPLETION_DATE) formattedValues.actualCompletionDate = values.ACTUAL_COMPLETION_DATE.format('YYYY-MM-DD');
       if (values.PD5_REPORT_ACTUAL_DATE) formattedValues.pd5ReportActualDate = values.PD5_REPORT_ACTUAL_DATE.format('YYYY-MM-DD');
-      
+
       // ✅ 2 TRƯỜNG QUAN TRỌNG
       if (values.DATE_PD5_HQ) formattedValues.datePd5Hq = values.DATE_PD5_HQ.format('YYYY-MM-DD');
       if (values.DATE_PD5_GET_REPORT) formattedValues.datePd5GetReport = values.DATE_PD5_GET_REPORT.format('YYYY-MM-DD');
@@ -284,7 +286,7 @@ const CertificationForm = () => {
       if (values.FACTORY_LEVEL) formattedValues.factoryLevel = values.FACTORY_LEVEL;
       if (values.PRICE_REQUEST !== undefined) formattedValues.priceRequest = values.PRICE_REQUEST;
       if (values.REPORT_LINK) formattedValues.reportLink = values.REPORT_LINK;
-    
+
       // Certification data
       if (certificationData.RELEASE_DATE) formattedValues.releaseDate = certificationData.RELEASE_DATE.format('YYYY-MM-DD');
       if (certificationData.FACTORY_NAME) formattedValues.factoryName = certificationData.FACTORY_NAME;
@@ -361,42 +363,118 @@ const CertificationForm = () => {
       setExportLoading(false);
     }
   };
+  const handleImageUpload = async (file, imageType) => {
+    console.log('handleImageUpload called:', imageType, file.name);
+
+    const isImage = file.type.startsWith('image/');
+    if (!isImage) {
+      toast.error('Chỉ có thể upload file hình ảnh!');
+      return false;
+    }
+
+    const isLt5M = file.size / 1024 / 1024 < 5;
+    if (!isLt5M) {
+      toast.error('Hình ảnh phải nhỏ hơn 5MB!');
+      return false;
+    }
+
+    try {
+      setUploadingImage(true);
+
+      const oldImage = images.find(img => {
+        const imgName = (img.name || img.NAME || '').toLowerCase();
+        if (imageType === 'catalog') {
+          return imgName.includes('catalog');
+        } else {
+          return imgName.includes('layer') || imgName.includes('structure');
+        }
+      });
+
+      if (oldImage) {
+        await deleteCertificationImage(certificationId, oldImage.id || oldImage.ID);
+        console.log('🗑️ Deleted old image');
+      }
+
+      // Upload ảnh mới
+      const ext = file.type.split('/')[1] || 'jpg';
+      const fileName = imageType === 'catalog' ? `catalog.${ext}` : `layer_structure.${ext}`;
+      const newFile = new File([file], fileName, { type: file.type });
+
+      await uploadCertificationImages(certificationId, [newFile]);
+
+      toast.success('Upload ảnh thành công!');
+
+      // Reload dữ liệu để hiển thị ảnh mới
+      await loadCertificationData();
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('❌ Lỗi khi upload ảnh: ' + error.message);
+    } finally {
+      setUploadingImage(false);
+    }
+
+    return false;
+  };
+  const handleDeleteImage = async (imageType) => {
+    const targetImage = images.find(img => {
+      const imgName = (img.name || img.NAME || '').toLowerCase();
+      if (imageType === 'catalog') {
+        return imgName.includes('catalog');
+      } else {
+        return imgName.includes('layer') || imgName.includes('structure');
+      }
+    });
+
+    if (!targetImage) {
+      toast.error('Không tìm thấy ảnh để xóa');
+      return;
+    }
+    try {
+      await deleteCertificationImage(certificationId, targetImage.id || targetImage.ID);
+      toast.success('Xóa ảnh thành công!');
+      await loadCertificationData();
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('❌ Lỗi khi xóa ảnh: ' + error.message);
+    }
+  };
   return (
     <MainLayout>
       <Toaster position="top-right" richColors />
       <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-            <Title level={2} style={{ margin: 0 }}>
-              Quản lý chứng nhận vật liệu
-            </Title>
-            <Space>
-              {currentProgressId === 1 && (
-                <Button
-                  type="primary"
-                  size="large"
-                  icon={<CheckCircleOutlined />}
-                  onClick={() => handleApproval('tksx')}
-                  loading={loading}
-                  style={{ 
-                    backgroundColor: '#1a1dc4ff', 
-                    borderColor: '#1a1dc4ff',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  TKSX Phê duyệt
-                </Button>
-              )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <Title level={2} style={{ margin: 0 }}>
+            Quản lý chứng nhận vật liệu
+          </Title>
+          <Space>
+            {currentProgressId === 1 && (
               <Button
                 type="primary"
-                icon={<FileExcelOutlined />}
-                onClick={handleExportExcel}
-                loading={exportLoading}
-                style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+                size="large"
+                icon={<CheckCircleOutlined />}
+                onClick={() => handleApproval('tksx')}
+                loading={loading}
+                style={{
+                  backgroundColor: '#1a1dc4ff',
+                  borderColor: '#1a1dc4ff',
+                  fontWeight: 'bold'
+                }}
               >
-                Xuất Excel
+                TKSX Phê duyệt
               </Button>
-            </Space>
-          </div>
+            )}
+            <Button
+              type="primary"
+              icon={<FileExcelOutlined />}
+              onClick={handleExportExcel}
+              loading={exportLoading}
+              style={{ backgroundColor: '#52c41a', borderColor: '#52c41a' }}
+            >
+              Xuất Excel
+            </Button>
+          </Space>
+        </div>
         <div style={{ background: 'white', padding: '24px', borderRadius: '8px' }}>
           <Tabs activeKey={activeTab} onChange={setActiveTab} style={{ marginBottom: '24px' }}>
             <TabPane
@@ -411,18 +489,18 @@ const CertificationForm = () => {
                   Biểu yêu cầu chứng nhận
                 </span>
               }
-              
+
               key="certification"
             >
-            {certificationData?.PERSON_ACCEPT && (
-              <Alert
-                message="TKSX-PTSP đã phê duyệt"
-                description={`Người phê duyệt: ${certificationData.PERSON_ACCEPT}`}
-                type="success"
-                showIcon
-                style={{ marginBottom: '24px' }}
-              />
-            )}
+              {certificationData?.PERSON_ACCEPT && (
+                <Alert
+                  message="TKSX-PTSP đã phê duyệt"
+                  description={`Người phê duyệt: ${certificationData.PERSON_ACCEPT}`}
+                  type="success"
+                  showIcon
+                  style={{ marginBottom: '24px' }}
+                />
+              )}
               <Form form={form} layout="vertical" onFinish={onFinish} initialValues={{}}>
                 <Divider orientation="left">Thông tin yêu cầu</Divider>
                 <Row gutter={16}>
@@ -433,9 +511,9 @@ const CertificationForm = () => {
                   </Col>
                   <Col span={8}>
                     <Form.Item name="DEPARTMENT_IN_CHARGE" label="Bộ phận phụ trách">
-                      <Select 
-                        placeholder="Chọn bộ phận phụ trách" 
-                        allowClear 
+                      <Select
+                        placeholder="Chọn bộ phận phụ trách"
+                        allowClear
                         showSearch
                         filterOption={(input, option) =>
                           option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
@@ -621,9 +699,45 @@ const CertificationForm = () => {
                         fontWeight: 'bold',
                         marginBottom: '12px',
                         fontSize: '14px',
-                        color: '#1890ff'
+                        color: '#1890ff',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
                       }}>
-                        Catalog
+                        <span>Catalog</span>
+                        <Space>
+                          <Upload
+                            beforeUpload={(file) => handleImageUpload(file, 'catalog')}
+                            showUploadList={false}
+                            accept="image/*"
+                          >
+                            <Button
+                              icon={<UploadOutlined />}
+                              size="small"
+                              loading={uploadingImage}
+                            >
+                              Thay đổi
+                            </Button>
+                          </Upload>
+                          {images.find(img => (img.name || img.NAME || '').toLowerCase().includes('catalog')) && (
+                            <Popconfirm
+                              title="Xác nhận xóa ảnh"
+                              description="Bạn có chắc chắn muốn xóa ảnh Catalog?"
+                              onConfirm={() => handleDeleteImage('catalog')}
+                              okText="Xóa"
+                              cancelText="Hủy"
+                              okButtonProps={{ danger: true }}
+                            >
+                              <Button
+                                danger
+                                icon={<DeleteOutlined />}
+                                size="small"
+                              >
+                                Xóa
+                              </Button>
+                            </Popconfirm>
+                          )}
+                        </Space>
                       </div>
                       {imagesLoading ? (
                         <div style={{
@@ -689,9 +803,48 @@ const CertificationForm = () => {
                         fontWeight: 'bold',
                         marginBottom: '12px',
                         fontSize: '14px',
-                        color: '#1890ff'
+                        color: '#1890ff',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
                       }}>
-                        Cấu trúc lớp
+                        <span>Cấu trúc lớp</span>
+                        <Space>
+                          <Upload
+                            beforeUpload={(file) => handleImageUpload(file, 'layerStructure')}
+                            showUploadList={false}
+                            accept="image/*"
+                          >
+                            <Button
+                              icon={<UploadOutlined />}
+                              size="small"
+                              loading={uploadingImage}
+                            >
+                              Thay đổi
+                            </Button>
+                          </Upload>
+                          {images.find(img => {
+                            const imgName = (img.name || img.NAME || '').toLowerCase();
+                            return imgName.includes('layer') || imgName.includes('structure');
+                          }) && (
+                              <Popconfirm
+                                title="Xác nhận xóa ảnh"
+                                description="Bạn có chắc chắn muốn xóa ảnh Cấu trúc lớp?"
+                                onConfirm={() => handleDeleteImage('layerStructure')}
+                                okText="Xóa"
+                                cancelText="Hủy"
+                                okButtonProps={{ danger: true }}
+                              >
+                                <Button
+                                  danger
+                                  icon={<DeleteOutlined />}
+                                  size="small"
+                                >
+                                  Xóa
+                                </Button>
+                              </Popconfirm>
+                            )}
+                        </Space>
                       </div>
                       {imagesLoading ? (
                         <div style={{
@@ -793,7 +946,7 @@ const CertificationForm = () => {
                 options={options}
                 certificationId={certificationId}
                 currentProgressId={currentProgressId}
-                personAccept={certificationData?.PERSON_ACCEPT} 
+                personAccept={certificationData?.PERSON_ACCEPT}
                 personAcceptQL2={certificationData?.PERSON_ACCEPT_QL2}
                 onApprovalSuccess={handleApproval}
               />
@@ -819,7 +972,7 @@ const CertificationForm = () => {
             </TabPane> */}
           </Tabs>
         </div>
-        </div>
+      </div>
     </MainLayout>
   );
 };

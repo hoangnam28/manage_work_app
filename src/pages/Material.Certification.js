@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Table, Button, Space, Popconfirm, Input, Dropdown, Menu, Tag, Tooltip } from 'antd';
 import Highlighter from 'react-highlight-words';
 import {
-  EditOutlined,
+  // EditOutlined,
   DeleteOutlined,
   PlusOutlined,
   SearchOutlined,
@@ -629,14 +629,14 @@ const handleExportLateReport = () => {
             size="small"
           />
         </Tooltip>
-        <Tooltip title="Sửa">
+        {/* <Tooltip title="Sửa">
           <Button
             type="primary"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
             size="small"
           />
-        </Tooltip>
+        </Tooltip> */}
         <Popconfirm
           title="Xác nhận xóa?"
           onConfirm={() => handleDelete(record)}
@@ -662,12 +662,12 @@ const handleViewHistory = (record) => {
   setHistoryModalVisible(true);
 };
 
-  const handleEdit = (record) => {
-    console.log('Edit record:', record);
-    setModalMode('edit');
-    setEditingRecord(record);
-    setModalVisible(true);
-  };
+  // const handleEdit = (record) => {
+  //   console.log('Edit record:', record);
+  //   setModalMode('edit');
+  //   setEditingRecord(record);
+  //   setModalVisible(true);
+  // };
 
   const handleCreateNew = () => {
     setModalMode('create');

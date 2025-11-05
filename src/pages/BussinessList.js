@@ -79,14 +79,12 @@ const BussinessList = () => {
     loadBusinesses();
   }, []);
 
-  // Load templates khi mở modal tạo mới
   useEffect(() => {
     if (modalVisible && !editingBusiness) {
       loadBusinessTemplates();
     }
   }, [modalVisible, editingBusiness]);
 
-  // Handle template selection
   const handleTemplateSelect = (templateId) => {
     setSelectedTemplate(templateId);
     
