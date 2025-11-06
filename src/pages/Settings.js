@@ -3,6 +3,19 @@ import './Settings.css';
 import settingApi from '../utils/setting-api'
 import CreateSettingModal from '../components/modal/CreateSettingModal'
 import MainLayout from '../components/layout/MainLayout';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  SettingOutlined,
+  FolderOpenOutlined,
+  UnorderedListOutlined,
+  CarryOutOutlined,
+  InboxOutlined,
+  LeftOutlined,
+  LoadingOutlined,
+  ClockCircleOutlined
+} from '@ant-design/icons';
 
 
 const Settings = () => {
@@ -166,7 +179,7 @@ const Settings = () => {
     <div className="settings-container">
       <div className="settings-header">
         <h1>
-          <i className="fas fa-cog"></i>
+          <SettingOutlined style={{ marginRight: '8px' }} />
           Settings To do List 
         </h1>
         <p className="settings-description">
@@ -179,26 +192,26 @@ const Settings = () => {
         <div className="template-column">
           <div className="column-header">
             <h2>
-              <i className="fas fa-briefcase"></i>
+              <UnorderedListOutlined style={{ marginRight: '8px' }} />
               Business Operations
             </h2>
             <button
               className="btn-add"
               onClick={() => openModal('business', 'create')}
             >
-              <i className="fas fa-plus"></i>
+              <PlusOutlined />
             </button>
           </div>
 
           <div className="template-list">
             {loading && businessTemplates.length === 0 ? (
               <div className="loading-state">
-                <i className="fas fa-spinner fa-spin"></i>
+                <LoadingOutlined style={{ fontSize: '24px' }} />
                 <p>Đang tải...</p>
               </div>
             ) : businessTemplates.length === 0 ? (
               <div className="empty-state">
-                <i className="fas fa-inbox"></i>
+                <InboxOutlined style={{ fontSize: '48px' }} />
                 <p>Chưa có business template nào</p>
                 <button
                   className="btn-primary"
@@ -225,7 +238,7 @@ const Settings = () => {
                         }}
                         title="Sửa"
                       >
-                        <i className="fas fa-edit"></i>
+                        <EditOutlined />
                       </button>
                       <button
                         className="btn-icon btn-delete"
@@ -235,7 +248,7 @@ const Settings = () => {
                         }}
                         title="Xóa"
                       >
-                        <i className="fas fa-trash"></i>
+                        <DeleteOutlined />
                       </button>
                     </div>
                   </div>
@@ -257,7 +270,7 @@ const Settings = () => {
         <div className="template-column">
           <div className="column-header">
             <h2>
-              <i className="fas fa-folder"></i>
+              <FolderOpenOutlined style={{ marginRight: '8px' }} />
               Projects
             </h2>
             {selectedBusiness && (
@@ -265,7 +278,7 @@ const Settings = () => {
                 className="btn-add"
                 onClick={() => openModal('project', 'create', null, selectedBusiness.ID)}
               >
-                <i className="fas fa-plus"></i>
+                <PlusOutlined />
               </button>
             )}
           </div>
@@ -273,17 +286,17 @@ const Settings = () => {
           <div className="template-list">
             {!selectedBusiness ? (
               <div className="empty-state">
-                <i className="fas fa-arrow-left"></i>
+                <LeftOutlined style={{ fontSize: '48px' }} />
                 <p>Chọn một business operation để xem projects</p>
               </div>
             ) : loading && projectTemplates.length === 0 ? (
               <div className="loading-state">
-                <i className="fas fa-spinner fa-spin"></i>
+                <LoadingOutlined style={{ fontSize: '24px' }} />
                 <p>Đang tải...</p>
               </div>
             ) : projectTemplates.length === 0 ? (
               <div className="empty-state">
-                <i className="fas fa-inbox"></i>
+                <InboxOutlined style={{ fontSize: '48px' }} />
                 <p>Chưa có project template nào</p>
                 <button
                   className="btn-primary"
@@ -315,7 +328,7 @@ const Settings = () => {
                         }}
                         title="Sửa"
                       >
-                        <i className="fas fa-edit"></i>
+                        <EditOutlined />
                       </button>
                       <button
                         className="btn-icon btn-delete"
@@ -325,7 +338,7 @@ const Settings = () => {
                         }}
                         title="Xóa"
                       >
-                        <i className="fas fa-trash"></i>
+                        <DeleteOutlined />
                       </button>
                     </div>
                   </div>
@@ -347,7 +360,7 @@ const Settings = () => {
         <div className="template-column">
           <div className="column-header">
             <h2>
-              <i className="fas fa-tasks"></i>
+              <CarryOutOutlined style={{ marginRight: '8px' }} />
               Tasks
             </h2>
             {selectedProject && (
@@ -355,7 +368,7 @@ const Settings = () => {
                 className="btn-add"
                 onClick={() => openModal('task', 'create', null, selectedProject.ID)}
               >
-                <i className="fas fa-plus"></i>
+                <PlusOutlined />
               </button>
             )}
           </div>
@@ -363,17 +376,17 @@ const Settings = () => {
           <div className="template-list">
             {!selectedProject ? (
               <div className="empty-state">
-                <i className="fas fa-arrow-left"></i>
+                <LeftOutlined style={{ fontSize: '48px' }} />
                 <p>Chọn một project để xem tasks</p>
               </div>
             ) : loading && taskTemplates.length === 0 ? (
               <div className="loading-state">
-                <i className="fas fa-spinner fa-spin"></i>
+                <LoadingOutlined style={{ fontSize: '24px' }} />
                 <p>Đang tải...</p>
               </div>
             ) : taskTemplates.length === 0 ? (
               <div className="empty-state">
-                <i className="fas fa-inbox"></i>
+                <InboxOutlined style={{ fontSize: '48px' }} />
                 <p>Chưa có task template nào</p>
                 <button
                   className="btn-primary"
@@ -396,14 +409,14 @@ const Settings = () => {
                         onClick={() => openModal('task', 'edit', task, selectedProject.ID)}
                         title="Sửa"
                       >
-                        <i className="fas fa-edit"></i>
+                        <EditOutlined />
                       </button>
                       <button
                         className="btn-icon btn-delete"
                         onClick={() => handleDelete('task', task.ID)}
                         title="Xóa"
                       >
-                        <i className="fas fa-trash"></i>
+                        <DeleteOutlined />
                       </button>
                     </div>
                   </div>
@@ -414,7 +427,7 @@ const Settings = () => {
                     <div className="task-info">
                       {task.ESTIMATED_DURATION && (
                         <span className="duration-badge">
-                          <i className="fas fa-clock"></i>
+                          <ClockCircleOutlined style={{ marginRight: '4px' }} />
                           {task.ESTIMATED_DURATION}h
                         </span>
                       )}

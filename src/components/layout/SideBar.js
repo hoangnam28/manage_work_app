@@ -14,7 +14,10 @@ import {
   CheckCircleOutlined,
   SafetyCertificateOutlined,
   HomeOutlined,
-  BgColorsOutlined
+  BgColorsOutlined,
+  SettingOutlined,
+  FolderAddOutlined,
+  CheckSquareOutlined
 } from '@ant-design/icons';
 import { Link, useLocation } from 'react-router-dom';
 import './SideBar.css';
@@ -153,7 +156,7 @@ const SideBar = ({ onLogout, userId }) => {
         </a>
       ),
     },
-     {
+    {
         key: '/material-certification',
         icon: <SafetyCertificateOutlined />,
         label: (
@@ -161,16 +164,44 @@ const SideBar = ({ onLogout, userId }) => {
               Material Certification
             </Link>
           ),
-      },
-      {
+    },
+    {
         key: '/settings',
-        icon: <SafetyCertificateOutlined />,
+        icon: <SettingOutlined />,
         label: (
             <Link to="/settings" style={location.pathname === '/settings' ? { color: '#1890ff', fontWeight: 600 } : {}}>
               Settings
             </Link>
         ),
-      }
+    },
+    {
+      key: '/my-tasks',
+      icon: <CheckSquareOutlined />,
+      label: (
+        <Link to="/my-tasks" style={location.pathname === '/my-tasks' ? { color: '#1890ff', fontWeight: 600 } : {}}>
+          My Tasks
+        </Link>
+      ),
+    },
+    {
+      key: '/dashboard',
+      icon: <BarChartOutlined />,
+      label: (
+        <Link to="/dashboard" style={location.pathname === '/dashboard' ? { color: '#1890ff', fontWeight: 600 } : {}}>
+          Dashboard
+        </Link>
+      ),
+    },
+    {
+      key: '/business',
+      icon: <FolderAddOutlined />,
+      label: (
+        <Link to="/business" style={location.pathname === '/business' ? { color: '#1890ff', fontWeight: 600 } : {}}>
+          Business
+        </Link>
+      ),
+    },
+    
   ];
   return (
     <Sider
@@ -188,7 +219,7 @@ const SideBar = ({ onLogout, userId }) => {
             <Avatar
               size={42}
               icon={<UserOutlined />}
-              src={getAvatarSrc()} // ✅ Thay đổi chỗ này
+              src={getAvatarSrc()} 
               onClick={() => setPwOpen(true)}
               style={{ cursor: 'pointer' }}
             />

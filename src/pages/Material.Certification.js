@@ -198,12 +198,10 @@ const handleCreate = async (values) => {
       };
     });
 
-    // ✅ Tạo worksheet và workbook
     const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "MaterialCertification");
 
-    // ✅ Ghi ra file Excel
     const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
     const blob = new Blob([wbout], { type: "application/octet-stream" });
     const filename = `MaterialCertification_${new Date()
@@ -226,7 +224,7 @@ const handleExportLateReport = () => {
       const deadline = row.PD5_REPORT_DEADLINE ? new Date(row.PD5_REPORT_DEADLINE) : null;
       const actualDate = row.PD5_REPORT_ACTUAL_DATE ? new Date(row.PD5_REPORT_ACTUAL_DATE) : null;
       
-      // ✅ Chậm muộn khi:
+      // Chậm muộn khi:
       // 1. Có deadline
       // 2. Deadline < hôm nay
       // 3. Chưa có ngày gửi thực tế (PD5_REPORT_ACTUAL_DATE)
