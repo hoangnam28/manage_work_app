@@ -50,27 +50,33 @@ const DashBoard = () => {
     return texts[status] || status;
   };
 
-  const getActionText = (action) => {
-    const texts = {
-      'START': 'đã bắt đầu',
-      'END': 'đã hoàn thành',
-      'PAUSE': 'đã tạm dừng',
-      'ASSIGN': 'đã được giao',
-      'CHECK': 'đã kiểm tra'
-    };
-    return texts[action] || action.toLowerCase();
+const getActionText = (action) => {
+  const texts = {
+    'start': 'đã bắt đầu',        
+    'complete': 'đã hoàn thành',  
+    'pause': 'đã tạm dừng',       
+    'created': 'đã được giao', 
+    'checked': 'đã kiểm tra',    
+    'updated': 'đã cập nhật',
+    'deleted': 'đã xóa',
+    'reassigned': 'đã gán lại'
   };
+  return texts[action] || action;
+};
 
-  const getActionIcon = (action) => {
-    const icons = {
-      'START': '▶️',
-      'END': '✅',
-      'PAUSE': '⏸️',
-      'ASSIGN': '👤',
-      'CHECK': '🔍'
-    };
-    return icons[action] || '📝';
+const getActionIcon = (action) => {
+  const icons = {
+    'start': '▶️',
+    'complete': '✅',
+    'pause': '⏸️',
+    'created': '👤',
+    'checked': '🔍',
+    'updated': '✏️',
+    'deleted': '🗑️',
+    'reassigned': '🔄'
   };
+  return icons[action] || '📝';
+};
 
   const formatDateTime = (dateString) => {
     if (!dateString) return '';

@@ -53,7 +53,7 @@ export const useDashboard = () => {
     : 0;
 
   const chartData = [
-    { status: 'pending', count: stats.taskStatusDistribution.peding || 0, color: '#fbbf24' },
+    { status: 'pending', count: stats.taskStatusDistribution.pending || 0, color: '#fbbf24' },
     { status: 'in_progress', count: stats.taskStatusDistribution.in_progress || 0, color: '#3b82f6' },
     { status: 'pause', count: stats.taskStatusDistribution.pause || 0, color: '#42368aff' },
     { status: 'done', count: stats.taskStatusDistribution.done || 0, color: '#10b981' },

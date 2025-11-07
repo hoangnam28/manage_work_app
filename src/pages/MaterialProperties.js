@@ -152,7 +152,6 @@ const MaterialProperties = () => {
       fetchData();
     } catch (error) {
       console.error('Error creating material pp:', error);
-      toast.error('Lỗi khi thêm mới');
     }
   };
   const handleUpdate = async (values) => {

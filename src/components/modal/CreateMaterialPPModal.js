@@ -137,13 +137,12 @@ const MaterialPPModal = ({
       toast.success(result?.message || 'Thêm mới thành công!');
     }
 
-    // Reset form và đóng modal sau khi thành công
     form.resetFields();
     if (onCancel) onCancel();
 
   } catch (error) {
     console.error('Validation failed:', error);
-    toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu'));
+    toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu hoặc dữ liệu đã tồn tại'));
   }
 };
   const getModalTitle = () => {

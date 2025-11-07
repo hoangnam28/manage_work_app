@@ -147,7 +147,6 @@ const handleSubmit = async () => {
 
   } catch (error) {
     console.error('Submit failed:', error);
-    toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu'));
   }
 };
 

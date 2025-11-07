@@ -193,39 +193,6 @@ export const taskApi = {
       throw error;
     }
   },
-
-  // Kết thúc task
-  endTask: async (taskId, note) => {
-    try {
-      const response = await axios.post(`/api/tasks/${taskId}/end`, { note });
-      return response.data;
-    } catch (error) {
-      console.error('Error ending task:', error);
-      throw error;
-    }
-  },
-
-  // Lấy tasks của tôi
-  getMyTasks: async () => {
-    try {
-      const response = await axios.get('/api/my-tasks');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching my tasks:', error);
-      throw error;
-    }
-  },
-
-  // Lấy tasks cần kiểm tra
-  getCheckTasks: async () => {
-    try {
-      const response = await axios.get('/api/check-tasks');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching check tasks:', error);
-      throw error;
-    }
-  }
 };
 
 // User API service
