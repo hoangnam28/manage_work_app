@@ -117,26 +117,31 @@ const MaterialPPModal = ({
       toast.success(result?.message || 'Cập nhật thành công!');
     } 
     else if (mode === 'clone') {
-      // Logic cho Clone mode
       const result = await onSubmit(values, mode);
 
       if (result && result.success === false) {
         throw new Error(result.message || 'Có lỗi xảy ra');
       }
 
-      toast.success(result?.message || 'Tạo bản sao thành công!');
+      if (result && result.success === true) {
+        toast.success(result?.message || 'Tạo bản sao thành công!');
+        form.resetFields();
+        if (onCancel) onCancel();
+      }
     } 
     else {
-      // Logic cho Create mode (mode === 'create' hoặc không xác định)
       const result = await onSubmit(values, mode);
 
       if (result && result.success === false) {
         throw new Error(result.message || 'Có lỗi xảy ra');
       }
 
-      toast.success(result?.message || 'Thêm mới thành công!');
+      if (result && result.success === true) {
+        toast.success(result?.message || 'Thêm mới thành công!');
+        form.resetFields();
+        if (onCancel) onCancel();
+      }
     }
-
     form.resetFields();
     if (onCancel) onCancel();
 

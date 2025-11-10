@@ -241,7 +241,6 @@ const TaskList = () => {
     }
   };
 
-  // Get priority badge
   const getPriorityBadge = (priority) => {
     const config = {
       'HIGH': { color: 'red', icon: <FireOutlined />, text: 'Cao' },
@@ -251,7 +250,6 @@ const TaskList = () => {
     return config[priority] || config['MEDIUM'];
   };
 
-  // Handle update task (chỉ dùng khi edit)
   const handleUpdateTask = async (values) => {
     try {
       const taskData = {
@@ -275,7 +273,6 @@ const TaskList = () => {
     }
   };
 
-  // Handle edit task
   const handleEdit = (task) => {
     setEditingTask(task);
     form.setFieldsValue({
@@ -289,7 +286,6 @@ const TaskList = () => {
     setModalVisible(true);
   };
 
-  // Handle delete task
   const handleDelete = async (taskId) => {
     try {
       await taskApi.deleteTask(taskId);

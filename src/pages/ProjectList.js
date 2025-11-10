@@ -1,36 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  Card,
-  Table,
-  Button,
-  Modal,
-  Form,
-  Input,
-  message,
-  Popconfirm,
-  Space,
-  Typography,
-  Row,
-  Col,
-  Statistic,
-  Tag,
-  Select,
-  Divider,
-  Alert,
+  Card, Table, Button, Modal, Form, Input, message,
+  Popconfirm, Space, Typography, Row, Col, Statistic,
+  Tag, Select, Divider, Alert, Tooltip
 } from 'antd';
 import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-  FolderOutlined,
-  ThunderboltOutlined,
+  PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined,
+  FolderOutlined, ThunderboltOutlined, SettingOutlined
 } from '@ant-design/icons';
 import { useParams, useNavigate } from 'react-router-dom';
 import MainLayout from '../components/layout/MainLayout';
 import { projectApi } from '../utils/project-api';
 import { businessApi } from '../utils/business-api';
 import { settingApi } from '../utils/setting-api';
+import { projectCustomFieldsApi } from '../utils/project-custom-fields-api';
+import CustomFieldsManager from '../components/CustomFieldsManager';
 
 const { Title } = Typography;
 const { TextArea } = Input;
@@ -45,11 +29,50 @@ const ProjectList = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [form] = Form.useForm();
+  const [customFieldsVisible, setCustomFieldsVisible] = useState(false);
+  const [selectedProject, setSelectedProject] = useState(null);
+  const [customFields, setCustomFields] = useState([]);
 
-  // Template states - Chỉ cần project templates
+  // Template states
   const [projectTemplates, setProjectTemplates] = useState([]);
   const [selectedProjectTemplate, setSelectedProjectTemplate] = useState(null);
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+
+  // Load custom fields and their values for all projects
+  const loadCustomFields = useCallback(async () => {
+    if (!businessId || !projects.length) return;
+    
+    try {
+      // First, get all custom fields from the first project (assuming all projects share same fields)
+      const firstProject = projects[0];
+      const fields = await projectCustomFieldsApi.getCustomFields(firstProject.id);
+      
+      // Then get custom field values for each project
+      const projectsWithFields = await Promise.all(
+        projects.map(async (project) => {
+          try {
+            const values = await projectCustomFieldsApi.getCustomFields(project.id);
+            return {
+              ...project,
+              customFields: values.map(field => ({
+                fieldId: field.id,
+                value: field.value || field.defaultValue
+              }))
+            };
+          } catch (error) {
+            console.error(`Error loading custom fields for project ${project.id}:`, error);
+            return project;
+          }
+        })
+      );
+      
+      setCustomFields(fields);
+      setProjects(projectsWithFields);
+    } catch (error) {
+      console.error('Error loading custom fields:', error);
+      message.error('Lỗi khi tải thông tin cột tùy chỉnh');
+    }
+  }, [businessId, projects]);
 
   // Load projects
   const loadProjects = useCallback(async () => {
@@ -75,15 +98,13 @@ const ProjectList = () => {
     }
   }, [businessId]);
 
-  // Load all active project templates (không cần chọn business template nữa)
+  // Load all active project templates
   const loadAllProjectTemplates = async () => {
     try {
       setLoadingTemplates(true);
-      // Load tất cả business templates active
       const businessTemplatesResult = await settingApi.getActiveBusinessTemplates();
       const businessTemplates = businessTemplatesResult.data || [];
       
-      // Load project templates từ tất cả business templates
       const allProjectTemplates = [];
       for (const boTemplate of businessTemplates) {
         try {
@@ -112,6 +133,13 @@ const ProjectList = () => {
     }
   }, [businessId, loadProjects, loadBusiness]);
 
+  // Load custom fields after projects are loaded
+  useEffect(() => {
+    if (projects.length > 0) {
+      loadCustomFields();
+    }
+  }, [projects, loadCustomFields]);
+
   // Load project templates when modal opens for creation
   useEffect(() => {
     if (modalVisible && !editingProject) {
@@ -119,7 +147,6 @@ const ProjectList = () => {
     }
   }, [modalVisible, editingProject]);
 
-  // Handle project template selection
   const handleProjectTemplateSelect = (templateId) => {
     setSelectedProjectTemplate(templateId);
     
@@ -138,7 +165,6 @@ const ProjectList = () => {
     }
   };
 
-  // Handle create/update project
   const handleSubmit = async (values) => {
     try {
       if (editingProject) {
@@ -148,7 +174,7 @@ const ProjectList = () => {
         await projectApi.createProject({ 
           ...values, 
           businessId,
-          projectTemplateId: selectedProjectTemplate // Lưu template ID
+          projectTemplateId: selectedProjectTemplate
         });
         message.success('Tạo dự án thành công');
       }
@@ -161,7 +187,6 @@ const ProjectList = () => {
     }
   };
 
-  // Handle edit project
   const handleEdit = (project) => {
     setEditingProject(project);
     form.setFieldsValue({
@@ -172,7 +197,6 @@ const ProjectList = () => {
     setModalVisible(true);
   };
 
-  // Handle delete project
   const handleDelete = async (projectId) => {
     try {
       await projectApi.deleteProject(projectId);
@@ -184,12 +208,10 @@ const ProjectList = () => {
     }
   };
 
-  // Handle view tasks
   const handleViewTasks = (projectId) => {
-    console.log('🔍 ProjectList - Navigating to tasks for projectId:', projectId, 'businessId:', businessId);
     navigate(`/business/${businessId}/project/${projectId}/tasks`);
   };
-  // Handle modal cancel
+
   const handleModalCancel = () => {
     setModalVisible(false);
     setEditingProject(null);
@@ -198,105 +220,156 @@ const ProjectList = () => {
     form.resetFields();
   };
 
-  // Get status color
   const getStatusColor = (status) => {
     switch (status) {
-      case 'ACTIVE':
-        return 'green';
-      case 'INACTIVE':
-        return 'red';
-      case 'COMPLETED':
-        return 'blue';
-      default:
-        return 'default';
+      case 'ACTIVE': return 'green';
+      case 'INACTIVE': return 'red';
+      case 'COMPLETED': return 'blue';
+      default: return 'default';
     }
   };
 
-  // Table columns
-  const columns = [
+  // Generate dynamic columns from custom fields
+  const getDynamicColumns = useCallback(() => {
+    if (!customFields || customFields.length === 0) return [];
+    
+    return customFields.map(field => ({
+      title: (
+        <div style={{ whiteSpace: 'nowrap' }}>
+          {field.fieldName}
+          {field.defaultValue && (
+            <Tooltip title={`Giá trị mặc định: ${field.defaultValue}`} placement="top">
+              <Tag color="gold" style={{ marginLeft: 8, cursor: 'help' }}>
+                Mặc định
+              </Tag>
+            </Tooltip>
+          )}
+        </div>
+      ),
+      key: `custom_${field.id}`,
+      width: 150,
+      render: (_, record) => {
+        const value = record.customFields?.find(cf => cf.fieldId === field.id)?.value 
+                     || field.defaultValue;
+
+        if (!value) return <Tag color="default">-</Tag>;
+
+        switch (field.fieldType) {
+          case 'SELECT':
+            return <Tag color="blue">{value}</Tag>;
+          case 'DATE':
+            return <Tag color="orange">
+              {new Date(value).toLocaleDateString('vi-VN')}
+            </Tag>;
+          case 'NUMBER':
+            return <Tag color="green">{value}</Tag>;
+          default:
+            return value;
+        }
+      },
+      ellipsis: true
+    }));
+  }, [customFields]);
+
+  // Base columns (fixed columns)
+  const baseColumns = [
     {
       title: 'Mã dự án',
       dataIndex: 'code',
       key: 'code',
-      render: (text) => <strong>{text}</strong>
+      width: 120,
+      fixed: 'left',
+      render: (text) => <strong>{text}</strong>,
     },
     {
       title: 'Tên dự án',
       dataIndex: 'name',
       key: 'name',
-      render: (text) => <strong>{text}</strong>
+      width: 200,
+      fixed: 'left',
+      render: (text) => <strong>{text}</strong>,
     },
     {
       title: 'Mô tả',
       dataIndex: 'description',
       key: 'description',
-      ellipsis: true
+      width: 250,
+      ellipsis: true,
     },
     {
       title: 'Trạng thái',
       dataIndex: 'status',
       key: 'status',
+      width: 120,
       render: (status) => (
         <Tag color={getStatusColor(status)}>
-          {status === 'pending'
-            ? 'Hoạt động'
-            : status === 'done' || status === 'checked'
-            ? 'Tạm dừng'
-            : 'Hoàn thành'}
+          {status === 'ACTIVE' ? 'Hoạt động' :
+           status === 'INACTIVE' ? 'Tạm dừng' : 'Hoàn thành'}
         </Tag>
       )
     },
     {
       title: 'Người tạo',
       dataIndex: 'creatorName',
-      key: 'creatorName'
+      key: 'creatorName',
+      width: 150,
     },
     {
       title: 'Ngày tạo',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      width: 120,
       render: (date) => new Date(date).toLocaleDateString('vi-VN')
     },
-    {
-      title: 'Thao tác',
-      key: 'actions',
-      render: (_, record) => (
-        <Space>
-          <Button
-            type="primary"
-            icon={<EyeOutlined />}
-            size="small"
-            onClick={() => handleViewTasks(record.id)}
-          >
-            Tasks
-          </Button>
-          <Button
-            type="default"
-            icon={<EditOutlined />}
-            size="small"
-            onClick={() => handleEdit(record)}
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Bạn có chắc muốn xóa dự án này?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Xóa"
-            cancelText="Hủy"
-          >
-            <Button
-              type="primary"
-              danger
-              icon={<DeleteOutlined />}
-              size="small"
-            >
-              Xóa
-            </Button>
-          </Popconfirm>
-        </Space>
-      )
-    }
   ];
+
+  // Action column (always last)
+  const actionColumn = {
+    title: 'Thao tác',
+    key: 'actions',
+    width: 280,
+    fixed: 'right',
+    render: (_, record) => (
+      <Space>
+        <Button
+          type="primary"
+          icon={<EyeOutlined />}
+          size="small"
+          onClick={() => handleViewTasks(record.id)}
+        >
+          Tasks
+        </Button>
+        <Button
+          icon={<EditOutlined />}
+          size="small"
+          onClick={() => handleEdit(record)}
+        >
+          Sửa
+        </Button>
+        <Popconfirm
+          title="Bạn có chắc muốn xóa dự án này?"
+          onConfirm={() => handleDelete(record.id)}
+          okText="Xóa"
+          cancelText="Hủy"
+        >
+          <Button danger icon={<DeleteOutlined />} size="small">
+            Xóa
+          </Button>
+        </Popconfirm>
+        <Button
+          icon={<SettingOutlined />}
+          size="small"
+          onClick={() => {
+            setSelectedProject(record);
+            setCustomFieldsVisible(true);
+          }}
+        >
+          Cột
+        </Button>
+      </Space>
+    )
+  };
+  const allColumns = [...baseColumns, ...getDynamicColumns(), actionColumn];
 
   return (
     <MainLayout>
@@ -313,6 +386,11 @@ const ProjectList = () => {
                   <p style={{ margin: '8px 0 0 0', color: '#666' }}>
                     Nghiệp vụ: {business?.name || 'Loading...'}
                   </p>
+                  {customFields.length > 0 && (
+                    <Tag color="cyan" style={{ marginTop: '8px' }}>
+                      {customFields.length} cột tùy chỉnh
+                    </Tag>
+                  )}
                 </Col>
                 <Col>
                   <Space>
@@ -368,17 +446,31 @@ const ProjectList = () => {
           </Col>
           <Col xs={24} sm={12} md={6}>
             <Card>
-              <Statistic title="Tổng tasks" value={0} suffix="tasks" />
+              <Statistic 
+                title="Cột tùy chỉnh" 
+                value={customFields.length} 
+                suffix="cột" 
+              />
             </Card>
           </Col>
         </Row>
 
         <Card>
+          {customFields.length > 0 && (
+            <Alert
+              message={`Đang hiển thị ${customFields.length} cột tùy chỉnh`}
+              type="info"
+              showIcon
+              closable
+              style={{ marginBottom: 16 }}
+            />
+          )}
           <Table
-            columns={columns}
+            columns={allColumns}
             dataSource={projects}
             loading={loading}
             rowKey="id"
+            scroll={{ x: 'max-content' }}
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
@@ -389,6 +481,7 @@ const ProjectList = () => {
           />
         </Card>
 
+        {/* Modal tạo/sửa project */}
         <Modal
           title={
             <Space>
@@ -406,12 +499,11 @@ const ProjectList = () => {
           width={700}
         >
           <Form form={form} layout="vertical" onFinish={handleSubmit}>
-            {/* Template Selector - Chỉ hiển thị khi tạo mới */}
             {!editingProject && projectTemplates.length > 0 && (
               <>
                 <Alert
                   message="Sử dụng Project Template"
-                  description={`Chọn template dự án có sẵn cho nghiệp vụ "${business?.name || ''}" để tự động điền thông tin, hoặc nhập thủ công bên dưới.`}
+                  description={`Chọn template dự án có sẵn để tự động điền thông tin.`}
                   type="info"
                   showIcon
                   icon={<ThunderboltOutlined />}
@@ -423,105 +515,53 @@ const ProjectList = () => {
                     <Space>
                       <ThunderboltOutlined style={{ color: '#1890ff' }} />
                       <span>Chọn Project Template</span>
-                      <Tag color="green">{projectTemplates.length} template có sẵn</Tag>
                     </Space>
                   }
                 >
                   <Select
-                    placeholder="-- Chọn template dự án hoặc nhập thủ công --"
+                    placeholder="-- Chọn template hoặc nhập thủ công --"
                     value={selectedProjectTemplate}
                     onChange={handleProjectTemplateSelect}
                     loading={loadingTemplates}
                     allowClear
-                    showSearch
-                    optionFilterProp="children"
-                    filterOption={(input, option) =>
-                      option?.children?.props?.children?.[1]?.toLowerCase().indexOf(input.toLowerCase()) >= 0
-                    }
                   >
                     {projectTemplates.map(template => (
                       <Option key={template.ID} value={template.ID}>
                         <Space>
-                          <FolderOutlined style={{ color: '#faad14' }} />
+                          <FolderOutlined />
                           {template.NAME}
-                          {template.CODE && (
-                            <Tag color="blue">{template.CODE}</Tag>
-                          )}
                         </Space>
                       </Option>
                     ))}
                   </Select>
-                  <div style={{ 
-                    marginTop: '8px', 
-                    fontSize: '12px', 
-                    color: '#8c8c8c',
-                    fontStyle: 'italic' 
-                  }}>
-                    💡 Template sẽ tự động điền tên, mã và mô tả dự án
-                  </div>
                 </Form.Item>
 
-                <Divider style={{ margin: '16px 0' }}>
-                  <span style={{ color: '#8c8c8c', fontSize: '12px' }}>
-                    Thông tin dự án
-                  </span>
-                </Divider>
+                <Divider />
               </>
-            )}
-
-            {!editingProject && projectTemplates.length === 0 && (
-              <Alert
-                message="Chưa có Project Template"
-                description={
-                  <span>
-                    Chưa có project template nào. Bạn có thể{' '}
-                    <a href="/settings">tạo template mới</a> hoặc nhập thủ công bên dưới.
-                  </span>
-                }
-                type="warning"
-                showIcon
-                style={{ marginBottom: 16 }}
-                closable
-              />
             )}
 
             <Form.Item
               name="name"
               label="Tên dự án"
-              rules={[
-                { required: true, message: 'Vui lòng nhập tên dự án' },
-                { min: 3, message: 'Tên dự án phải có ít nhất 3 ký tự' }
-              ]}
+              rules={[{ required: true, message: 'Vui lòng nhập tên dự án' }]}
             >
-              <Input 
-                placeholder="Nhập tên dự án" 
-                prefix={<FolderOutlined style={{ color: '#bfbfbf' }} />}
-              />
+              <Input placeholder="Nhập tên dự án" />
             </Form.Item>
 
             <Form.Item
               name="code"
               label="Mã dự án"
-              rules={[
-                { required: true, message: 'Vui lòng nhập mã dự án' },
-                { min: 2, message: 'Mã dự án phải có ít nhất 2 ký tự' }
-              ]}
+              rules={[{ required: true, message: 'Vui lòng nhập mã dự án' }]}
             >
-              <Input 
-                placeholder="Nhập mã dự án (VD: FE-DEV, BE-API)" 
-                style={{ textTransform: 'uppercase' }}
-              />
+              <Input placeholder="Nhập mã dự án" />
             </Form.Item>
 
             <Form.Item
               name="description"
               label="Mô tả"
-              rules={[
-                { required: true, message: 'Vui lòng nhập mô tả' },
-                { min: 10, message: 'Mô tả phải có ít nhất 10 ký tự' }
-              ]}
+              rules={[{ required: true, message: 'Vui lòng nhập mô tả' }]}
             >
-              <TextArea rows={4} placeholder="Nhập mô tả chi tiết về dự án" />
+              <TextArea rows={4} placeholder="Nhập mô tả" />
             </Form.Item>
 
             <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
@@ -534,6 +574,20 @@ const ProjectList = () => {
             </Form.Item>
           </Form>
         </Modal>
+
+        {/* Modal quản lý custom fields */}
+        <CustomFieldsManager
+          projectId={selectedProject?.id}
+          visible={customFieldsVisible}
+          onClose={() => {
+            setCustomFieldsVisible(false);
+            setSelectedProject(null);
+            loadProjects();
+          }}
+          onFieldsChange={() => {
+            loadCustomFields();
+          }}
+        />
       </div>
     </MainLayout>
   );

@@ -85,11 +85,8 @@ const MaterialProperties = () => {
       const adjustedCurrent = Math.min(currentPage, totalPages || 1);
 
       if (adjustedCurrent !== currentPage && totalPages > 0) {
-        // Nếu trang hiện tại đã bị điều chỉnh, gọi lại API với trang đúng
         return fetchData(adjustedCurrent, currentPageSize, currentFilters);
       }
-
-      // Convert all keys to uppercase for consistency
       const formattedData = (response.data || []).map(item => {
         const newItem = {};
         Object.keys(item).forEach(key => {
@@ -136,7 +133,6 @@ const MaterialProperties = () => {
         .map(v => Number(v.trim()))
         .filter(v => !isNaN(v));
 
-      // Gửi từng bản ghi lên BE
       for (const resin of resinArr) {
         await createMaterialPp({
           ...values,
@@ -146,12 +142,13 @@ const MaterialProperties = () => {
           status: 'Pending',
         });
       }
-      setCloneRecord(null); // Reset clone record
-      setModalMode('create'); // Reset mode
+      setCloneRecord(null); 
+      setModalMode('create'); 
       setModalVisible(false);
       fetchData();
     } catch (error) {
       console.error('Error creating material pp:', error);
+      toast.error('Lỗi khi thêm mới');
     }
   };
   const handleUpdate = async (values) => {
