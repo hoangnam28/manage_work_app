@@ -8,7 +8,7 @@ import axiosInstance from '../utils/axiosConfig';
 
 const Login = () => {
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState('login'); // 'login' | 'forgot'
+  const [mode, setMode] = useState('login');
   const navigate = useNavigate(); 
 
   const handleLogin = async (values) => {
@@ -28,7 +28,7 @@ const Login = () => {
 
         // Check if user has assigned tasks
         try {
-          const tasksResponse = await axiosInstance.get('/bussiness/my-tasks');
+          const tasksResponse = await axiosInstance.get('/tasks/my-tasks');
           const hasTasks = tasksResponse.data && tasksResponse.data.length > 0;
           
           toast.success('Đăng nhập thành công');
@@ -94,7 +94,10 @@ const Login = () => {
           <div className="forgot-form">
               <Typography.Title level={4} style={{ textAlign: 'center' }}>Quên mật khẩu</Typography.Title>
               <Form layout="vertical" onFinish={handleForgot} autoComplete="off">
-                <Form.Item label="ID Công ty" name="company_id" rules={[{ required: true, message: 'Vui lòng nhập ID công ty!' }]}>
+                <Form.Item
+                  label="ID Công ty"
+                  name="forgot_company_id"
+                  rules={[{ required: true, message: 'Vui lòng nhập ID công ty!' }]}>
                   <Input placeholder="Nhập ID công ty" />
                 </Form.Item>
                 <Form.Item label="Email nhận mật khẩu (tùy chọn)" name="email">
