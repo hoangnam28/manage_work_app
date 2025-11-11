@@ -17,6 +17,7 @@ import {
 import { CloseOutlined, SaveOutlined, UploadOutlined, DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { uploadCertificationImages, deleteCertificationImage  } from '../../utils/material-certification-api';
+import { toast } from 'sonner';
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -36,10 +37,56 @@ const CreateUlCertificationModal = ({
   const [layerStructureImage, setLayerStructureImage] = useState(null);
   const [catalogPreview, setCatalogPreview] = useState(null);
   const [layerStructurePreview, setLayerStructurePreview] = useState(null);
-  
+  const [savedFormData, setSavedFormData] = useState(null);
+  const [savedImages, setSavedImages] = useState({
+    catalogImage: null,
+    layerStructureImage: null,
+    catalogPreview: null,
+    layerStructurePreview: null
+  });  
 
-  const handleCancel = () => {
+   const handleCancel = () => {
+    if (mode === 'create') {
+      const currentValues = form.getFieldsValue(true);
+      setSavedFormData(currentValues);
+      setSavedImages({
+        catalogImage,
+        layerStructureImage,
+        catalogPreview,
+        layerStructurePreview
+      });
+    }
+    
+    if (mode === 'edit') {
+      form.resetFields();
+      setCatalogImage(null);
+      setLayerStructureImage(null);
+      setCatalogPreview(null);
+      setLayerStructurePreview(null);
+      setSavedFormData(null);
+      setSavedImages({
+        catalogImage: null,
+        layerStructureImage: null,
+        catalogPreview: null,
+        layerStructurePreview: null
+      });
+    }
+    
+    onCancel();
+  };
+  const handleCancelButton = () => {
     form.resetFields();
+    setCatalogImage(null);
+    setLayerStructureImage(null);
+    setCatalogPreview(null);
+    setLayerStructurePreview(null);
+    setSavedFormData(null);
+    setSavedImages({
+      catalogImage: null,
+      layerStructureImage: null,
+      catalogPreview: null,
+      layerStructurePreview: null
+    });
     onCancel();
   };
 
@@ -96,8 +143,12 @@ const removeImage = (imageType) => {
 };
 
 
-useEffect(() => {
-  if (open) {
+
+  useEffect(() => {
+    if (!open) return;                 
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+
+    // ✅ Nếu đang edit
     if (editingRecord) {
       const formData = {
         releaseDate: editingRecord.releaseDate || editingRecord.RELEASE_DATE
@@ -106,7 +157,6 @@ useEffect(() => {
         factoryName: editingRecord.factoryName || editingRecord.FACTORY_NAME,
         DEPARTMENT_IN_CHARGE: editingRecord.departmentInCharge || editingRecord.DEPARTMENT_IN_CHARGE,
         requestReason: editingRecord.requestReason || editingRecord.REQUEST_REASON,
-        
         layerStructure: editingRecord.layerStructure || editingRecord.LAYER_STRUCTURE,
         RELIABILITY_LEVEL_ID: editingRecord.reliabilityLevelId || editingRecord.RELIABILITY_LEVEL,
         usage: editingRecord.usage || editingRecord.USAGE,
@@ -117,7 +167,6 @@ useEffect(() => {
         materialCertExpected: editingRecord.materialCertExpected || editingRecord.MATERIAL_CERT_EXPECTED
           ? dayjs(editingRecord.materialCertExpected || editingRecord.MATERIAL_CERT_EXPECTED)
           : null,
-        
         manufacturerName: editingRecord.manufacturerName || editingRecord.MANUFACTURER_NAME,
         factoryLocation: editingRecord.factoryLocation || editingRecord.FACTORY_LOCATION,
         materialName: editingRecord.materialName || editingRecord.MATERIAL_NAME,
@@ -127,19 +176,15 @@ useEffect(() => {
         materialProperty3Id: editingRecord.materialProperty3Id || editingRecord.MATERIAL_PROPERTY3,
         materialStatusId: editingRecord.materialStatusId || editingRecord.materialStatus || editingRecord.MATERIAL_STATUS,
         ulStatusId: editingRecord.ulStatusId || editingRecord.ulCertStatus || editingRecord.UL_CERT_STATUS,
-        
         notes1: editingRecord.notes1 || editingRecord.NOTES_1,
       };
-      
-      console.log('🔄 Setting form values for edit:', formData);
-      console.log('📥 Original editingRecord:', editingRecord);
+
       form.setFieldsValue(formData);
       setCatalogImage(null);
       setLayerStructureImage(null);
       setCatalogPreview(null);
       setLayerStructurePreview(null);
-      
-      // Nếu có URL ảnh từ server, set preview
+
       if (editingRecord.IMAGES && editingRecord.IMAGES.length > 0) {
         const catalogImg = editingRecord.IMAGES.find(img =>
           (img.name || img.NAME || '').toLowerCase().includes('catalog')
@@ -148,106 +193,69 @@ useEffect(() => {
           (img.name || img.NAME || '').toLowerCase().includes('layer') ||
           (img.name || img.NAME || '').toLowerCase().includes('structure')
         );
-        
+
         if (catalogImg) {
           setCatalogPreview(catalogImg.url || catalogImg.URL);
           form.setFieldsValue({ catalogImage: 'existing' });
-          editingRecord.CATALOG_IMAGE_ID = catalogImg.id || catalogImg.ID;
         }
-        
+
         if (layerImg) {
           setLayerStructurePreview(layerImg.url || layerImg.URL);
           form.setFieldsValue({ layerStructureImage: 'existing' });
-          editingRecord.LAYER_STRUCTURE_IMAGE_ID = layerImg.id || layerImg.ID;
         }
       }
     }
-  }
-}, [open, editingRecord, form]);
-const handleSubmit = async (values) => {
-  setLoading(true);
-  
-  try {
-    const submitData = {
-      ...values,
-      // Format dates
-      releaseDate: values.releaseDate ? values.releaseDate.format('YYYY-MM-DD') : null,
-      massProductionDate: values.massProductionDate ? values.massProductionDate.format('YYYY-MM-DD') : null,
-      materialCertExpected: values.materialCertExpected ? values.materialCertExpected.format('YYYY-MM-DD') : null,
-      
-      // Map field names
-      materialClassId: values.MATERIAL_CLASS_ID,
-      reliabilityLevelId: values.RELIABILITY_LEVEL_ID,
-      departmentInCharge: values.DEPARTMENT_IN_CHARGE,
-      
-      // Thêm các field còn lại nếu backend cần
-      materialProperty1Id: values.materialProperty1Id,
-      materialProperty2Id: values.materialProperty2Id,
-      materialProperty3Id: values.materialProperty3Id,
-      materialStatus: values.materialStatusId,
-      ulCertStatus: values.ulStatusId,
-    };
-    
-    console.log('📤 Submitting data:', submitData);
-    
-    const result = await onSubmit(submitData);
-    const certificationId = isEditMode ? editingRecord.id : result.data?.id;
-    
-    if (mode === 'create') {
-      const hasImages = catalogImage || layerStructureImage;      
-      if (hasImages) {
-        const imagesToUpload = [];
-        
-        if (catalogImage) {
-          const ext = catalogImage.type.split('/')[1] || 'jpg';
-          const file = new File([catalogImage], `catalog.${ext}`, { 
-            type: catalogImage.type 
-          });
-          imagesToUpload.push(file);
-        }
-        
-        if (layerStructureImage) {
-          const ext = layerStructureImage.type.split('/')[1] || 'jpg';
-          const file = new File([layerStructureImage], `layer_structure.${ext}`, { 
-            type: layerStructureImage.type 
-          });
-          imagesToUpload.push(file);
-        }  
-        
-        try {
-          const uploadResult = await uploadCertificationImages(certificationId, imagesToUpload);
-          if (uploadResult.success) {
-            const uploadedCount = uploadResult.count || uploadResult.images?.length || imagesToUpload.length;
-            message.success(`✅ Tạo certification và upload ${uploadedCount} hình thành công!`);
-          } else {
-            message.warning('⚠️ Tạo thành công nhưng upload hình thất bại: ' + uploadResult.message);
-          }
-        } catch (uploadError) {
-          console.error('Upload error:', uploadError);
-          message.warning('⚠️ Tạo certification thành công nhưng upload hình thất bại');
-        }
+    else {
+      if (savedFormData) {
+        form.setFieldsValue(savedFormData);
+        setCatalogImage(savedImages.catalogImage);
+        setLayerStructureImage(savedImages.layerStructureImage);
+        setCatalogPreview(savedImages.catalogPreview);
+        setLayerStructurePreview(savedImages.layerStructurePreview);
       } else {
-        message.success('✅ Tạo certification thành công!');
+        form.resetFields();
+        form.setFieldsValue({
+          releaseDate: dayjs(),
+          factoryName: 'タクタット工場 (ベトナム)',
+          PERSON_IN_CHARGE: userInfo.email || userInfo.username,
+          DEPARTMENT_IN_CHARGE: userInfo.department,
+          START_DATE: dayjs(),
+        });
+
+        setCatalogImage(null);
+        setLayerStructureImage(null);
+        setCatalogPreview(null);
+        setLayerStructurePreview(null);
       }
-    } else if (mode === 'edit') {
-      // ✅ XÓA ẢNH CŨ NẾU CÓ ẢNH MỚI
-      const hasNewImages = catalogImage || layerStructureImage;
+    }
+  }, [open, editingRecord, form, savedFormData, savedImages]);
+ const handleSubmit = async (values) => {
+    setLoading(true);
+    
+    try {
+      const submitData = {
+        ...values,
+        releaseDate: values.releaseDate ? values.releaseDate.format('YYYY-MM-DD') : null,
+        massProductionDate: values.massProductionDate ? values.massProductionDate.format('YYYY-MM-DD') : null,
+        materialCertExpected: values.materialCertExpected ? values.materialCertExpected.format('YYYY-MM-DD') : null,
+        materialClassId: values.MATERIAL_CLASS_ID,
+        reliabilityLevelId: values.RELIABILITY_LEVEL_ID,
+        departmentInCharge: values.DEPARTMENT_IN_CHARGE,
+        materialProperty1Id: values.materialProperty1Id,
+        materialProperty2Id: values.materialProperty2Id,
+        materialProperty3Id: values.materialProperty3Id,
+        materialStatus: values.materialStatusId,
+        ulCertStatus: values.ulStatusId,
+      };
       
-      if (hasNewImages) {
-        try {
-          // Xóa ảnh catalog cũ nếu có ảnh mới
-          if (catalogImage && editingRecord.CATALOG_IMAGE_ID) {
-            await deleteCertificationImage(certificationId, editingRecord.CATALOG_IMAGE_ID);
-            console.log('🗑️ Deleted old catalog image');
-          }
-          
-          // Xóa ảnh layer structure cũ nếu có ảnh mới
-          if (layerStructureImage && editingRecord.LAYER_STRUCTURE_IMAGE_ID) {
-            await deleteCertificationImage(certificationId, editingRecord.LAYER_STRUCTURE_IMAGE_ID);
-            console.log('🗑️ Deleted old layer structure image');
-          }
-          
-          // Upload ảnh mới
+      console.log('📤 Submitting data:', submitData);
+      
+      const result = await onSubmit(submitData);
+      const certificationId = isEditMode ? editingRecord.id : result.data?.id;
+      
+      if (mode === 'create') {
+        const hasImages = catalogImage || layerStructureImage;      
+        if (hasImages) {
           const imagesToUpload = [];
           
           if (catalogImage) {
@@ -264,31 +272,86 @@ const handleSubmit = async (values) => {
               type: layerStructureImage.type 
             });
             imagesToUpload.push(file);
+          }  
+          
+          try {
+            const uploadResult = await uploadCertificationImages(certificationId, imagesToUpload);
+            if (uploadResult.success) {
+              const uploadedCount = uploadResult.count || uploadResult.images?.length || imagesToUpload.length;
+              toast.success(`Tạo certification và upload ${uploadedCount} hình thành công!`);
+            } else {
+              toast.warning('⚠️ Tạo thành công nhưng upload hình thất bại: ' + uploadResult.message);
+            }
+          } catch (uploadError) {
+            console.error('Upload error:', uploadError);
+            toast.warning('Tạo certification thành công nhưng upload hình thất bại');
           }
-          
-          await uploadCertificationImages(certificationId, imagesToUpload);
-          message.success('✅ Cập nhật ảnh thành công!');
-          
-        } catch (uploadError) {
-          console.error('Upload error:', uploadError);
-          message.warning('⚠️ Cập nhật thành công nhưng upload ảnh mới thất bại');
+        } else {
+          toast.success('Tạo certification thành công!');
         }
-      } else {
-        message.success('✅ Cập nhật thành công!');
-      }
-    }
+        setSavedFormData(null);
+        setSavedImages({
+          catalogImage: null,
+          layerStructureImage: null,
+          catalogPreview: null,
+          layerStructurePreview: null
+        });
+      } else if (mode === 'edit') {
+        const hasNewImages = catalogImage || layerStructureImage;
         
-    if (onSuccess) {
-      onSuccess(mode === 'create' ? certificationId : null);
+        if (hasNewImages) {
+          try {
+            if (catalogImage && editingRecord.CATALOG_IMAGE_ID) {
+              await deleteCertificationImage(certificationId, editingRecord.CATALOG_IMAGE_ID);
+              console.log('🗑️ Deleted old catalog image');
+            }
+            
+            if (layerStructureImage && editingRecord.LAYER_STRUCTURE_IMAGE_ID) {
+              await deleteCertificationImage(certificationId, editingRecord.LAYER_STRUCTURE_IMAGE_ID);
+              console.log('🗑️ Deleted old layer structure image');
+            }
+            
+            const imagesToUpload = [];
+            
+            if (catalogImage) {
+              const ext = catalogImage.type.split('/')[1] || 'jpg';
+              const file = new File([catalogImage], `catalog.${ext}`, { 
+                type: catalogImage.type 
+              });
+              imagesToUpload.push(file);
+            }
+            
+            if (layerStructureImage) {
+              const ext = layerStructureImage.type.split('/')[1] || 'jpg';
+              const file = new File([layerStructureImage], `layer_structure.${ext}`, { 
+                type: layerStructureImage.type 
+              });
+              imagesToUpload.push(file);
+            }
+            
+            await uploadCertificationImages(certificationId, imagesToUpload);
+            toast.success('Cập nhật ảnh thành công!');
+            
+          } catch (uploadError) {
+            console.error('Upload error:', uploadError);
+            toast.warning('Cập nhật thành công nhưng upload ảnh mới thất bại');
+          }
+        } else {
+          toast.success('Cập nhật thành công!');
+        }
+      }
+          
+      if (onSuccess) {
+        onSuccess(mode === 'create' ? certificationId : null);
+      }
+      handleCancelButton(); // ✅ Dùng handleCancelButton để xóa hết dữ liệu sau khi submit
+    } catch (error) {
+      console.error('Submit error:', error);
+      toast.error(error.message || 'Có lỗi xảy ra');
+    } finally {
+      setLoading(false);
     }
-    handleCancel();
-  } catch (error) {
-    console.error('Submit error:', error);
-    message.error(error.message || 'Có lỗi xảy ra');
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
   return (
     <Modal
@@ -305,7 +368,9 @@ const handleSubmit = async (values) => {
         </div>
       }
       open={open}
-      onCancel={handleCancel}
+      onCancel={handleCancel} 
+      maskClosable={true}
+      destroyOnClose={false}
       width={1200}
       style={{ top: 20 }}
       footer={
@@ -340,7 +405,7 @@ const handleSubmit = async (values) => {
           </Space>
         </div>
       }
-      destroyOnClose
+      forceRender
     >
       <Form
         form={form}
@@ -470,7 +535,7 @@ const handleSubmit = async (values) => {
           <Col span={8}>
             <Form.Item
               name="expectedProductionQty"
-              label="Sản lượng dự kiến"
+              label="Sản lượng dự kiến (m2/tháng)"
               rules={[
                 { required: true, message: 'Vui lòng nhập sản lượng dự kiến' },
                 { pattern: /^[0-9,.\s]+$/, message: 'Sản lượng chỉ được nhập số' },
@@ -483,9 +548,9 @@ const handleSubmit = async (values) => {
           <Col span={8}>
             <Form.Item 
               name="massProductionDate" 
-              label="Ngày sản xuất hàng loạt"
+              label="Ngày dự kiến sản xuất hàng loạt"
               rules={[
-                { required: true, message: 'Vui lòng chọn ngày sản xuất hàng loạt' },
+                { required: true, message: 'Vui lòng chọn ngày dự kiến sản xuất hàng loạt' },
               ]}
             >
               <DatePicker
@@ -666,8 +731,6 @@ const handleSubmit = async (values) => {
             </Form.Item>
           </Col>
         </Row>
-
-        {/* Section 4: Ghi chú */}
         <Divider orientation="left" style={{ color: '#1890ff', fontWeight: 'bold' }}>
           Ghi chú
         </Divider>
@@ -715,11 +778,9 @@ const handleSubmit = async (values) => {
                   rules={[
                     {
                       validator: () => {
-                        // Nếu đang edit và đã có preview (ảnh cũ), không cần validate
                         if (isEditMode && catalogPreview) {
                           return Promise.resolve();
                         }
-                        // Nếu mode create hoặc chưa có ảnh, phải upload
                         if (!catalogImage && !catalogPreview) {
                           return Promise.reject('Vui lòng upload hình Catalog');
                         }
@@ -771,11 +832,9 @@ const handleSubmit = async (values) => {
                     rules={[
                       {
                         validator: () => {
-                          // Nếu đang edit và đã có preview (ảnh cũ), không cần validate
                           if (isEditMode && layerStructurePreview) {
                             return Promise.resolve();
                           }
-                          // Nếu mode create hoặc chưa có ảnh, phải upload
                           if (!layerStructureImage && !layerStructurePreview) {
                             return Promise.reject('Vui lòng upload hình Cấu trúc lớp');
                           }

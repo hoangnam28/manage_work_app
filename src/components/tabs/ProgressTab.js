@@ -158,7 +158,7 @@ const ProgressTab = ({
               <Input />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={24}>
             <Form.Item name="RELIABILITY_LEVEL_ID" label="Mức độ tin cậy">
               <Select placeholder="Chọn mức độ tin cậy" allowClear>
                 {options.reliabilityLevel?.map(item => (
@@ -269,6 +269,7 @@ const ProgressTab = ({
               <Select.Option value="level4">4</Select.Option>
               <Select.Option value="level5">5</Select.Option>
               <Select.Option value="level6">6</Select.Option>
+              <Select.Option value="-">-</Select.Option>
             </Select>
           </Form.Item>
         </Col>

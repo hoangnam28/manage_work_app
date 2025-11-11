@@ -34,7 +34,7 @@ const MaterialCertification = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
-  const [modalMode, setModalMode] = useState('create'); // 'create', 'edit', 'view'
+  const [modalMode, setModalMode] = useState('create'); 
   const [searchFilters, setSearchFilters] = useState({});
   const [options, setOptions] = useState({});
   const searchInput = useRef(null);
@@ -437,7 +437,7 @@ const handleExportLateReport = () => {
   };
   const columns = [
   {
-    title: 'No',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>No</div>,
     dataIndex: 'ID',
     key: 'id',
     width: 60,
@@ -445,7 +445,7 @@ const handleExportLateReport = () => {
     align: 'center',
   },
   {
-    title: 'Tên vật liệu',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Tên vật liệu</div>,
     dataIndex: 'MATERIAL_NAME',
     key: 'material_name',
     width: 120,
@@ -473,7 +473,7 @@ const handleExportLateReport = () => {
     )
   },
   {
-    title: 'Loại VL',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Loại Vật liệu</div>,
     dataIndex: 'MATERIAL_CLASS',
     key: 'material_class',
     width: 80,
@@ -486,7 +486,7 @@ const handleExportLateReport = () => {
     align: 'center'
   },
   {
-    title: 'Cấu trúc',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Cấu trúc</div>,
     dataIndex: 'UL_CERT_STATUS',
     key: 'ul_cert_status',
     width: 90,
@@ -498,7 +498,7 @@ const handleExportLateReport = () => {
     ) : '-'
   },
   {
-    title: 'Tin cậy',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Mức độ Tin cậy</div>,
     dataIndex: 'RELIABILITY_LEVEL',
     key: 'reliability_level',
     width: 70,
@@ -511,7 +511,7 @@ const handleExportLateReport = () => {
     align: 'center'
   },
   {
-    title: 'Tiến độ',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Tiến độ</div>,
     dataIndex: 'PROGRESS',
     key: 'progress',
     width: 100,
@@ -532,7 +532,7 @@ const handleExportLateReport = () => {
     align: 'center'
   },
   {
-    title: 'Bộ phận',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Bộ phận phụ trách</div>,
     dataIndex: 'DEPARTMENT_CODE',
     key: 'department_code',
     width: 70,
@@ -540,7 +540,7 @@ const handleExportLateReport = () => {
     align: 'center'
   },
   {
-    title: 'Người PT',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Người Phụ trách</div>,
     dataIndex: 'PERSON_IN_CHARGE',
     key: 'person_in_charge',
     width: 100,
@@ -556,7 +556,7 @@ const handleExportLateReport = () => {
     align: 'center'
   },
   {
-    title: 'Bắt đầu',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Ngày Bắt đầu</div>,
     dataIndex: 'START_DATE',
     key: 'start_date',
     width: 85,
@@ -564,7 +564,7 @@ const handleExportLateReport = () => {
     align: 'center'
   },
   {
-    title: 'KH gửi PD5',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Kỳ hạn gửi báo cáo tới PD5</div>,
     dataIndex: 'PD5_REPORT_DEADLINE',
     key: 'pd5_report_deadline',
     width: 85,
@@ -572,7 +572,7 @@ const handleExportLateReport = () => {
     align: 'center'
   },
   {
-    title: 'KH hoàn thành',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Kỳ Hạn hoàn thành</div>,
     dataIndex: 'COMPLETION_DEADLINE',
     key: 'completion_deadline',
     width: 95,
@@ -580,7 +580,7 @@ const handleExportLateReport = () => {
     align: 'center'
   },
   {
-    title: 'TT gửi PD5',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Ngày gửi báo cáo tới PD5  thực tế </div>,
     dataIndex: 'PD5_REPORT_ACTUAL_DATE',
     key: 'pd5_report_actual_date',
     width: 85,
@@ -588,7 +588,7 @@ const handleExportLateReport = () => {
     align: 'center'
   },
   {
-    title: 'TT hoàn thành',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Ngày hoàn thành thực tế</div>,
     dataIndex: 'ACTUAL_COMPLETION_DATE',
     key: 'actual_completion_date',
     width: 95,
@@ -596,7 +596,7 @@ const handleExportLateReport = () => {
     align: 'center'
   },
   {
-    title: 'Ghi chú',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Ghi chú</div>,
     dataIndex: 'NOTES_1',
     key: 'notes_1',
     width: 120,
@@ -612,7 +612,7 @@ const handleExportLateReport = () => {
     )
   },
   {
-    title: 'Thao tác',
+    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Thao tác</div>,
     key: 'action',
     fixed: 'right',
     width: 130,
@@ -762,11 +762,7 @@ const handleViewHistory = (record) => {
 
         <CreateUlCertificationModal
           open={modalVisible}
-          onCancel={() => {
-            setModalVisible(false);
-            setEditingRecord(null);
-            setModalMode('create');
-          }}
+          onCancel={() => setModalVisible(false)}
           onSubmit={modalMode === 'edit' ? handleUpdate : handleCreate}
           editingRecord={editingRecord}
           mode={modalMode}

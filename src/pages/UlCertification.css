@@ -40,10 +40,14 @@
 }
 
 .table-container .ant-table-thead > tr > th {
-  background: #fafafa;
+  background: #96e7a4 !important;
   font-weight: 600;
-  color: #262626;
-  border-bottom: 2px solid #f0f0f0;
+  color: rgb(17, 2, 2) !important;
+  border-bottom: 2px solid #5aa039 !important;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
+  padding: 12px 8px !important;
 }
 
 .table-container .ant-table-tbody > tr:hover > td {
@@ -51,7 +55,7 @@
 }
 
 .table-container .ant-table-tbody > tr > td {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #6b47cc;
   padding: 12px 16px;
 }
 

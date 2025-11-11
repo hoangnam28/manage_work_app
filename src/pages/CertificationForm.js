@@ -532,7 +532,7 @@ const CertificationForm = () => {
                       <Input />
                     </Form.Item>
                   </Col>
-                  <Col span={8}>
+                  <Col span={24}>
                     <Form.Item name="REQUEST_REASON" label="Lý do yêu cầu">
                       <TextArea rows={1} />
                     </Form.Item>
@@ -566,7 +566,7 @@ const CertificationForm = () => {
 
                 <Row gutter={16}>
                   <Col span={8}>
-                    <Form.Item name="EXPECTED_PRODUCTION_QTY" label="Sản lượng dự kiến">
+                    <Form.Item name="EXPECTED_PRODUCTION_QTY" label="Sản lượng dự kiến (m2/tháng)">
                       <Input />
                     </Form.Item>
                   </Col>
