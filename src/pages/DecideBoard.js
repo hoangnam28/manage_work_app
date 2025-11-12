@@ -649,7 +649,6 @@ const DecideBoard = () => {
           }
         `}
       </style>
-      <div style={{ padding: '24px' }}>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <h1>Large Size Board</h1>
           <Button
@@ -1096,7 +1095,6 @@ const DecideBoard = () => {
             </Form.Item>
           </Form>
         </Modal>
-      </div>
     </MainLayout>
   );
 };

@@ -269,6 +269,11 @@ const MaterialCore = () => {
   // Frontend: MaterialCore.js - Optimized handleStatusChange
 
 const handleReasonConfirm = async (reason) => {
+  if (!reason || reason.trim() === '') {
+    toast.error('Vui lòng nhập lý do!');
+    return; // Dừng lại, không set loading
+  }
+
   setReasonModal(prev => ({ ...prev, loading: true }));
 
   try {

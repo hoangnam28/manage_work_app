@@ -388,6 +388,10 @@ const MaterialProperties = () => {
     clearFilters();
   };
   const handleReasonConfirm = async (reason) => {
+    if (!reason || reason.trim() === '') {
+    toast.error('Vui lòng nhập lý do!');
+    return;
+  }
     setReasonModal(prev => ({ ...prev, loading: true }));
 
     try {

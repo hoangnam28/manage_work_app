@@ -21,7 +21,7 @@ import {
   softDeleteCertification,
   fetchMaterialCertificationOptions
 } from '../utils/material-certification-api';
-import CreateUlCertificationModal from '../components/modal/CreateUlCertificationModal';
+import CreateMtCertificationModal from '../components/modal/CreateMtCertificationModal';
 import CertificationHistoryModal from '../components/modal/CertificationHistoryModal';
 import { toast, Toaster } from 'sonner';
 import './UlCertification.css';
@@ -163,7 +163,6 @@ const handleCreate = async (values) => {
   try {
 
 
-    // ✅ Lấy toàn bộ dữ liệu từ state data
     const exportData = data.map((row) => {
       return {
         ID: row.ID ?? "-",
@@ -221,6 +220,9 @@ const handleExportLateReport = () => {
     today.setHours(0, 0, 0, 0);
 
     const lateData = data.filter((row) => {
+      if (row.PROGRESS_ID === 6) {
+        return false;
+      }
       const deadline = row.PD5_REPORT_DEADLINE ? new Date(row.PD5_REPORT_DEADLINE) : null;
       const actualDate = row.PD5_REPORT_ACTUAL_DATE ? new Date(row.PD5_REPORT_ACTUAL_DATE) : null;
       
@@ -244,8 +246,6 @@ const handleExportLateReport = () => {
     const exportData = lateData.map((row, index) => {
       const deadline = row.PD5_REPORT_DEADLINE ? new Date(row.PD5_REPORT_DEADLINE) : null;
       const actualDate = row.PD5_REPORT_ACTUAL_DATE ? new Date(row.PD5_REPORT_ACTUAL_DATE) : null;
-      
-      // ✅ Tính số ngày trễ
       let daysLate = 0;
       if (deadline) {
         const compareDate = actualDate || today;
@@ -461,6 +461,7 @@ const handleExportLateReport = () => {
           padding: 0,
           textDecoration: 'underline',
           font: 'inherit',
+          fontWeight: 'bold', 
           textAlign: 'left',
           width: '100%',
           whiteSpace: 'normal',
@@ -473,42 +474,106 @@ const handleExportLateReport = () => {
     )
   },
   {
-    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Loại Vật liệu</div>,
+    title: (
+      <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+        Loại Vật liệu
+      </div>
+    ),
     dataIndex: 'MATERIAL_CLASS',
     key: 'material_class',
-    width: 80,
+    width: 100,
     ...getColumnSearchProps('MATERIAL_CLASS'),
     render: (text) => {
       if (!text) return '';
-      const matches = text.match(/\b[A-Z]{2,}\b/g); 
-      return matches ? matches.join(', ') : text;
+
+      const matches = text.match(/\b[A-Z]{2,}\b/g);
+      const displayText = matches ? matches.join(', ') : text;
+
+      return (
+        <div
+          style={{
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+            lineHeight: '1.4',
+            maxWidth: '100%',
+          }}
+        >
+          {displayText}
+        </div>
+      );
     },
     align: 'center'
   },
   {
-    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Cấu trúc</div>,
+    title: (
+      <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+        Cấu trúc
+      </div>
+    ),
     dataIndex: 'UL_CERT_STATUS',
     key: 'ul_cert_status',
     width: 90,
     align: 'center',
-    render: (status) => status ? (
-      <Tag color={getStatusColor(status)} style={{ fontSize: '11px', padding: '0 4px' }}>
-        {status}
-      </Tag>
-    ) : '-'
+    render: (status) =>
+      status ? (
+        <div
+          style={{
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+            lineHeight: '1.4',
+            maxWidth: '100%',
+          }}
+        >
+          <Tag
+            color={getStatusColor(status)}
+            style={{ fontSize: '11px', padding: '0 4px', whiteSpace: 'normal' }}
+          >
+            {status}
+          </Tag>
+        </div>
+      ) : (
+        <div
+          style={{
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+            lineHeight: '1.4',
+          }}
+        >
+          -
+        </div>
+      ),
   },
   {
-    title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Mức độ Tin cậy</div>,
+    title: (
+      <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>
+        Mức độ Tin cậy
+      </div>
+    ),
     dataIndex: 'RELIABILITY_LEVEL',
     key: 'reliability_level',
     width: 70,
+    align: 'center',
     ...getColumnSearchProps('RELIABILITY_LEVEL'),
     render: (text) => {
-      if (!text) return '';
-      const match = text.match(/\d+/);
-      return match ? `Cấp ${match[0]}` : text;
+      const display = (() => {
+        if (!text) return '';
+        const match = text.match(/\d+/);
+        return match ? `Cấp ${match[0]}` : text;
+      })();
+
+      return (
+        <div
+          style={{
+            whiteSpace: 'normal',
+            wordBreak: 'break-word',
+            lineHeight: '1.4',
+            maxWidth: '100%',
+          }}
+        >
+          {display}
+        </div>
+      );
     },
-    align: 'center'
   },
   {
     title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Tiến độ</div>,
@@ -615,7 +680,7 @@ const handleExportLateReport = () => {
     title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Thao tác</div>,
     key: 'action',
     fixed: 'right',
-    width: 130,
+    width: 80,
     align: 'center',
     render: (_, record) => (
       <Space size="small">
@@ -760,7 +825,7 @@ const handleViewHistory = (record) => {
           />
         </div>
 
-        <CreateUlCertificationModal
+        <CreateMtCertificationModal
           open={modalVisible}
           onCancel={() => setModalVisible(false)}
           onSubmit={modalMode === 'edit' ? handleUpdate : handleCreate}

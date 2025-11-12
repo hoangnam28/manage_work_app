@@ -59,7 +59,7 @@ const MaterialPPModal = ({
     }
   }, [open, editingRecord, cloneRecord, mode, form]);
 
- const handleSubmit = async () => {
+  const handleSubmit = async () => {
   try {
     const values = await form.validateFields();
     
@@ -79,6 +79,12 @@ const MaterialPPModal = ({
 
     // Xử lý theo từng mode
     if (mode === 'edit' && editingRecord) {
+      // Kiểm tra reason trước khi submit
+      if (!values.reason || values.reason.trim() === '') {
+        toast.error('Vui lòng nhập lý do cập nhật!');
+        return;
+      }
+
       // Logic cho Edit mode
       const recordId = editingRecord.ID || editingRecord.id;
       if (!recordId) {
@@ -147,9 +153,14 @@ const MaterialPPModal = ({
 
   } catch (error) {
     console.error('Validation failed:', error);
-    toast.error('Có lỗi xảy ra: ' + (error.message || 'Vui lòng kiểm tra lại dữ liệu hoặc dữ liệu đã tồn tại'));
+    // Hiển thị toast error phù hợp
+    if (error.errorFields) {
+      toast.error('Vui lòng kiểm tra lại thông tin nhập vào!');
+    } else {
+      toast.error(error.message || 'Có lỗi xảy ra, vui lòng kiểm tra lại dữ liệu!');
+    }
   }
-};
+  };
   const getModalTitle = () => {
     switch (mode) {
       case 'edit':
