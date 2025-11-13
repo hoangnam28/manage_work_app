@@ -11,7 +11,8 @@ import {
   ReloadOutlined,
   DownOutlined,
   FileExcelOutlined,
-  ClockCircleOutlined
+  ClockCircleOutlined,
+  EyeOutlined
 } from '@ant-design/icons';
 import MainLayout from '../components/layout/MainLayout';
 import {
@@ -775,6 +776,14 @@ const handleViewHistory = (record) => {
         <div className="ul-certification-header">
           <h1 style={{ color: '#e29a51ff' }}>Chứng nhận vật liệu</h1>
           <div className="header-actions">
+            <Button
+              type="primary"
+              icon={<EyeOutlined />}
+              onClick={() => window.open('/User guide_Sysyem_material certification.pdf', '_blank', 'noopener,noreferrer')}
+              style={{ background: '#1890ff', borderColor: '#1890ff' }}
+              >
+              Hướng dẫn sử dụng
+            </Button>
             <Button
               type="primary"
               icon={<PlusOutlined />}
