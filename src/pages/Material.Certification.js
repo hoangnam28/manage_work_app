@@ -668,11 +668,15 @@ const handleExportLateReport = () => {
     width: 120,
     align: 'left',
     render: (text) => (
-      <div style={{ 
-        whiteSpace: 'normal',
-        wordBreak: 'break-word',
-        lineHeight: '1.4'
-      }}>
+      <div
+        style={{
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          lineHeight: '1.4',
+        }}
+        title={text} 
+      >
         {text || '-'}
       </div>
     )

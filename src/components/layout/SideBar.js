@@ -87,6 +87,14 @@ const SideBar = ({ onLogout, userId }) => {
       label: 'Material',
       children: [
         {
+          key: '/material-new',
+          label: (
+            <Link to="/material-new" style={location.pathname === '/material-new' ? { color: '#1890ff', fontWeight: 600 } : {}}>
+              New
+            </Link>
+          ),
+        },
+        {
           key: '/material-core',
           label: (
             <Link to="/material-core" style={location.pathname === '/material-core' ? { color: '#1890ff', fontWeight: 600 } : {}}>
@@ -99,14 +107,6 @@ const SideBar = ({ onLogout, userId }) => {
           label: (
             <Link to="/material-properties" style={location.pathname === '/material-properties' ? { color: '#1890ff', fontWeight: 600 } : {}}>
               Prepreg
-            </Link>
-          ),
-        },
-        {
-          key: '/material-new',
-          label: (
-            <Link to="/material-new" style={location.pathname === '/material-new' ? { color: '#1890ff', fontWeight: 600 } : {}}>
-              New
             </Link>
           ),
         },
