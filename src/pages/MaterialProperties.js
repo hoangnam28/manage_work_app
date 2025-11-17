@@ -85,8 +85,11 @@ const MaterialProperties = () => {
       const adjustedCurrent = Math.min(currentPage, totalPages || 1);
 
       if (adjustedCurrent !== currentPage && totalPages > 0) {
+        // Nếu trang hiện tại đã bị điều chỉnh, gọi lại API với trang đúng
         return fetchData(adjustedCurrent, currentPageSize, currentFilters);
       }
+
+      // Convert all keys to uppercase for consistency
       const formattedData = (response.data || []).map(item => {
         const newItem = {};
         Object.keys(item).forEach(key => {
@@ -133,6 +136,7 @@ const MaterialProperties = () => {
         .map(v => Number(v.trim()))
         .filter(v => !isNaN(v));
 
+      // Gửi từng bản ghi lên BE
       for (const resin of resinArr) {
         await createMaterialPp({
           ...values,
@@ -142,8 +146,8 @@ const MaterialProperties = () => {
           status: 'Pending',
         });
       }
-      setCloneRecord(null); 
-      setModalMode('create'); 
+      setCloneRecord(null); // Reset clone record
+      setModalMode('create'); // Reset mode
       setModalVisible(false);
       fetchData();
     } catch (error) {
@@ -195,54 +199,56 @@ const MaterialProperties = () => {
     toast.error('Lỗi khi chuẩn bị xóa');
   }
 };
-  const handleStatusChange = async (record, status) => {
+    const handleStatusChange = async (record, status) => {
     if (!hasPermission('approve')) {
       toast.error('Bạn không có quyền thay đổi trạng thái!');
       return;
     }
+    
     try {
       const id = record.ID || record.id;
       if (!id) {
         toast.error('ID không hợp lệ, không thể cập nhật trạng thái!');
         return;
       }
-
-      const loadingToast = toast.loading('Đang cập nhật...');
-
-      try {
-        // Lấy thông tin người dùng từ localStorage
-        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-        const handler = userInfo.username || 'Unknown';
-
-        // Chuẩn bị dữ liệu cập nhật
-        const updateData = {
+  
+      // ✅ Optimistic UI update
+      setData(prevData => 
+        prevData.map(item => 
+          (item.ID === id || item.id === id)
+            ? { ...item, STATUS: status }
+            : item
+        )
+      );
+  
+      const loadingToast = toast.loading('Đang cập nhật trạng thái...');
+  
+      const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+      const handler = userInfo.username || 'Unknown';
+      
+      const updateData = {
           status,
           handler,
-          // Chỉ cập nhật complete_date khi status là Approve
-          ...(status === 'Approve' || 'Cancel' ? { complete_date: new Date().toISOString() } : {}),
-        };
-
-        const result = await updateMaterialPp(id, updateData);
-        toast.dismiss(loadingToast);
-        if (result && result.success === false) {
-          throw new Error(result.message || 'Cập nhật trạng thái thất bại');
-        }
-
-        toast.success(`Đã cập nhật trạng thái thành công: ${status}`);
-
-        // Refresh với current pagination
-        setTimeout(() => {
-          fetchData();
-        }, 500);
-
-      } catch (error) {
-        toast.dismiss(loadingToast);
-        console.error('Error updating status:', error);
-        toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
+          ...(['Approve', 'Cancel'].includes(status) ? { complete_date: new Date().toISOString() } : {}),
+      };
+  
+      const result = await updateMaterialPp(id, updateData);
+      
+      toast.dismiss(loadingToast);
+  
+      if (result && result.success === false) {
+        // Rollback nếu fail
+        await fetchData(pagination.current, pagination.pageSize);
+        throw new Error(result.message || 'Cập nhật trạng thái thất bại');
       }
-
+  
+      toast.success(`Đã cập nhật trạng thái thành công: ${status}`);
+      
+      // Refresh để đảm bảo data đồng bộ
+      await fetchData(pagination.current, pagination.pageSize);
+  
     } catch (error) {
-      console.error('Error updating status:', error);
+      console.error('❌ Error updating status:', error);
       toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
     }
   };
@@ -388,10 +394,6 @@ const MaterialProperties = () => {
     clearFilters();
   };
   const handleReasonConfirm = async (reason) => {
-    if (!reason || reason.trim() === '') {
-    toast.error('Vui lòng nhập lý do!');
-    return;
-  }
     setReasonModal(prev => ({ ...prev, loading: true }));
 
     try {
@@ -443,7 +445,15 @@ const MaterialProperties = () => {
 
 
   const columns = [
-
+    {
+      title: 'NO.',
+      dataIndex: 'ID',
+      key: 'id',
+      width: 90,
+      fixed: 'left',
+      align: 'center',
+      ...getColumnSearchProps('ID')
+    },
     {
       title: 'VENDOR',
       dataIndex: 'VENDOR',
@@ -483,10 +493,10 @@ const MaterialProperties = () => {
       ...getColumnSearchProps('GLASS_STYLE')
     },
     {
-      title: 'RESIN_PERCENTAGE',
+      title: 'RESIN_PERCENTAGE(%)',
       dataIndex: 'RESIN_PERCENTAGE',
       key: 'resin_percentage',
-      width: 150,
+      width: 180,
       align: 'center',
       ...getColumnSearchProps('RESIN_PERCENTAGE')
     },
@@ -512,14 +522,14 @@ const MaterialProperties = () => {
       align: 'center'
     },
     {
-      title: 'TG_MIN',
+      title: 'TG_MIN(°C)',
       dataIndex: 'TG_MIN',
       key: 'tg_min',
       width: 100,
       align: 'center'
     },
     {
-      title: 'TG_MAX',
+      title: 'TG_MAX(°C)',
       dataIndex: 'TG_MAX',
       key: 'tg_max',
       width: 100,
@@ -660,7 +670,7 @@ const MaterialProperties = () => {
     },
     {
       title: 'DF_6GHz',
-      dataIndex: 'DF_6GHz',
+      dataIndex: 'DF_6GHZ',
       key: 'df_6ghz',
       width: 120,
       align: 'center'
@@ -668,7 +678,7 @@ const MaterialProperties = () => {
     {
       title: 'DK_7GHz',
       dataIndex: 'DK_7GHz',
-      key: 'dk_7ghz',
+      key: 'df_7ghz',
       width: 120,
       align: 'center'
     },
@@ -823,13 +833,6 @@ const MaterialProperties = () => {
       align: 'center'
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'STATUS',
-      key: 'status',
-      width: 120,
-      align: 'center'
-    },
-    {
       title: 'Ngày hoàn thành',
       dataIndex: 'COMPLETE_DATE',
       key: 'complete_date',
@@ -890,7 +893,6 @@ const MaterialProperties = () => {
                 title="Sửa"
               />
             </PermissionGuard>
-
             <PermissionGuard requiredPermissions={['create']}>
               <Button
                 type="default"

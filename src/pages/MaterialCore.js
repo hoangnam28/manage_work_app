@@ -71,12 +71,17 @@ const MaterialCore = () => {
       const currentPage = page || pagination.current;
       const currentPageSize = pageSize || pagination.pageSize;
       const currentFilters = filters !== null ? filters : searchFilters;
+
+      console.log('Fetching data with params:', {
+        page: currentPage,
+        pageSize: currentPageSize,
+        filters: currentFilters
+      });
+
       const response = await fetchMaterialCoreList({
         page: currentPage,
         pageSize: currentPageSize,
-        ...currentFilters, // ✅ Trực tiếp truyền filters thay vì wrap trong search object
-        sortBy: 'status', // Hoặc tên field bạn định nghĩa ở backend
-      sortOrder: 'asc'
+        ...currentFilters // ✅ Trực tiếp truyền filters thay vì wrap trong search object
       });
 
       // Kiểm tra và điều chỉnh trang hiện tại nếu vượt quá tổng số trang
@@ -191,60 +196,58 @@ const MaterialCore = () => {
   }
 };
   const handleStatusChange = async (record, status) => {
-    if (!hasPermission('approve')) {
-      toast.error('Bạn không có quyền thay đổi trạng thái!');
+  if (!hasPermission('approve')) {
+    toast.error('Bạn không có quyền thay đổi trạng thái!');
+    return;
+  }
+  
+  try {
+    const id = record.ID || record.id;
+    if (!id) {
+      toast.error('ID không hợp lệ, không thể cập nhật trạng thái!');
       return;
     }
-    try {
-      const id = record.ID || record.id;
-      if (!id) {
-        toast.error('ID không hợp lệ, không thể cập nhật trạng thái!');
-        return;
-      }
 
-      const loadingToast = toast.loading('Đang cập nhật trạng thái...');
+    // ✅ Optimistic UI update
+    setData(prevData => 
+      prevData.map(item => 
+        (item.ID === id || item.id === id)
+          ? { ...item, STATUS: status }
+          : item
+      )
+    );
 
-      try {
-        // Get user info from localStorage
-        const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
-        const handler = userInfo.username || 'Unknown';
-        // Prepare update data with proper status change
-        const updateData = {
-          status,
-          handler,
-          // Only update complete_date when status is Approve
-          ...(status === 'Approve' || 'Cancel' ? { complete_date: new Date().toISOString() } : {}),
-        };
+    const loadingToast = toast.loading('Đang cập nhật trạng thái...');
 
-        console.log('Sending update data:', updateData);
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
+    const handler = userInfo.username || 'Unknown';
+    
+    const updateData = {
+      status,
+      handler,
+      ...(status === 'Approve' || status === 'Cancel' ? { complete_date: new Date().toISOString() } : {}),
+    };
 
-        const result = await updateMaterialCore(id, updateData);
+    const result = await updateMaterialCore(id, updateData);
+    
+    toast.dismiss(loadingToast);
 
-        toast.dismiss(loadingToast);
-
-        if (result && result.success === false) {
-          throw new Error(result.message || 'Cập nhật trạng thái thất bại');
-        }
-
-        toast.success(`Đã cập nhật trạng thái thành công: ${status}`);
-        console.log('✅ Status update successful, email should be sent');
-
-        // Refresh data after successful update
-        setTimeout(() => {
-          fetchData(pagination.current, pagination.pageSize);
-        }, 500);
-
-      } catch (error) {
-        toast.dismiss(loadingToast);
-        console.error('Error updating status:', error);
-        toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
-      }
-
-    } catch (error) {
-      console.error('Error in handleStatusChange:', error);
-      toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
+    if (result && result.success === false) {
+      // Rollback nếu fail
+      await fetchData(pagination.current, pagination.pageSize);
+      throw new Error(result.message || 'Cập nhật trạng thái thất bại');
     }
-  };
+
+    toast.success(`Đã cập nhật trạng thái thành công: ${status}`);
+    
+    // Refresh để đảm bảo data đồng bộ
+    await fetchData(pagination.current, pagination.pageSize);
+
+  } catch (error) {
+    console.error('❌ Error updating status:', error);
+    toast.error('Lỗi khi cập nhật trạng thái: ' + (error.message || 'Đã có lỗi xảy ra'));
+  }
+};
   const handleDelete = async (record) => {
   try {
     const id = Number(record?.id ?? record?.ID ?? record);
@@ -269,11 +272,6 @@ const MaterialCore = () => {
   // Frontend: MaterialCore.js - Optimized handleStatusChange
 
 const handleReasonConfirm = async (reason) => {
-  if (!reason || reason.trim() === '') {
-    toast.error('Vui lòng nhập lý do!');
-    return; // Dừng lại, không set loading
-  }
-
   setReasonModal(prev => ({ ...prev, loading: true }));
 
   try {
@@ -515,6 +513,15 @@ const handleReasonCancel = () => {
   );
   const columns = [
     {
+      title: 'NO.',
+      dataIndex: 'ID',
+      key: 'id',
+      width: 90,
+      fixed: 'left',
+      align: 'center',
+      ...getColumnSearchProps('ID')
+    },
+    {
       title: 'Vendor',
       dataIndex: 'VENDOR',
       key: 'vendor',
@@ -545,25 +552,25 @@ const handleReasonCancel = () => {
       ...getColumnSearchProps('FAMILY')
     },
     {
-      title: 'PREPREG_Count',
+      title: 'PREPREG_COUNT',
       dataIndex: 'PREPREG_COUNT',
       key: 'prepreg_count',
-      width: 120,
+      width: 140,
       align: 'center',
     },
     {
-      title: 'Nominal_Thickness',
+      title: 'Nominal_Thickness(mm)',
       dataIndex: 'NOMINAL_THICKNESS',
       key: 'nominal_thickness',
-      width: 160,
+      width: 190,
       align: 'center',
       ...getColumnSearchProps('NOMINAL_THICKNESS')
     },
     {
-      title: 'Spec_Thickness',
+      title: 'Spec_Thickness(mm)',
       dataIndex: 'SPEC_THICKNESS',
       key: 'spec_thickness',
-      width: 150,
+      width: 190,
       align: 'center',
       ...getColumnSearchProps('SPEC_THICKNESS')
     },
@@ -606,14 +613,14 @@ const handleReasonCancel = () => {
       ...getColumnSearchProps('BOT_FOIL_CU_WEIGHT')
     },
     {
-      title: 'Tg_Min',
+      title: 'Tg_Min(°C)',
       dataIndex: 'TG_MIN',
       key: 'tg_min',
       width: 100,
       align: 'center',
     },
     {
-      title: 'Tg_Max',
+      title: 'Tg_Max(°C)',
       dataIndex: 'TG_MAX',
       key: 'tg_max',
       width: 100,
@@ -628,336 +635,336 @@ const handleReasonCancel = () => {
       ...getColumnSearchProps('CENTER_GLASS')
     },
     {
-      title: 'Dk_0_1G',
+      title: 'DK_01G',
       dataIndex: 'DK_01G',
       key: 'dk_01g',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_0_1G',
+      title: 'DF_01G',
       dataIndex: 'DF_01G',
       key: 'df_01g',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_0_001GHz',
+      title: 'DK_0_001GHz_',
       dataIndex: 'DK_0_001GHZ',
       key: 'dk_0_001ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_0_001GHz',
+      title: 'DF_0_001GHz',
       dataIndex: 'DF_0_001GHZ',
       key: 'df_0_001ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_0_01GHz',
+      title: 'DK_0_01GHz',
       dataIndex: 'DK_0_01GHZ',
       key: 'dk_0_01ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_0_01GHz',
+      title: 'DF_0_01GHz',
       dataIndex: 'DF_0_01GHZ',
       key: 'df_0_01ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_0_02GHz',
+      title: 'DK_0_02GHz',
       dataIndex: 'DK_0_02GHZ',
       key: 'dk_0_02ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_0_02GHz',
+      title: 'DF_0_02GHz',
       dataIndex: 'DF_0_02GHZ',
       key: 'df_0_02ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_2GHz',
+      title: 'DK_2GHz',
       dataIndex: 'DK_2GHZ',
       key: 'dk_2ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_2GHz',
+      title: 'DF_2GHz',
       dataIndex: 'DF_2GHZ',
       key: 'df_2ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_2_45GHz',
+      title: 'DK_2_45GHz',
       dataIndex: 'DK_2_45GHZ',
       key: 'dk_2_45ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_2_45GHz',
+      title: 'DF_2_45GHz',
       dataIndex: 'DF_2_45GHZ',
       key: 'df_2_45ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_3GHz',
+      title: 'DK_3GHz',
       dataIndex: 'DK_3GHZ',
       key: 'dk_3ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_3GHz',
+      title: 'DF_3GHz',
       dataIndex: 'DF_3GHZ',
       key: 'df_3ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_4GHz',
+      title: 'DK_4GHz',
       dataIndex: 'DK_4GHZ',
       key: 'dk_4ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_4GHz',
+      title: 'DF_4GHz',
       dataIndex: 'DF_4GHZ',
       key: 'df_4ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_5GHz',
+      title: 'DK_5GHz',
       dataIndex: 'DK_5GHZ',
       key: 'dk_5ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_5GHz',
+      title: 'DF_5GHz',
       dataIndex: 'DF_5GHZ',
       key: 'df_5ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_6GHz',
+      title: 'DK_6GHz',
       dataIndex: 'DK_6GHZ',
       key: 'dk_6ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_6GHz',
+      title: 'DF_6GHz',
       dataIndex: 'DF_6GHZ',
       key: 'df_6ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_7GHz',
+      title: 'DK_7GHz',
       dataIndex: 'DK_7GHZ',
       key: 'dk_7ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_7GHz',
+      title: 'DF_7GHz',
       dataIndex: 'DF_7GHZ',
       key: 'df_7ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_8GHz',
+      title: 'DK_8GHz',
       dataIndex: 'DK_8GHZ',
       key: 'dk_8ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_8GHz',
+      title: 'DF_8GHZ',
       dataIndex: 'DF_8GHZ',
       key: 'df_8ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_9GHz',
+      title: 'DK_9GHZ',
       dataIndex: 'DK_9GHZ',
       key: 'dk_9ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_9GHz',
+      title: 'DF_9GHZ',
       dataIndex: 'DF_9GHZ',
       key: 'df_9ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_10GHz',
+      title: 'DK_10GHZ',
       dataIndex: 'DK_10GHZ',
       key: 'dk_10ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_10GHz',
+      title: 'DF_10GHZ',
       dataIndex: 'DF_10GHZ',
       key: 'df_10ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_15GHz',
+      title: 'DK_15GHZ',
       dataIndex: 'DK_15GHZ',
       key: 'dk_15ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_15GHz',
+      title: 'DF_15GHZ',
       dataIndex: 'DF_15GHZ',
       key: 'df_15ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_16GHz',
+      title: 'DK_16GHZ',
       dataIndex: 'DK_16GHZ',
       key: 'dk_16ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_16GHz',
+      title: 'DF_16GHZ',
       dataIndex: 'DF_16GHZ',
       key: 'df_16ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_20GHz',
+      title: 'DK_20GHZ',
       dataIndex: 'DK_20GHZ',
       key: 'dk_20ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_20GHz',
+      title: 'DF_20GHZ',
       dataIndex: 'DF_20GHZ',
       key: 'df_20ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_25GHz',
+      title: 'DK_25GHZ',
       dataIndex: 'DK_25GHZ',
       key: 'dk_25ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_25GHz',
+      title: 'DF_25GHZ',
       dataIndex: 'DF_25GHZ',
       key: 'df_25ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_30GHz',
+      title: 'DK_30GHZ',
       dataIndex: 'DK_30GHZ',
       key: 'dk_30ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_30GHz',
+      title: 'DF_30GHZ',
       dataIndex: 'DF_30GHZ',
       key: 'df_30ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_35GHz',
+      title: 'DK_35GHZ',
       dataIndex: 'DK_35GHZ',
       key: 'dk_35ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_35GHz',
+      title: 'DF_35GHZ',
       dataIndex: 'DF_35GHZ',
       key: 'df_35ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_40GHz',
+      title: 'DK_40GHZ',
       dataIndex: 'DK_40GHZ',
       key: 'dk_40ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_40GHz',
+      title: 'DF_40GHZ',
       dataIndex: 'DF_40GHZ',
       key: 'df_40ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_45GHz',
+      title: 'DK_45GHZ',
       dataIndex: 'DK_45GHZ',
       key: 'dk_45ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_45GHz',
+      title: 'DF_45GHZ',
       dataIndex: 'DF_45GHZ',
       key: 'df_45ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_50GHz',
+      title: 'DK_50GHZ',
       dataIndex: 'DK_50GHZ',
       key: 'dk_50ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_50GHz',
+      title: 'DF_50GHZ',
       dataIndex: 'DF_50GHZ',
       key: 'df_50ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Dk_55GHz',
+      title: 'DK_55GHZ',
       dataIndex: 'DK_55GHZ',
       key: 'dk_55ghz',
       width: 120,
       align: 'center',
     },
     {
-      title: 'Df_55GHz',
+      title: 'DF_55GHZ',
       dataIndex: 'DF_55GHZ',
       key: 'df_55ghz',
       width: 120,
