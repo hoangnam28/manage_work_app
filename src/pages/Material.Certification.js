@@ -579,7 +579,7 @@ const handleExportLateReport = () => {
   {
     title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Tiến độ</div>,
     dataIndex: 'PROGRESS',
-    key: 'progress',
+    key: 'PROGRESS',
     width: 100,
     filters: Array.isArray(options.progress)
       ? options.progress.map(p => ({ text: p.status_name, value: String(p.status_id) }))
@@ -600,9 +600,17 @@ const handleExportLateReport = () => {
   {
     title: <div style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>Bộ phận phụ trách</div>,
     dataIndex: 'DEPARTMENT_CODE',
-    key: 'department_code',
+    key: 'DEPARTMENT_IN_CHARGE', 
     width: 70,
-    render: (v) => v || '-',            
+    filters: Array.isArray(options.department)
+      ? options.department.map(d => ({ text: d.dept_code, value: String(d.dept_id) }))
+      : [],
+    filteredValue: searchFilters.DEPARTMENT_IN_CHARGE || null,
+    filterMultiple: true,
+    render: (v) => {
+      if (v) return <div style={{ fontSize: '12px', whiteSpace: 'normal', wordBreak: 'break-word' }}>{v}</div>;
+      return '-';
+    },            
     align: 'center'
   },
   {

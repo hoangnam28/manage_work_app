@@ -187,7 +187,7 @@ const ProgressTab = ({
           </Col>
           <Col span={8}>
             <Form.Item name="PERSON_IN_CHARGE" label="Người phụ trách">
-              <Input disabled placeholder="Tự động điền" />
+              <Input />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -293,7 +293,7 @@ const ProgressTab = ({
             label="Link gửi báo cáo đánh giá"
             extra="Khi điền link và lưu, sẽ tự động cập nhật 'Ngày gửi báo cáo tới PD5 thực tế'"
           >
-            <Input placeholder="https://example.com/bao-cao" />
+            <TextArea rows={1} placeholder="https://example.com/bao-cao" />
           </Form.Item>
         </Col>
       </Row>
