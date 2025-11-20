@@ -104,6 +104,7 @@ const CertificationForm = () => {
           FACTORY_LEVEL: data.FACTORY_LEVEL,
           PRICE_REQUEST: data.PRICE_REQUEST,
           REPORT_LINK: data.REPORT_LINK,
+          LINK_RAKRAK_DOCUMENT: data.LINK_RAKRAK_DOCUMENT,
           NOTES_1: data.NOTES_1,
           NOTES_2: data.NOTES_2,
           DEPARTMENT_IN_CHARGE: data.DEPT_ID || data.DEPARTMENT_IN_CHARGE || undefined,
@@ -165,6 +166,7 @@ const CertificationForm = () => {
           FACTORY_LEVEL: data.FACTORY_LEVEL || undefined,
           PRICE_REQUEST: data.PRICE_REQUEST || undefined,
           REPORT_LINK: data.REPORT_LINK || undefined,
+          LINK_RAKRAK_DOCUMENT: data.LINK_RAKRAK_DOCUMENT || undefined,
           DATE_PD5_HQ: data.DATE_PD5_HQ ? moment(data.DATE_PD5_HQ) : null,
           DATE_PD5_GET_REPORT: data.DATE_PD5_GET_REPORT ? moment(data.DATE_PD5_GET_REPORT) : null
         };
@@ -232,6 +234,7 @@ const CertificationForm = () => {
           DATE_PD5_HQ: values.DATE_PD5_HQ,
           DATE_PD5_GET_REPORT: values.DATE_PD5_GET_REPORT,
           NOTES_1: values.NOTES_1,
+          LINK_RAKRAK_DOCUMENT: values.LINK_RAKRAK_DOCUMENT
         });
       } else {
         toast.error(response.message || 'Lưu thất bại');
@@ -245,82 +248,101 @@ const CertificationForm = () => {
   };
 
   const onProgressFinish = async (values) => {
-    try {
-      setLoading(true);
-      const certificationData = form.getFieldsValue();
+  try {
+    setLoading(true);
+    const certificationData = form.getFieldsValue();
 
-      const formattedValues = {};
+    const formattedValues = {};
 
-      // ✅ XỬ LÝ LOGIC MỚI: Khi có REPORT_LINK -> tự động set PD5_REPORT_ACTUAL_DATE
-      if (values.REPORT_LINK && !values.PD5_REPORT_ACTUAL_DATE) {
-        const today = moment();
-        formattedValues.pd5ReportActualDate = today.format('YYYY-MM-DD');
-
-        // Cập nhật lại form để hiển thị
-        progressForm.setFieldsValue({
-          PD5_REPORT_ACTUAL_DATE: today
-        });
-      }
-
-      // Existing fields
-      if (values.PERSON_IN_CHARGE) formattedValues.personInCharge = values.PERSON_IN_CHARGE;
-      if (values.DEPARTMENT_IN_CHARGE) formattedValues.departmentInCharge = values.DEPARTMENT_IN_CHARGE;
-      if (values.START_DATE) formattedValues.startDate = values.START_DATE.format('YYYY-MM-DD');
-      if (values.PD5_REPORT_DEADLINE) formattedValues.pd5ReportDeadline = values.PD5_REPORT_DEADLINE.format('YYYY-MM-DD');
-      if (values.COMPLETION_DEADLINE) formattedValues.completionDeadline = values.COMPLETION_DEADLINE.format('YYYY-MM-DD');
-      if (values.ACTUAL_COMPLETION_DATE) formattedValues.actualCompletionDate = values.ACTUAL_COMPLETION_DATE.format('YYYY-MM-DD');
-      if (values.PD5_REPORT_ACTUAL_DATE) formattedValues.pd5ReportActualDate = values.PD5_REPORT_ACTUAL_DATE.format('YYYY-MM-DD');
-
-      // ✅ 2 TRƯỜNG QUAN TRỌNG
-      if (values.DATE_PD5_HQ) formattedValues.datePd5Hq = values.DATE_PD5_HQ.format('YYYY-MM-DD');
-      if (values.DATE_PD5_GET_REPORT) formattedValues.datePd5GetReport = values.DATE_PD5_GET_REPORT.format('YYYY-MM-DD');
-      if (values.PROGRESS_ID) formattedValues.progress = values.PROGRESS_ID;
-      if (values.TOTAL_TIME) formattedValues.totalTime = values.TOTAL_TIME;
-      if (values.MATERIAL_NAME) formattedValues.materialName = values.MATERIAL_NAME;
-      if (values.MATERIAL_CLASS_ID) formattedValues.materialClassId = values.MATERIAL_CLASS_ID;
-      if (values.LAYER_STRUCTURE) formattedValues.layerStructure = values.LAYER_STRUCTURE;
-      if (values.RELIABILITY_LEVEL_ID) formattedValues.reliabilityLevelId = values.RELIABILITY_LEVEL_ID;
-      if (values.NOTES_1) formattedValues.notes1 = values.NOTES_1;
-      if (values.FACTORY_CERT_READY !== undefined) formattedValues.factoryCertReady = values.FACTORY_CERT_READY;
-      if (values.FACTORY_CERT_STATUS) formattedValues.factoryCertStatus = values.FACTORY_CERT_STATUS;
-      if (values.FACTORY_LEVEL) formattedValues.factoryLevel = values.FACTORY_LEVEL;
-      if (values.PRICE_REQUEST !== undefined) formattedValues.priceRequest = values.PRICE_REQUEST;
-      if (values.REPORT_LINK) formattedValues.reportLink = values.REPORT_LINK;
-
-      // Certification data
-      if (certificationData.RELEASE_DATE) formattedValues.releaseDate = certificationData.RELEASE_DATE.format('YYYY-MM-DD');
-      if (certificationData.FACTORY_NAME) formattedValues.factoryName = certificationData.FACTORY_NAME;
-      if (certificationData.REQUEST_REASON) formattedValues.requestReason = certificationData.REQUEST_REASON;
-      if (certificationData.USAGE) formattedValues.usage = certificationData.USAGE;
-      if (certificationData.EXPECTED_PRODUCTION_QTY) formattedValues.expectedProductionQty = certificationData.EXPECTED_PRODUCTION_QTY;
-      if (certificationData.MASS_PRODUCTION_DATE) formattedValues.massProductionDate = certificationData.MASS_PRODUCTION_DATE.format('YYYY-MM-DD');
-      if (certificationData.MATERIAL_CERT_EXPECTED) formattedValues.materialCertExpected = certificationData.MATERIAL_CERT_EXPECTED.format('YYYY-MM-DD');
-      if (certificationData.MANUFACTURER_NAME) formattedValues.manufacturerName = certificationData.MANUFACTURER_NAME;
-      if (certificationData.FACTORY_LOCATION) formattedValues.factoryLocation = certificationData.FACTORY_LOCATION;
-      if (certificationData.MATERIAL_PROPERTY1_ID) formattedValues.materialProperty1Id = certificationData.MATERIAL_PROPERTY1_ID;
-      if (certificationData.MATERIAL_PROPERTY2_ID) formattedValues.materialProperty2Id = certificationData.MATERIAL_PROPERTY2_ID;
-      if (certificationData.MATERIAL_PROPERTY3_ID) formattedValues.materialProperty3Id = certificationData.MATERIAL_PROPERTY3_ID;
-      if (certificationData.MATERIAL_STATUS) formattedValues.materialStatusId = certificationData.MATERIAL_STATUS;
-      if (certificationData.UL_CERT_STATUS) formattedValues.ulStatusId = certificationData.UL_CERT_STATUS;
-      if (certificationData.NOTES_2) formattedValues.notes2 = certificationData.NOTES_2;
-
-      console.log('📤 Submitting progress data:', formattedValues);
-
-      const response = await updateMaterialCertification(certificationId, formattedValues);
-
-      if (response.success) {
-        toast.success('Lưu tiến độ thành công!');
-        await loadCertificationData();
-      } else {
-        toast.error(response.message || 'Lưu tiến độ thất bại');
-      }
-    } catch (error) {
-      console.error('Error saving progress:', error);
-      toast.error('Lỗi khi lưu tiến độ: ' + (error.response?.data?.message || error.message));
-    } finally {
-      setLoading(false);
+    // Xử lý các trường thông thường
+    if (values.PERSON_IN_CHARGE !== undefined) formattedValues.personInCharge = values.PERSON_IN_CHARGE;
+    if (values.DEPARTMENT_IN_CHARGE !== undefined) formattedValues.departmentInCharge = values.DEPARTMENT_IN_CHARGE;
+    
+    // ✅ QUAN TRỌNG: Date fields - xử lý cả null để cho phép xóa
+    if (values.START_DATE !== undefined) {
+      formattedValues.startDate = values.START_DATE ? values.START_DATE.format('YYYY-MM-DD') : null;
     }
-  };
+    if (values.PD5_REPORT_DEADLINE !== undefined) {
+      formattedValues.pd5ReportDeadline = values.PD5_REPORT_DEADLINE ? values.PD5_REPORT_DEADLINE.format('YYYY-MM-DD') : null;
+    }
+    if (values.COMPLETION_DEADLINE !== undefined) {
+      formattedValues.completionDeadline = values.COMPLETION_DEADLINE ? values.COMPLETION_DEADLINE.format('YYYY-MM-DD') : null;
+    }
+    if (values.ACTUAL_COMPLETION_DATE !== undefined) {
+      formattedValues.actualCompletionDate = values.ACTUAL_COMPLETION_DATE ? values.ACTUAL_COMPLETION_DATE.format('YYYY-MM-DD') : null;
+    }
+    if (values.PD5_REPORT_ACTUAL_DATE !== undefined) {
+      formattedValues.pd5ReportActualDate = values.PD5_REPORT_ACTUAL_DATE ? values.PD5_REPORT_ACTUAL_DATE.format('YYYY-MM-DD') : null;
+    }
+    if (values.DATE_PD5_HQ !== undefined) {
+      formattedValues.datePd5Hq = values.DATE_PD5_HQ ? values.DATE_PD5_HQ.format('YYYY-MM-DD') : null;
+    }
+    if (values.DATE_PD5_GET_REPORT !== undefined) {
+      formattedValues.datePd5GetReport = values.DATE_PD5_GET_REPORT ? values.DATE_PD5_GET_REPORT.format('YYYY-MM-DD') : null;
+    }
+    
+    // ✅ Xử lý các trường text - cho phép xóa (gửi null)
+    if (values.PROGRESS_ID !== undefined) formattedValues.progress = values.PROGRESS_ID;
+    if (values.TOTAL_TIME !== undefined) formattedValues.totalTime = values.TOTAL_TIME;
+    if (values.MATERIAL_NAME !== undefined) formattedValues.materialName = values.MATERIAL_NAME;
+    if (values.MATERIAL_CLASS_ID !== undefined) formattedValues.materialClassId = values.MATERIAL_CLASS_ID;
+    if (values.LAYER_STRUCTURE !== undefined) formattedValues.layerStructure = values.LAYER_STRUCTURE;
+    if (values.RELIABILITY_LEVEL_ID !== undefined) formattedValues.reliabilityLevelId = values.RELIABILITY_LEVEL_ID;
+    if (values.NOTES_1 !== undefined) formattedValues.notes1 = values.NOTES_1;
+    if (values.FACTORY_CERT_READY !== undefined) formattedValues.factoryCertReady = values.FACTORY_CERT_READY;
+    if (values.FACTORY_CERT_STATUS !== undefined) formattedValues.factoryCertStatus = values.FACTORY_CERT_STATUS;
+    if (values.FACTORY_LEVEL !== undefined) formattedValues.factoryLevel = values.FACTORY_LEVEL;
+    if (values.PRICE_REQUEST !== undefined) formattedValues.priceRequest = values.PRICE_REQUEST;
+    
+    // ✅ Các trường quan trọng cho auto-update status - cho phép null
+    if (values.REPORT_LINK !== undefined) {
+      formattedValues.reportLink = values.REPORT_LINK || null;
+    }
+    if (values.LINK_RAKRAK_DOCUMENT !== undefined) {
+      formattedValues.linkRakrakDocument = values.LINK_RAKRAK_DOCUMENT || null;
+    }
+
+    // Certification data
+    if (certificationData.RELEASE_DATE !== undefined) {
+      formattedValues.releaseDate = certificationData.RELEASE_DATE ? certificationData.RELEASE_DATE.format('YYYY-MM-DD') : null;
+    }
+    if (certificationData.MASS_PRODUCTION_DATE !== undefined) {
+      formattedValues.massProductionDate = certificationData.MASS_PRODUCTION_DATE ? certificationData.MASS_PRODUCTION_DATE.format('YYYY-MM-DD') : null;
+    }
+    if (certificationData.MATERIAL_CERT_EXPECTED !== undefined) {
+      formattedValues.materialCertExpected = certificationData.MATERIAL_CERT_EXPECTED ? certificationData.MATERIAL_CERT_EXPECTED.format('YYYY-MM-DD') : null;
+    }
+    
+    if (certificationData.FACTORY_NAME !== undefined) formattedValues.factoryName = certificationData.FACTORY_NAME;
+    if (certificationData.REQUEST_REASON !== undefined) formattedValues.requestReason = certificationData.REQUEST_REASON;
+    if (certificationData.USAGE !== undefined) formattedValues.usage = certificationData.USAGE;
+    if (certificationData.EXPECTED_PRODUCTION_QTY !== undefined) formattedValues.expectedProductionQty = certificationData.EXPECTED_PRODUCTION_QTY;
+    if (certificationData.MANUFACTURER_NAME !== undefined) formattedValues.manufacturerName = certificationData.MANUFACTURER_NAME;
+    if (certificationData.FACTORY_LOCATION !== undefined) formattedValues.factoryLocation = certificationData.FACTORY_LOCATION;
+    if (certificationData.MATERIAL_PROPERTY1_ID !== undefined) formattedValues.materialProperty1Id = certificationData.MATERIAL_PROPERTY1_ID;
+    if (certificationData.MATERIAL_PROPERTY2_ID !== undefined) formattedValues.materialProperty2Id = certificationData.MATERIAL_PROPERTY2_ID;
+    if (certificationData.MATERIAL_PROPERTY3_ID !== undefined) formattedValues.materialProperty3Id = certificationData.MATERIAL_PROPERTY3_ID;
+    if (certificationData.MATERIAL_STATUS !== undefined) formattedValues.materialStatusId = certificationData.MATERIAL_STATUS;
+    if (certificationData.UL_CERT_STATUS !== undefined) formattedValues.ulStatusId = certificationData.UL_CERT_STATUS;
+    if (certificationData.NOTES_2 !== undefined) formattedValues.notes2 = certificationData.NOTES_2;
+
+    console.log('📤 Submitting progress data:', formattedValues);
+
+    const response = await updateMaterialCertification(certificationId, formattedValues);
+
+    if (response.success) {
+      toast.success('Lưu tiến độ thành công!');
+      await loadCertificationData();
+    } else {
+      toast.error(response.message || 'Lưu tiến độ thất bại');
+    }
+  } catch (error) {
+    console.error('Error saving progress:', error);
+    toast.error('Lỗi khi lưu tiến độ: ' + (error.response?.data?.message || error.message));
+  } finally {
+    setLoading(false);
+  }
+};
   const handleApproval = async (approvalType) => {
     try {
       setLoading(true);

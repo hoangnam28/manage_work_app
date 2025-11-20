@@ -16,6 +16,7 @@ const ProgressTab = ({
 }) => {
   const navigate = useNavigate();
   const [canApprove, setCanApprove] = useState(false);
+  const [isDataSaved, setIsDataSaved] = useState(false);
   
   const handleCompletionDeadlineChange = (date) => {
     if (date) {
@@ -48,6 +49,23 @@ const ProgressTab = ({
     setCanApprove(!!allFilled);
   };
 
+  // Reset saved status when form values change
+  const handleFormChange = () => {
+    setIsDataSaved(false);
+    checkRequiredFields();
+  };
+
+  // Handle form save
+  const handleFormSave = async () => {
+    try {
+      await form.validateFields();
+      await onFinish(form.getFieldsValue());
+      setIsDataSaved(true);
+    } catch (error) {
+      console.error('Validation error:', error);
+    }
+  };
+
   useEffect(() => {
     checkRequiredFields();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -66,7 +84,7 @@ const ProgressTab = ({
       layout="vertical"
       onFinish={onFinish}
       initialValues={{}}
-      onValuesChange={checkRequiredFields}
+      onValuesChange={handleFormChange}
     >
       {(showTKSXApproval || showQL2Approval) && (
         <Card 
@@ -97,6 +115,16 @@ const ProgressTab = ({
               style={{ marginBottom: '16px' }}
             />
           )}
+
+          {showQL2Approval && !isDataSaved && (
+            <Alert
+              message="⚠️ Chưa lưu dữ liệu"
+              description="Bạn phải lưu tiến độ trước khi có thể phê duyệt. Vui lòng click nút 'Lưu tiến độ' ở dưới cùng."
+              type="error"
+              showIcon
+              style={{ marginBottom: '16px' }}
+            />
+          )}
           
           <Row justify="center">
             <Space size="large">
@@ -106,10 +134,11 @@ const ProgressTab = ({
                   size="large"
                   icon={<CheckCircleOutlined />}
                   onClick={() => onApprovalSuccess && onApprovalSuccess('ql2')}
-                  disabled={!canApprove}
+                  disabled={!canApprove || !isDataSaved}
+                  title={!isDataSaved ? 'Vui lòng lưu tiến độ trước khi phê duyệt' : ''}
                   style={{ 
-                    backgroundColor: canApprove ? '#1890ff' : undefined, 
-                    borderColor: canApprove ? '#1890ff' : undefined,
+                    backgroundColor: (canApprove && isDataSaved) ? '#1890ff' : undefined, 
+                    borderColor: (canApprove && isDataSaved) ? '#1890ff' : undefined,
                     height: '48px',
                     fontSize: '16px',
                     fontWeight: 'bold'
@@ -308,6 +337,15 @@ const ProgressTab = ({
           marginBottom: '16px',
         }}
       >
+        <Col span={24}>
+          <Form.Item 
+            name="LINK_RAKRAK_DOCUMENT" 
+            label="Link RakRak Document (Kết quả chứng nhận)"
+            extra="Khi điền link và lưu, sẽ tự động cập nhật 'Ngày hoàn thành thực tế'"
+          >
+            <TextArea rows={1} placeholder="https://example.com/bao-cao" />
+          </Form.Item>
+        </Col>
         <Col span={8}>
           <Form.Item name="COMPLETION_DEADLINE" label={<span>Kỳ hạn hoàn thành <span style={{color: 'red'}}>*</span></span>}>
             <DatePicker
@@ -383,9 +421,13 @@ const ProgressTab = ({
         </Col>
         
         <Col>
-          <Button type="primary" htmlType="submit" loading={loading}>
-            Lưu tiến độ
-          </Button>
+          <Button 
+        type="primary" 
+        loading={loading}
+        onClick={handleFormSave}  
+      >
+        Lưu tiến độ
+      </Button>
         </Col>
       </Row>
     </Form>
