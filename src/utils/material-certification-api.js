@@ -445,3 +445,136 @@ export const softDeleteCertification = async (id) => {
     throw error;
   }
 };
+
+export const uploadCertificationPDF = async (certificationId, pdfNumber, file) => {
+  try{
+    if(!certificationId || !pdfNumber || !file){
+      throw new Error('Thiếu thông tin để upload PDF');
+  }
+  if(pdfNumber < 1 || pdfNumber > 8){
+    throw new Error('Số PDF không hợp lệ (1-8)');
+  }
+    const formData = new FormData();
+    formData.append('pdfFile', file);
+    const response = await axiosInstance.post(
+      `/material-certification/upload-pdf/${certificationId}/${pdfNumber}`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        },
+        timeout: 60000
+      }
+    );
+    if(!response.data || !response.data.success){
+      throw new Error(response.data?.message ||'Lỗi khi upload PDF');
+    }
+    return response.data;
+  }catch(error){
+    console.error('❌ Error uploading certification PDF:', error);
+    if (error.response) {
+      throw new Error(error.response.data?.message || 'Lỗi khi upload PDF');
+    }
+    throw error;
+  }
+};
+
+export const getCertificationPDFUrl = (certificationId, pdfNumber) => {
+  if (!certificationId || !pdfNumber) {
+    console.warn('Missing certificationId or pdfNumber for PDF URL generation');
+    return null;
+  }
+  const certId = parseInt(certificationId);
+  const pdfNum = parseInt(pdfNumber);
+  if (isNaN(certId) || isNaN(pdfNum)) {
+    console.warn('Invalid certificationId or pdfNumber:', certificationId, pdfNumber);
+    return null;
+  }
+  const baseURL = axiosInstance.defaults.baseURL || '';
+  const url = `${baseURL}/material-certification/pdf/${certId}/${pdfNum}`;
+  return url;
+};
+
+export const getCertificationPDFInFor = async (certificationId, ) => {
+  try{
+    if(!certificationId){
+      throw new Error('ID certification không hợp lệ');
+    }
+    console.log('📄 Fetching PDF info for certification:', certificationId);
+    const response = await axiosInstance.get(
+      `/material-certification/pdf-info/${certificationId}`
+    );
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Lỗi khi lấy thông tin PDF');
+    }
+    return response.data;
+  }catch(error){
+    console.error('❌ Error fetching certification PDF info:', error);
+    if (error.response) {
+      throw new Error(error.response.data?.message || 'Lỗi khi lấy thông tin PDF');
+    }
+    throw error;
+  }
+};
+export const deleteCertificationPDF = async (certificationId, pdfNumber) => {
+  try {
+    if (!certificationId || !pdfNumber) {
+      throw new Error('Thiếu ID certification hoặc số PDF để xóa');
+    }
+    if (pdfNumber < 1 || pdfNumber > 8) {
+      throw new Error('Số PDF không hợp lệ (1-8)');
+    }
+    const response = await axiosInstance.delete(
+      `/material-certification/pdf/${certificationId}/${pdfNumber}`
+    );
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Lỗi khi xóa PDF');
+    }
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error deleting certification PDF:', error);
+    if (error.response) {
+      throw new Error(error.response.data?.message || 'Lỗi khi xóa PDF');
+    }
+    throw error;
+  }
+}
+
+export const downloadCertificationPDF = async (certificationId, pdfNumber, fileName) => {
+  try {
+    if (!certificationId || !pdfNumber) {
+      throw new Error('Thiếu thông tin để download PDF');
+    }
+
+    console.log(`⬇️ Downloading PDF${pdfNumber} from certification:`, certificationId);
+
+    const response = await axiosInstance.get(
+      `/material-certification/pdf/${certificationId}/${pdfNumber}`,
+      {
+        responseType: 'blob'
+      }
+    );
+
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', fileName || `document_${pdfNumber}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+
+    console.log(`✅ PDF${pdfNumber} downloaded successfully`);
+    return { success: true, message: 'Download thành công' };
+
+  } catch (error) {
+    console.error(`❌ Error downloading PDF${pdfNumber}:`, error);
+    
+    if (error.response) {
+      throw new Error('Lỗi khi download PDF');
+    }
+    
+    throw error;
+  }
+};

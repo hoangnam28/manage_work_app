@@ -1,23 +1,36 @@
-import { Form, Input, DatePicker, Select, Button, Row, Col, Divider, Alert, Space, Card } from 'antd';
+import { Form, Input, DatePicker, Select, Button, Row, Col, Divider, Alert, Space, Card, Upload, Popconfirm, Spin } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircleOutlined } from '@ant-design/icons';
-import { useState, useEffect } from 'react';
+import { CheckCircleOutlined, UploadOutlined, DeleteOutlined, DownloadOutlined, EyeOutlined, FileOutlined } from '@ant-design/icons';
+import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
+import { getPDFLabel } from '../../utils/pdf-labels';
+import {
+  uploadCertificationPDF,
+  getCertificationPDFInFor,
+  deleteCertificationPDF,
+  downloadCertificationPDF,
+  getCertificationPDFUrl
+} from '../../utils/material-certification-api';
 
 const { TextArea } = Input;
 
-const ProgressTab = ({ 
-  form, 
-  onFinish, 
-  loading, 
+const ProgressTab = ({
+  form,
+  onFinish,
+  loading,
   options,
   currentProgressId,
   onApprovalSuccess,
-  personAcceptQL2 
+  personAcceptQL2,
+  certificationId
 }) => {
   const navigate = useNavigate();
   const [canApprove, setCanApprove] = useState(false);
   const [isDataSaved, setIsDataSaved] = useState(false);
-  
+  const [pdfFiles, setPdfFiles] = useState([]);
+  const [loadingPDFs, setLoadingPDFs] = useState(false);
+  const [uploadingPDF, setUploadingPDF] = useState({});
+
   const handleCompletionDeadlineChange = (date) => {
     if (date) {
       const pd5Deadline = date.clone().subtract(1, 'month');
@@ -31,6 +44,88 @@ const ProgressTab = ({
     }
   };
 
+  const loadPDFInfo = useCallback(async () => {
+    if (!certificationId) return;
+    try {
+      setLoadingPDFs(true);
+      const response = await getCertificationPDFInFor(certificationId);
+      if (response.success) {
+        setPdfFiles(response.pdfFiles || []);
+      }
+    } catch (error) {
+      console.error('Error loading PDF info:', error);
+      toast.error('Lỗi khi tải thông tin PDF');
+    } finally {
+      setLoadingPDFs(false);
+    }
+  }, [certificationId]); // chỉ thay đổi khi certificationId thay đổi
+
+  useEffect(() => {
+    loadPDFInfo();
+  }, [loadPDFInfo]); // bây giờ ESLint sẽ không cảnh báo
+
+  const handlePDFUpload = async (file, pdfNumber) => {
+    console.log('📄 File info:', {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      pdfNumber: pdfNumber
+    });
+
+    const isPDF = file.type === 'application/pdf' ||
+      file.name.toLowerCase().endsWith('.pdf');
+
+    if (!isPDF) {
+      toast.error('Chỉ chấp nhận file PDF');
+      return false;
+    }
+
+    const isLt10MB = file.size / 1024 / 1024 < 10;
+    if (!isLt10MB) {
+      toast.error('File phải nhỏ hơn 10MB');
+      return false;
+    }
+
+    try {
+      setUploadingPDF(prev => ({ ...prev, [pdfNumber]: true }));
+      await uploadCertificationPDF(certificationId, pdfNumber, file);
+      toast.success(`Tải lên ${getPDFLabel(pdfNumber)} thành công`);
+      await loadPDFInfo();
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Lỗi khi tải lên PDF: ' + (error.message || ''));
+    } finally {
+      setUploadingPDF(prev => ({ ...prev, [pdfNumber]: false }));
+    }
+
+    return false;
+  };
+  const handlePDFDelete = async (pdfNumber) => {
+    try {
+      await deleteCertificationPDF(certificationId, pdfNumber);
+      toast.success(`Xoá ${getPDFLabel(pdfNumber)} thành công`);
+      await loadPDFInfo();
+    } catch (error) {
+      toast.error('Lỗi khi xoá PDF' + error.message);
+    }
+  }
+
+  const handlePDFDownload = async (pdfNumber, fileName) => {
+    try {
+      await downloadCertificationPDF(certificationId, pdfNumber, fileName);
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Lỗi khi download PDF: ' + error.message);
+    }
+  };
+
+  const handlePDFPreview = (pdfNumber) => {
+    const url = getCertificationPDFUrl(certificationId, pdfNumber);
+    if (url) {
+      window.open(url, '_blank');
+    }
+  };
+
   const checkRequiredFields = () => {
     const values = form.getFieldsValue([
       'FACTORY_CERT_READY',
@@ -40,12 +135,12 @@ const ProgressTab = ({
       'COMPLETION_DEADLINE'
     ]);
 
-    const allFilled = values.FACTORY_CERT_READY && 
-                      values.FACTORY_CERT_STATUS && 
-                      values.FACTORY_LEVEL && 
-                      values.PRICE_REQUEST && 
-                      values.COMPLETION_DEADLINE;
-    
+    const allFilled = values.FACTORY_CERT_READY &&
+      values.FACTORY_CERT_STATUS &&
+      values.FACTORY_LEVEL &&
+      values.PRICE_REQUEST &&
+      values.COMPLETION_DEADLINE;
+
     setCanApprove(!!allFilled);
   };
 
@@ -68,11 +163,11 @@ const ProgressTab = ({
 
   useEffect(() => {
     checkRequiredFields();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form]);
 
-  const showTKSXApproval = currentProgressId === 1; 
-  const showQL2Approval = currentProgressId === 2; 
+  const showTKSXApproval = currentProgressId === 1;
+  const showQL2Approval = currentProgressId === 2;
 
   const currentProgressName = options.progress?.find(
     p => p.status_id === currentProgressId
@@ -87,8 +182,8 @@ const ProgressTab = ({
       onValuesChange={handleFormChange}
     >
       {(showTKSXApproval || showQL2Approval) && (
-        <Card 
-          style={{ 
+        <Card
+          style={{
             marginBottom: '24px',
             borderColor: showTKSXApproval ? '#52c41a' : '#1890ff',
             backgroundColor: showTKSXApproval ? '#f6ffed' : '#e6f7ff'
@@ -97,7 +192,7 @@ const ProgressTab = ({
           <Alert
             message={`Trạng thái hiện tại: ${currentProgressName}`}
             description={
-              showTKSXApproval 
+              showTKSXApproval
                 ? 'Yêu cầu đang chờ TKSX phê duyệt. Sau khi phê duyệt, trạng thái sẽ chuyển sang "Đang lập kế hoạch".'
                 : 'Kế hoạch đang chờ QL2 phê duyệt. Sau khi phê duyệt, trạng thái sẽ chuyển sang "Đang đánh giá".'
             }
@@ -105,7 +200,7 @@ const ProgressTab = ({
             showIcon
             style={{ marginBottom: '16px' }}
           />
-          
+
           {!canApprove && showQL2Approval && (
             <Alert
               message="Chưa thể phê duyệt"
@@ -125,7 +220,7 @@ const ProgressTab = ({
               style={{ marginBottom: '16px' }}
             />
           )}
-          
+
           <Row justify="center">
             <Space size="large">
               {showQL2Approval && (
@@ -136,8 +231,8 @@ const ProgressTab = ({
                   onClick={() => onApprovalSuccess && onApprovalSuccess('ql2')}
                   disabled={!canApprove || !isDataSaved}
                   title={!isDataSaved ? 'Vui lòng lưu tiến độ trước khi phê duyệt' : ''}
-                  style={{ 
-                    backgroundColor: (canApprove && isDataSaved) ? '#1890ff' : undefined, 
+                  style={{
+                    backgroundColor: (canApprove && isDataSaved) ? '#1890ff' : undefined,
                     borderColor: (canApprove && isDataSaved) ? '#1890ff' : undefined,
                     height: '48px',
                     fontSize: '16px',
@@ -164,7 +259,7 @@ const ProgressTab = ({
           )}
         </div>
       )}
-      <div style={{ backgroundColor: '#f0f8ff', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
+      <div style={{ backgroundColor: '#f0f8ff', borderRadius: '8px', marginBottom: '24px' }}>
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item name="MATERIAL_NAME" label="Tên vật liệu">
@@ -201,7 +296,7 @@ const ProgressTab = ({
         </Row>
       </div>
 
-      <div style={{ backgroundColor: '#f0f8ff', padding: '16px', borderRadius: '8px', marginBottom: '24px' }}>
+      <div style={{ backgroundColor: '#f0f8ff', borderRadius: '8px', marginBottom: '24px' }}>
         <Row gutter={16}>
           <Col span={8}>
             <Form.Item name="PROGRESS_ID" label="Tiến độ">
@@ -221,9 +316,9 @@ const ProgressTab = ({
           </Col>
           <Col span={8}>
             <Form.Item name="DEPARTMENT_IN_CHARGE" label="Bộ phận phụ trách">
-              <Select 
-                placeholder="Chọn bộ phận phụ trách" 
-                allowClear 
+              <Select
+                placeholder="Chọn bộ phận phụ trách"
+                allowClear
                 showSearch
                 filterOption={(input, option) =>
                   option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
@@ -244,7 +339,6 @@ const ProgressTab = ({
         gutter={16}
         style={{
           backgroundColor: '#e6f7ff',
-          padding: '16px',
           borderRadius: '8px',
           marginBottom: '16px',
         }}
@@ -266,9 +360,9 @@ const ProgressTab = ({
           </Form.Item>
         </Col>
         <Col span={12}>
-          <Form.Item 
-            name="FACTORY_CERT_READY" 
-            label={<span>Chứng nhận ở nhà máy khác <span style={{color: 'red'}}>*</span></span>}
+          <Form.Item
+            name="FACTORY_CERT_READY"
+            label={<span>Chứng nhận ở nhà máy khác <span style={{ color: 'red' }}>*</span></span>}
           >
             <Select placeholder="Chọn trạng thái chứng nhận">
               <Select.Option value="yes">Yes</Select.Option>
@@ -278,18 +372,18 @@ const ProgressTab = ({
         </Col>
 
         <Col span={12}>
-          <Form.Item 
-            name="FACTORY_CERT_STATUS" 
-            label={<span>Nhà máy đã chứng nhận <span style={{color: 'red'}}>*</span></span>}
+          <Form.Item
+            name="FACTORY_CERT_STATUS"
+            label={<span>Nhà máy đã chứng nhận <span style={{ color: 'red' }}>*</span></span>}
           >
             <Input placeholder="Nhập tên nhà máy hoặc mô tả" />
           </Form.Item>
         </Col>
 
         <Col span={12}>
-          <Form.Item 
-            name="FACTORY_LEVEL" 
-            label={<span>Cấp độ ở nhà máy khác <span style={{color: 'red'}}>*</span></span>}
+          <Form.Item
+            name="FACTORY_LEVEL"
+            label={<span>Cấp độ ở nhà máy khác <span style={{ color: 'red' }}>*</span></span>}
           >
             <Select placeholder="Chọn cấp độ">
               <Select.Option value="level1">1</Select.Option>
@@ -304,9 +398,9 @@ const ProgressTab = ({
         </Col>
 
         <Col span={12}>
-          <Form.Item 
-            name="PRICE_REQUEST" 
-            label={<span>Yêu cầu báo cáo đánh giá <span style={{color: 'red'}}>*</span></span>}
+          <Form.Item
+            name="PRICE_REQUEST"
+            label={<span>Yêu cầu báo cáo đánh giá <span style={{ color: 'red' }}>*</span></span>}
           >
             <Select placeholder="Chọn cấp độ">
               <Select.Option value="Gia công">Gia công</Select.Option>
@@ -317,8 +411,8 @@ const ProgressTab = ({
         </Col>
 
         <Col span={24}>
-          <Form.Item 
-            name="REPORT_LINK" 
+          <Form.Item
+            name="REPORT_LINK"
             label="Link gửi báo cáo đánh giá"
             extra="Khi điền link và lưu, sẽ tự động cập nhật 'Ngày gửi báo cáo tới PD5 thực tế'"
           >
@@ -326,20 +420,589 @@ const ProgressTab = ({
           </Form.Item>
         </Col>
       </Row>
+      <Divider orientation="left">Báo cáo tin cậy</Divider>
+      <Row
+        gutter={16}
+        style={{
+          backgroundColor: '#f8fff0ff',
+          borderRadius: '8px',
+          marginBottom: '16px',
+        }}
+      >
+        {loadingPDFs ? (
+          <Col span={24} style={{ textAlign: 'center' }}>
+            <Spin />
+            <div style={{ marginTop: '12px', color: '#999' }}>
+              Đang tải thông tin PDF files...
+            </div>
+          </Col>
+        ) : (
+          <>
+            <Col span={12}>
+              <Form.Item label="Báo cáo tin cậy">
+                {pdfFiles.find(p => p.number === 1)?.hasFile ? (
+                  <div style={{
+                    backgroundColor: '#f0f9ff',
+                    borderRadius: '8px',
+                    marginBottom: '16px',
+                  }}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {pdfFiles.find(p => p.number === 1)?.fileName}
+                        </span>
+                      </div>
+                      <Space size="small">
+                        <Button
+                          size="small"
+                          icon={<EyeOutlined />}
+                          onClick={() => handlePDFPreview(1)}
+                        >
+                          Xem
+                        </Button>
+                        <Button
+                          size="small"
+                          icon={<DownloadOutlined />}
+                          onClick={() => handlePDFDownload(1, pdfFiles.find(p => p.number === 1)?.fileName)}
+                        >
+                          Tải về
+                        </Button>
+                        <Popconfirm
+                          title="Xác nhận xóa PDF"
+                          description="Bạn có chắc chắn muốn xóa file này?"
+                          onConfirm={() => handlePDFDelete(1)}
+                          okText="Xóa"
+                          cancelText="Hủy"
+                          okButtonProps={{ danger: true }}
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                          >
+                            Xóa
+                          </Button>
+                        </Popconfirm>
+                      </Space>
+                    </Space>
+                  </div>
+                ) : (
+                  <Upload
+                    beforeUpload={(file) => handlePDFUpload(file, 1)}
+                    showUploadList={false}
+                    accept=".pdf"
+                  >
+                    <Button
+                      icon={<UploadOutlined />}
+                      loading={uploadingPDF[1]}
+                      block
+                    >
+                      {uploadingPDF[1] ? 'Đang upload...' : 'Chọn file PDF'}
+                    </Button>
+                  </Upload>
+                )}
+              </Form.Item>
+            </Col>
 
+            <Divider orientation="left">Báo cáo gia công ngoại hình</Divider>
+            <Col span={12}>
+              <Form.Item label="NC">
+                {pdfFiles.find(p => p.number === 2)?.hasFile ? (
+                  <div style={{
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '8px',
+                    backgroundColor: '#fff'
+                  }}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {pdfFiles.find(p => p.number === 2)?.fileName}
+                        </span>
+                      </div>
+                      <Space size="small">
+                        <Button
+                          size="small"
+                          icon={<EyeOutlined />}
+                          onClick={() => handlePDFPreview(2)}
+                        >
+                          Xem
+                        </Button>
+                        <Button
+                          size="small"
+                          icon={<DownloadOutlined />}
+                          onClick={() => handlePDFDownload(2, pdfFiles.find(p => p.number === 2)?.fileName)}
+                        >
+                          Tải về
+                        </Button>
+                        <Popconfirm
+                          title="Xác nhận xóa PDF"
+                          description="Bạn có chắc chắn muốn xóa file này?"
+                          onConfirm={() => handlePDFDelete(2)}
+                          okText="Xóa"
+                          cancelText="Hủy"
+                          okButtonProps={{ danger: true }}
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                          >
+                            Xóa
+                          </Button>
+                        </Popconfirm>
+                      </Space>
+                    </Space>
+                  </div>
+                ) : (
+                  <Upload
+                    beforeUpload={(file) => handlePDFUpload(file, 2)}
+                    showUploadList={false}
+                    accept=".pdf"
+                  >
+                    <Button
+                      icon={<UploadOutlined />}
+                      loading={uploadingPDF[2]}
+                      block
+                    >
+                      {uploadingPDF[2] ? 'Đang upload...' : 'Chọn file PDF'}
+                    </Button>
+                  </Upload>
+                )}
+              </Form.Item>
+            </Col>
+
+            {/* PDF 3: Gia công ngoại hình */}
+            <Col span={12}>
+              <Form.Item label="Gia công ngoại hình">
+                {pdfFiles.find(p => p.number === 3)?.hasFile ? (
+                  <div style={{
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '8px',
+                    backgroundColor: '#fff'
+                  }}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {pdfFiles.find(p => p.number === 3)?.fileName}
+                        </span>
+                      </div>
+                      <Space size="small">
+                        <Button
+                          size="small"
+                          icon={<EyeOutlined />}
+                          onClick={() => handlePDFPreview(3)}
+                        >
+                          Xem
+                        </Button>
+                        <Button
+                          size="small"
+                          icon={<DownloadOutlined />}
+                          onClick={() => handlePDFDownload(3, pdfFiles.find(p => p.number === 3)?.fileName)}
+                        >
+                          Tải về
+                        </Button>
+                        <Popconfirm
+                          title="Xác nhận xóa PDF"
+                          description="Bạn có chắc chắn muốn xóa file này?"
+                          onConfirm={() => handlePDFDelete(3)}
+                          okText="Xóa"
+                          cancelText="Hủy"
+                          okButtonProps={{ danger: true }}
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                          >
+                            Xóa
+                          </Button>
+                        </Popconfirm>
+                      </Space>
+                    </Space>
+                  </div>
+                ) : (
+                  <Upload
+                    beforeUpload={(file) => handlePDFUpload(file, 3)}
+                    showUploadList={false}
+                    accept=".pdf"
+                  >
+                    <Button
+                      icon={<UploadOutlined />}
+                      loading={uploadingPDF[3]}
+                      block
+                    >
+                      {uploadingPDF[3] ? 'Đang upload...' : 'Chọn file PDF'}
+                    </Button>
+                  </Upload>
+                )}
+              </Form.Item>
+            </Col>
+
+            {/* PDF 4: Mạ */}
+            <Col span={12}>
+              <Form.Item label="Mạ">
+                {pdfFiles.find(p => p.number === 4)?.hasFile ? (
+                  <div style={{
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '8px',
+                    backgroundColor: '#fff'
+                  }}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {pdfFiles.find(p => p.number === 4)?.fileName}
+                        </span>
+                      </div>
+                      <Space size="small">
+                        <Button
+                          size="small"
+                          icon={<EyeOutlined />}
+                          onClick={() => handlePDFPreview(4)}
+                        >
+                          Xem
+                        </Button>
+                        <Button
+                          size="small"
+                          icon={<DownloadOutlined />}
+                          onClick={() => handlePDFDownload(4, pdfFiles.find(p => p.number === 4)?.fileName)}
+                        >
+                          Tải về
+                        </Button>
+                        <Popconfirm
+                          title="Xác nhận xóa PDF"
+                          description="Bạn có chắc chắn muốn xóa file này?"
+                          onConfirm={() => handlePDFDelete(4)}
+                          okText="Xóa"
+                          cancelText="Hủy"
+                          okButtonProps={{ danger: true }}
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                          >
+                            Xóa
+                          </Button>
+                        </Popconfirm>
+                      </Space>
+                    </Space>
+                  </div>
+                ) : (
+                  <Upload
+                    beforeUpload={(file) => handlePDFUpload(file, 4)}
+                    showUploadList={false}
+                    accept=".pdf"
+                  >
+                    <Button
+                      icon={<UploadOutlined />}
+                      loading={uploadingPDF[4]}
+                      block
+                    >
+                      {uploadingPDF[4] ? 'Đang upload...' : 'Chọn file PDF'}
+                    </Button>
+                  </Upload>
+                )}
+              </Form.Item>
+            </Col>
+
+            {/* PDF 5: Hàn điểm + Ép lớp */}
+            <Col span={12}>
+              <Form.Item label="Hàn điểm + Ép lớp">
+                {pdfFiles.find(p => p.number === 5)?.hasFile ? (
+                  <div style={{
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '8px',
+                    backgroundColor: '#fff'
+                  }}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {pdfFiles.find(p => p.number === 5)?.fileName}
+                        </span>
+                      </div>
+                      <Space size="small">
+                        <Button
+                          size="small"
+                          icon={<EyeOutlined />}
+                          onClick={() => handlePDFPreview(5)}
+                        >
+                          Xem
+                        </Button>
+                        <Button
+                          size="small"
+                          icon={<DownloadOutlined />}
+                          onClick={() => handlePDFDownload(5, pdfFiles.find(p => p.number === 5)?.fileName)}
+                        >
+                          Tải về
+                        </Button>
+                        <Popconfirm
+                          title="Xác nhận xóa PDF"
+                          description="Bạn có chắc chắn muốn xóa file này?"
+                          onConfirm={() => handlePDFDelete(5)}
+                          okText="Xóa"
+                          cancelText="Hủy"
+                          okButtonProps={{ danger: true }}
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                          >
+                            Xóa
+                          </Button>
+                        </Popconfirm>
+                      </Space>
+                    </Space>
+                  </div>
+                ) : (
+                  <Upload
+                    beforeUpload={(file) => handlePDFUpload(file, 5)}
+                    showUploadList={false}
+                    accept=".pdf"
+                  >
+                    <Button
+                      icon={<UploadOutlined />}
+                      loading={uploadingPDF[5]}
+                      block
+                    >
+                      {uploadingPDF[5] ? 'Đang upload...' : 'Chọn file PDF'}
+                    </Button>
+                  </Upload>
+                )}
+              </Form.Item>
+            </Col>
+
+            {/* PDF 6: LAZER */}
+            <Col span={12}>
+              <Form.Item label="LAZER ">
+                {pdfFiles.find(p => p.number === 6)?.hasFile ? (
+                  <div style={{
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '8px',
+                    backgroundColor: '#fff'
+                  }}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {pdfFiles.find(p => p.number === 6)?.fileName}
+                        </span>
+                      </div>
+                      <Space size="small">
+                        <Button
+                          size="small"
+                          icon={<EyeOutlined />}
+                          onClick={() => handlePDFPreview(6)}
+                        >
+                          Xem
+                        </Button>
+                        <Button
+                          size="small"
+                          icon={<DownloadOutlined />}
+                          onClick={() => handlePDFDownload(6, pdfFiles.find(p => p.number === 6)?.fileName)}
+                        >
+                          Tải về
+                        </Button>
+                        <Popconfirm
+                          title="Xác nhận xóa PDF"
+                          description="Bạn có chắc chắn muốn xóa file này?"
+                          onConfirm={() => handlePDFDelete(6)}
+                          okText="Xóa"
+                          cancelText="Hủy"
+                          okButtonProps={{ danger: true }}
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                          >
+                            Xóa
+                          </Button>
+                        </Popconfirm>
+                      </Space>
+                    </Space>
+                  </div>
+                ) : (
+                  <Upload
+                    beforeUpload={(file) => handlePDFUpload(file, 6)}
+                    showUploadList={false}
+                    accept=".pdf"
+                  >
+                    <Button
+                      icon={<UploadOutlined />}
+                      loading={uploadingPDF[6]}
+                      block
+                    >
+                      {uploadingPDF[6] ? 'Đang upload...' : 'Chọn file PDF'}
+                    </Button>
+                  </Upload>
+                )}
+              </Form.Item>
+            </Col>
+
+            {/* PDF 7: Other */}
+            <Col span={12}>
+              <Form.Item label="Other">
+                {pdfFiles.find(p => p.number === 7)?.hasFile ? (
+                  <div style={{
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '8px',
+                    backgroundColor: '#fff'
+                  }}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {pdfFiles.find(p => p.number === 7)?.fileName}
+                        </span>
+                      </div>
+                      <Space size="small">
+                        <Button
+                          size="small"
+                          icon={<EyeOutlined />}
+                          onClick={() => handlePDFPreview(7)}
+                        >
+                          Xem
+                        </Button>
+                        <Button
+                          size="small"
+                          icon={<DownloadOutlined />}
+                          onClick={() => handlePDFDownload(7, pdfFiles.find(p => p.number === 7)?.fileName)}
+                        >
+                          Tải về
+                        </Button>
+                        <Popconfirm
+                          title="Xác nhận xóa PDF"
+                          description="Bạn có chắc chắn muốn xóa file này?"
+                          onConfirm={() => handlePDFDelete(7)}
+                          okText="Xóa"
+                          cancelText="Hủy"
+                          okButtonProps={{ danger: true }}
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                          >
+                            Xóa
+                          </Button>
+                        </Popconfirm>
+                      </Space>
+                    </Space>
+                  </div>
+                ) : (
+                  <Upload
+                    beforeUpload={(file) => handlePDFUpload(file, 7)}
+                    showUploadList={false}
+                    accept=".pdf"
+                  >
+                    <Button
+                      icon={<UploadOutlined />}
+                      loading={uploadingPDF[7]}
+                      block
+                    >
+                      {uploadingPDF[7] ? 'Đang upload...' : 'Chọn file PDF'}
+                    </Button>
+                  </Upload>
+                )}
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Mực phủ sơn, lấp lỗ, in chữ">
+                {pdfFiles.find(p => p.number === 8)?.hasFile ? (
+                  <div style={{
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '8px',
+                    backgroundColor: '#fff'
+                  }}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <FileOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
+                        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {pdfFiles.find(p => p.number === 8)?.fileName}
+                        </span>
+                      </div>
+                      <Space size="small">
+                        <Button
+                          size="small"
+                          icon={<EyeOutlined />}
+                          onClick={() => handlePDFPreview(8)}
+                        >
+                          Xem
+                        </Button>
+                        <Button
+                          size="small"
+                          icon={<DownloadOutlined />}
+                          onClick={() => handlePDFDownload(8, pdfFiles.find(p => p.number === 8)?.fileName)}
+                        >
+                          Tải về
+                        </Button>
+                        <Popconfirm
+                          title="Xác nhận xóa PDF"
+                          description="Bạn có chắc chắn muốn xóa file này?"
+                          onConfirm={() => handlePDFDelete(8)}
+                          okText="Xóa"
+                          cancelText="Hủy"
+                          okButtonProps={{ danger: true }}
+                        >
+                          <Button
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                          >
+                            Xóa
+                          </Button>
+                        </Popconfirm>
+                      </Space>
+                    </Space>
+                  </div>
+                ) : (
+                  <Upload
+                    beforeUpload={(file) => handlePDFUpload(file, 8)}
+                    showUploadList={false}
+                    accept=".pdf"
+                  >
+                    <Button
+                      icon={<UploadOutlined />}
+                      loading={uploadingPDF[8]}
+                      block
+                    >
+                      {uploadingPDF[8] ? 'Đang upload...' : 'Chọn file PDF'}
+                    </Button>
+                  </Upload>
+                )}
+              </Form.Item>
+            </Col>
+
+            {/* Summary */}
+            <Col span={24}>
+              <Alert
+                message={`Đã upload ${pdfFiles.filter(p => p.hasFile).length}/8 file PDF`}
+                type="info"
+                showIcon
+                style={{ marginTop: '16px' }}
+              />
+            </Col>
+          </>
+        )}
+      </Row>
       <Divider orientation="left">Thời gian thực hiện</Divider>
       <Row
         gutter={16}
         style={{
           backgroundColor: '#f0f8ff',
-          padding: '16px',
           borderRadius: '8px',
           marginBottom: '16px',
         }}
       >
         <Col span={24}>
-          <Form.Item 
-            name="LINK_RAKRAK_DOCUMENT" 
+          <Form.Item
+            name="LINK_RAKRAK_DOCUMENT"
             label="Link RakRak Document (Kết quả chứng nhận)"
             extra="Khi điền link và lưu, sẽ tự động cập nhật 'Ngày hoàn thành thực tế'"
           >
@@ -347,7 +1010,7 @@ const ProgressTab = ({
           </Form.Item>
         </Col>
         <Col span={8}>
-          <Form.Item name="COMPLETION_DEADLINE" label={<span>Kỳ hạn hoàn thành <span style={{color: 'red'}}>*</span></span>}>
+          <Form.Item name="COMPLETION_DEADLINE" label={<span>Kỳ hạn hoàn thành <span style={{ color: 'red' }}>*</span></span>}>
             <DatePicker
               style={{ width: '100%' }}
               format="DD/MM/YYYY"
@@ -358,8 +1021,8 @@ const ProgressTab = ({
         </Col>
 
         <Col span={8}>
-          <Form.Item 
-            name="ACTUAL_COMPLETION_DATE" 
+          <Form.Item
+            name="ACTUAL_COMPLETION_DATE"
             label="Ngày hoàn thành thực tế"
             extra="Khi điền ngày và lưu, trạng thái sẽ tự động chuyển sang 'Hoàn thành'"
           >
@@ -368,8 +1031,8 @@ const ProgressTab = ({
         </Col>
 
         <Col span={8}>
-          <Form.Item 
-            name="PD5_REPORT_ACTUAL_DATE" 
+          <Form.Item
+            name="PD5_REPORT_ACTUAL_DATE"
             label="Ngày gửi báo cáo tới PD5 thực tế"
             extra="Tự động cập nhật khi điền Link gửi báo cáo đánh giá"
           >
@@ -378,8 +1041,8 @@ const ProgressTab = ({
         </Col>
 
         <Col span={8}>
-          <Form.Item 
-            name="DATE_PD5_HQ" 
+          <Form.Item
+            name="DATE_PD5_HQ"
             label="Ngày PD5 gửi tổng"
             extra="Khi điền ngày và lưu, trạng thái sẽ tự động chuyển sang 'HQ đang phê duyệt'"
           >
@@ -387,8 +1050,8 @@ const ProgressTab = ({
           </Form.Item>
         </Col>
         <Col span={8}>
-          <Form.Item 
-            name="DATE_PD5_GET_REPORT" 
+          <Form.Item
+            name="DATE_PD5_GET_REPORT"
             label="Ngày PD5 tổng hợp báo cáo"
           >
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
@@ -400,7 +1063,6 @@ const ProgressTab = ({
         gutter={16}
         style={{
           backgroundColor: '#fff1f0',
-          padding: '16px',
           borderRadius: '8px',
           marginBottom: '16px',
         }}
@@ -419,15 +1081,15 @@ const ProgressTab = ({
             Quay lại
           </Button>
         </Col>
-        
+
         <Col>
-          <Button 
-        type="primary" 
-        loading={loading}
-        onClick={handleFormSave}  
-      >
-        Lưu tiến độ
-      </Button>
+          <Button
+            type="primary"
+            loading={loading}
+            onClick={handleFormSave}
+          >
+            Lưu tiến độ
+          </Button>
         </Col>
       </Row>
     </Form>

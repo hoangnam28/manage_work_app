@@ -500,25 +500,57 @@ const removeImage = (imageType) => {
               <Input placeholder="Nhập cấu tạo lớp" />
             </Form.Item>
           </Col>
-
           <Col span={8}>
             <Form.Item
-              name="RELIABILITY_LEVEL_ID"
-              label="Mức độ tin cậy"
+              name="MATERIAL_CLASS_ID"
+              label="Phân loại vật liệu"
               rules={[
-                { required: true, message: 'Vui lòng chọn mức độ tin cậy' },
+                { required: true, message: 'Vui lòng chọn phân loại vật liệu' },
               ]}
             >
-              <Select placeholder="Chọn mức độ tin cậy">
-                {options?.reliabilityLevel?.map((level) => (
-                  <Option key={level.id} value={level.id}>
-                    {level.nameVi} ({level.nameJp})
+              <Select 
+                placeholder="Chọn phân loại vật liệu"
+                onChange={(value) => {
+                  // Tìm material class được chọn
+                  const selectedMaterialClass = options?.materialClass?.find(
+                    item => item.id === value
+                  );
+                  
+                  if (selectedMaterialClass) {
+                    const nameVi = selectedMaterialClass.nameVi || '';
+                    const nameJp = selectedMaterialClass.nameJp || '';
+                    
+                    // Kiểm tra điều kiện
+                    const isBaseMaterial = 
+                      [1, 2, 3].includes(value) || 
+                      nameVi.startsWith('Vật liệu nền') ||
+                      nameJp.startsWith('Vật liệu nền');
+                    
+                    if (isBaseMaterial) {
+                      // Tìm "Ngoài đối tượng"
+                      const outOfScopeLevel = options?.reliabilityLevel?.find(
+                        level => 
+                          level.nameVi === 'Ngoài đối tượng' || 
+                          level.nameJp === '対象外'
+                      );
+                      
+                      if (outOfScopeLevel) {
+                        form.setFieldsValue({
+                          RELIABILITY_LEVEL_ID: outOfScopeLevel.id
+                        });
+                      }
+                    }
+                  }
+                }}
+              >
+                {options?.materialClass?.map(materialClassId => (
+                  <Option key={materialClassId.id} value={materialClassId.id}>
+                    {materialClassId.nameVi} ({materialClassId.nameJp})
                   </Option>
                 ))}
               </Select>
             </Form.Item>
           </Col>
-
           <Col span={8}>
             <Form.Item
               name="usage"
@@ -630,25 +662,23 @@ const removeImage = (imageType) => {
               <Input placeholder="Nhập tên vật liệu" />
             </Form.Item>
           </Col>
-
           <Col span={12}>
             <Form.Item
-              name="MATERIAL_CLASS_ID"
-              label="Phân loại vật liệu"
+              name="RELIABILITY_LEVEL_ID"
+              label="Mức độ tin cậy"
               rules={[
-                { required: true, message: 'Vui lòng chọn phân loại vật liệu' },
+                { required: true, message: 'Vui lòng chọn mức độ tin cậy' },
               ]}
             >
-              <Select placeholder="Chọn phân loại vật liệu">
-                {options?.materialClass?.map(materialClassId => (
-                  <Option key={materialClassId.id} value={materialClassId.id}>
-                    {materialClassId.nameVi} ({materialClassId.nameJp})
+              <Select placeholder="Chọn mức độ tin cậy">
+                {options?.reliabilityLevel?.map((level) => (
+                  <Option key={level.id} value={level.id}>
+                    {level.nameVi} ({level.nameJp})
                   </Option>
                 ))}
               </Select>
             </Form.Item>
           </Col>
-
           <Col span={8}>
             <Form.Item
               name="materialProperty1Id"
