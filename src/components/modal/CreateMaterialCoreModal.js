@@ -64,104 +64,105 @@ const MaterialCoreModal = ({
     }
   }, [open, editingRecord, cloneRecord, mode, form]);
 
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
+const handleSubmit = async () => {
+  try {
+    const values = await form.validateFields();
 
-      // Format dates
-      if (values.request_date) {
-        values.request_date = values.request_date.toDate().toISOString();
-      }
-      if (values.complete_date) {
-        values.complete_date = values.complete_date.toDate().toISOString();
-      }
-      
-      if (mode === 'view') {
-        if (onCancel) onCancel();
+    // Format dates
+    if (values.request_date) {
+      values.request_date = values.request_date.toDate().toISOString();
+    }
+    if (values.complete_date) {
+      values.complete_date = values.complete_date.toDate().toISOString();
+    }
+    
+    if (mode === 'view') {
+      if (onCancel) onCancel();
+      return;
+    }
+
+    // Xử lý theo từng mode
+    if (mode === 'edit' && editingRecord) {
+      // Kiểm tra reason trước khi submit
+      if (!values.reason || values.reason.trim() === '') {
+        toast.error('Vui lòng nhập lý do cập nhật!');
         return;
       }
 
-      // Xử lý theo từng mode
-      if (mode === 'edit' && editingRecord) {
-        // Kiểm tra reason trước khi submit
-        if (!values.reason || values.reason.trim() === '') {
-          toast.error('Vui lòng nhập lý do cập nhật!');
-          return;
+      // Logic cho Edit mode
+      const recordId = editingRecord.ID || editingRecord.id;
+      if (!recordId) {
+        throw new Error('Không tìm thấy ID bản ghi');
+      }
+      values.id = recordId;
+
+      const changedValues = { id: recordId, reason: values.reason };
+      const formattedRecord = Object.keys(editingRecord).reduce((acc, key) => {
+        acc[key.toLowerCase()] = editingRecord[key];
+        return acc;
+      }, {});
+
+      Object.keys(values).forEach(key => {
+        if (key === 'id' || key === 'reason') return;
+        
+        let oldValue = formattedRecord[key];
+        let newValue = values[key];
+        
+        if (key === 'request_date' || key === 'complete_date') {
+          oldValue = oldValue ? new Date(oldValue).toISOString() : null;
+          newValue = newValue ? newValue : null;
         }
-
-        // Logic cho Edit mode
-        const recordId = editingRecord.ID || editingRecord.id;
-        if (!recordId) {
-          throw new Error('Không tìm thấy ID bản ghi');
+        
+        if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+          changedValues[key] = newValue;
         }
-        values.id = recordId;
+      });
 
-        const changedValues = { id: recordId, reason: values.reason };
-        const formattedRecord = Object.keys(editingRecord).reduce((acc, key) => {
-          acc[key.toLowerCase()] = editingRecord[key];
-          return acc;
-        }, {});
+      const result = await onSubmit(changedValues, mode);
 
-        Object.keys(values).forEach(key => {
-          if (key === 'id' || key === 'reason') return;
-          
-          let oldValue = formattedRecord[key];
-          let newValue = values[key];
-          
-          if (key === 'request_date' || key === 'complete_date') {
-            oldValue = oldValue ? new Date(oldValue).toISOString() : null;
-            newValue = newValue ? newValue : null;
-          }
-          
-          if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
-            changedValues[key] = newValue;
-          }
-        });
-
-        const result = await onSubmit(changedValues, mode);
-
-        if (result && result.success === false) {
-          throw new Error(result.message || 'Có lỗi xảy ra');
-        }
-
-        toast.success(result?.message || 'Cập nhật thành công!');
-      } 
-      else if (mode === 'clone') {
-        // Logic cho Clone mode
-        const result = await onSubmit(values, mode);
-
-        if (result && result.success === false) {
-          throw new Error(result.message || 'Có lỗi xảy ra');
-        }
-
-        toast.success(result?.message || 'Tạo bản sao thành công!');
-      } 
-      else {
-        // Logic cho Create mode (mode === 'create' hoặc không xác định)
-        const result = await onSubmit(values, mode);
-
-        if (result && result.success === false) {
-          throw new Error(result.message || 'Có lỗi xảy ra');
-        }
-
-        toast.success(result?.message || 'Thêm mới thành công!');
+      if (result && result.success === false) {
+        throw new Error(result.message || 'Có lỗi xảy ra');
       }
 
-      // Reset form và đóng modal sau khi thành công
-      form.resetFields();
-      if (onCancel) onCancel();
+      toast.success(result?.message || 'Cập nhật thành công!');
+    } 
+    else if (mode === 'clone') {
+      // Logic cho Clone mode
+      const result = await onSubmit(values, mode);
 
-    } catch (error) {
-      console.error('Submit failed:', error);
-      // Hiển thị toast error khi có lỗi validation hoặc lỗi khác
-      if (error.errorFields) {
-        toast.error('Vui lòng nhập lý do cập nhật!');
-      } else {
-        toast.error(error.message || 'Có lỗi xảy ra, vui lòng thử lại!');
+      if (result && result.success === false) {
+        throw new Error(result.message || 'Có lỗi xảy ra');
       }
+
+      toast.success(result?.message || 'Tạo bản sao thành công!');
+    } 
+    else {
+      // Logic cho Create mode (mode === 'create' hoặc không xác định)
+      const result = await onSubmit(values, mode);
+
+      if (result && result.success === false) {
+        throw new Error(result.message || 'Có lỗi xảy ra');
+      }
+
+      toast.success(result?.message || 'Thêm mới thành công!');
     }
-  };
 
+    // Reset form và đóng modal sau khi thành công
+    form.resetFields();
+    if (onCancel) onCancel();
+
+  } catch (error) {
+    console.error('Submit failed:', error);
+    // Hiển thị toast error khi có lỗi validation hoặc lỗi khác
+    if (error.errorFields) {
+      toast.error('Vui lòng nhập lý do cập nhật!');
+    } else {
+      toast.error(error.message || 'Có lỗi xảy ra, vui lòng thử lại!');
+    }
+  }
+};
+
+  // Generate modal title based on mode
   const getModalTitle = () => {
     switch (mode) {
       case 'edit':
@@ -466,10 +467,10 @@ const MaterialCoreModal = ({
               </Form.Item>
               <Form.Item
                 name="dk_01g"
-                label="DK_0.1GHz"
-                rules={[{ required: true, message: "Vui lòng nhập DK_0.1GHz" }]}
+                label="DK_1GHz"
+                rules={[{ required: true, message: "Vui lòng nhập DK_1GHz" }]}
               >
-                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Nhập DK_0.1GHz vd: 4.24' />
+                <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} placeholder='Nhập DK_1GHz vd: 4.24' />
               </Form.Item>
               <Form.Item
                 name="df_01g"
@@ -642,13 +643,13 @@ const MaterialCoreModal = ({
               </Form.Item>
               <Form.Item
                 name="dk_8ghz"
-                label="DK @ 8GHz"
+                label="DK_8GHz"
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>
               <Form.Item
                 name="df_8ghz"
-                label="DF @ 8GHz"
+                label="DF_8GHz"
               >
                 <InputNumber style={{ width: '100%' }} step={0.0001} precision={4} />
               </Form.Item>

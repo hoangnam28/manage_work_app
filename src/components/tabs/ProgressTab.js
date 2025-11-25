@@ -68,7 +68,7 @@ const ProgressTab = ({
       return isRigidMaterial && !hasUlCert123 && (isProcessingOnly || isBoth);
       
     case 7:
-      // PDF 7 (Other) - không hiển thị trong logic hiện tại
+      // PDF 7 (Other) - hiển thị trong logic hiện tại
       return true;
       
     case 8: // Mực phủ sơn
