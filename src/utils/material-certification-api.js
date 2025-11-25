@@ -578,3 +578,34 @@ export const downloadCertificationPDF = async (certificationId, pdfNumber, fileN
     throw error;
   }
 };
+
+export const submittingReported = async (certificationId) => {
+  try {
+    if (!certificationId) {
+      throw new Error('Thiếu thông tin để nộp báo cáo');
+    }
+    
+    console.log('📤 Submitting report for certification:', certificationId);
+    
+    const response = await axiosInstance.post(
+      `/material-certification/submit-report/${certificationId}`
+    );
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Lỗi khi nộp báo cáo');
+    }
+    
+    console.log('✅ Report submitted successfully:', response.data);
+    
+    return response.data; // ← Thêm return này
+    
+  } catch (error) {
+    console.error('❌ Error submitting report:', error);
+    
+    if (error.response) {
+      throw new Error(error.response.data?.message || 'Lỗi khi nộp báo cáo');
+    }
+    
+    throw error;
+  }
+};

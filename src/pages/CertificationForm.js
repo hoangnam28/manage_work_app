@@ -168,7 +168,8 @@ const CertificationForm = () => {
           REPORT_LINK: data.REPORT_LINK || undefined,
           LINK_RAKRAK_DOCUMENT: data.LINK_RAKRAK_DOCUMENT || undefined,
           DATE_PD5_HQ: data.DATE_PD5_HQ ? moment(data.DATE_PD5_HQ) : null,
-          DATE_PD5_GET_REPORT: data.DATE_PD5_GET_REPORT ? moment(data.DATE_PD5_GET_REPORT) : null
+          DATE_PD5_GET_REPORT: data.DATE_PD5_GET_REPORT ? moment(data.DATE_PD5_GET_REPORT) : null,
+          UL_CERT_STATUS: data.UL_CERT_STATUS || undefined
         };
         progressForm.setFieldsValue(progressFormValues);
       }
@@ -258,7 +259,7 @@ const CertificationForm = () => {
     if (values.PERSON_IN_CHARGE !== undefined) formattedValues.personInCharge = values.PERSON_IN_CHARGE;
     if (values.DEPARTMENT_IN_CHARGE !== undefined) formattedValues.departmentInCharge = values.DEPARTMENT_IN_CHARGE;
     
-    // ✅ QUAN TRỌNG: Date fields - xử lý cả null để cho phép xóa
+    // Date fields
     if (values.START_DATE !== undefined) {
       formattedValues.startDate = values.START_DATE ? values.START_DATE.format('YYYY-MM-DD') : null;
     }
@@ -281,7 +282,7 @@ const CertificationForm = () => {
       formattedValues.datePd5GetReport = values.DATE_PD5_GET_REPORT ? values.DATE_PD5_GET_REPORT.format('YYYY-MM-DD') : null;
     }
     
-    // ✅ Xử lý các trường text - cho phép xóa (gửi null)
+    // Other fields
     if (values.PROGRESS_ID !== undefined) formattedValues.progress = values.PROGRESS_ID;
     if (values.TOTAL_TIME !== undefined) formattedValues.totalTime = values.TOTAL_TIME;
     if (values.MATERIAL_NAME !== undefined) formattedValues.materialName = values.MATERIAL_NAME;
@@ -294,7 +295,12 @@ const CertificationForm = () => {
     if (values.FACTORY_LEVEL !== undefined) formattedValues.factoryLevel = values.FACTORY_LEVEL;
     if (values.PRICE_REQUEST !== undefined) formattedValues.priceRequest = values.PRICE_REQUEST;
     
-    // ✅ Các trường quan trọng cho auto-update status - cho phép null
+    // ✅ THÊM: Xử lý UL_CERT_STATUS từ ProgressTab
+    if (values.UL_CERT_STATUS !== undefined) {
+      formattedValues.ulStatusId = values.UL_CERT_STATUS;
+    }
+    
+    // Links
     if (values.REPORT_LINK !== undefined) {
       formattedValues.reportLink = values.REPORT_LINK || null;
     }
@@ -302,7 +308,7 @@ const CertificationForm = () => {
       formattedValues.linkRakrakDocument = values.LINK_RAKRAK_DOCUMENT || null;
     }
 
-    // Certification data
+    // Certification data from main form
     if (certificationData.RELEASE_DATE !== undefined) {
       formattedValues.releaseDate = certificationData.RELEASE_DATE ? certificationData.RELEASE_DATE.format('YYYY-MM-DD') : null;
     }
@@ -323,7 +329,12 @@ const CertificationForm = () => {
     if (certificationData.MATERIAL_PROPERTY2_ID !== undefined) formattedValues.materialProperty2Id = certificationData.MATERIAL_PROPERTY2_ID;
     if (certificationData.MATERIAL_PROPERTY3_ID !== undefined) formattedValues.materialProperty3Id = certificationData.MATERIAL_PROPERTY3_ID;
     if (certificationData.MATERIAL_STATUS !== undefined) formattedValues.materialStatusId = certificationData.MATERIAL_STATUS;
-    if (certificationData.UL_CERT_STATUS !== undefined) formattedValues.ulStatusId = certificationData.UL_CERT_STATUS;
+    
+    // ✅ QUAN TRỌNG: Ưu tiên UL_CERT_STATUS từ ProgressTab, nếu không có thì lấy từ CertificationForm
+    if (values.UL_CERT_STATUS === undefined && certificationData.UL_CERT_STATUS !== undefined) {
+      formattedValues.ulStatusId = certificationData.UL_CERT_STATUS;
+    }
+    
     if (certificationData.NOTES_2 !== undefined) formattedValues.notes2 = certificationData.NOTES_2;
 
     console.log('📤 Submitting progress data:', formattedValues);
@@ -971,6 +982,7 @@ const CertificationForm = () => {
                 personAccept={certificationData?.PERSON_ACCEPT}
                 personAcceptQL2={certificationData?.PERSON_ACCEPT_QL2}
                 onApprovalSuccess={handleApproval}
+                ulCerStatus={certificationData?.UL_CERT_STATUS}
               />
             </TabPane>
 
