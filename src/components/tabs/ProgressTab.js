@@ -10,9 +10,10 @@ import {
   deleteCertificationPDF,
   downloadCertificationPDF,
   getCertificationPDFUrl,
-  submittingReported 
+  submittingReported,
+  resubmitReport
 } from '../../utils/material-certification-api';
-import moment from 'moment'; 
+import moment from 'moment';
 
 const { TextArea } = Input;
 
@@ -34,56 +35,62 @@ const ProgressTab = ({
   const [loadingPDFs, setLoadingPDFs] = useState(false);
   const [uploadingPDF, setUploadingPDF] = useState({});
   const [submittingReport, setSubmittingReport] = useState(false);
+  const [canSubmitReport, setCanSubmitReport] = useState(false);
+  const [reuploadedFiles, setReuploadedFiles] = useState([]);
+  const [canResubmitReport, setCanResubmitReport] = useState(false);
+  const [resubmittingReport, setResubmittingReport] = useState(false);
+
+
 
   // ===== HELPER FUNCTION: Kiểm tra PDF nào cần hiển thị =====
   const shouldShowPDF = useCallback((pdfNumber) => {
-  const materialClassId = form.getFieldValue('MATERIAL_CLASS_ID');
-  const priceRequest = form.getFieldValue('PRICE_REQUEST');
-  const ulCertValue = form.getFieldValue('UL_CERT_STATUS') || ulCertStatus;
-  
-  const isPaintRelatedMaterial = materialClassId && [4, 5, 7].includes(materialClassId);
-  const isRigidMaterial = materialClassId === 1;
-  const hasUlCert123 = ulCertValue && [1, 2, 3].includes(ulCertValue);
-  
-  const isProcessingOnly = priceRequest === 'Gia công';
-  const isBoth = priceRequest === 'Gia công & Tin cậy';
-  
-  switch(pdfNumber) {
-    case 1: // Báo cáo tin cậy
-      // Ẩn nếu: ID [4,5,7] + "Gia công" HOẶC ID 1 + "Gia công"
-      if (isPaintRelatedMaterial && isProcessingOnly) return false;
-      if (isRigidMaterial && isProcessingOnly) return false;
-      // Hiển thị trong tất cả các trường hợp khác (bao gồm "Tin cậy" và "Gia công & Tin cậy")
-      return true;
-      
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-      // Hiển thị nếu: ID 1 + ("Gia công" HOẶC "Gia công & Tin cậy")
-      return isRigidMaterial && (isProcessingOnly || isBoth);
-      
-    case 6:
-      // Hiển thị nếu: ID 1 + UL khác [1,2,3] + ("Gia công" HOẶC "Gia công & Tin cậy")
-      return isRigidMaterial && !hasUlCert123 && (isProcessingOnly || isBoth);
-      
-    case 7:
-      // PDF 7 (Other) - hiển thị trong logic hiện tại
-      return true;
-      
-    case 8: // Mực phủ sơn
-      // Hiển thị nếu: ID [4,5,7] + ("Gia công" HOẶC "Gia công & Tin cậy")
-      return isPaintRelatedMaterial && (isProcessingOnly || isBoth);
-      
-    default:
-      return false;
-  }
-}, [form, ulCertStatus]);
+    const materialClassId = form.getFieldValue('MATERIAL_CLASS_ID');
+    const priceRequest = form.getFieldValue('PRICE_REQUEST');
+    const ulCertValue = form.getFieldValue('UL_CERT_STATUS') || ulCertStatus;
+
+    const isPaintRelatedMaterial = materialClassId && [4, 5, 7].includes(materialClassId);
+    const isRigidMaterial = materialClassId === 1;
+    const hasUlCert123 = ulCertValue && [1, 2, 3].includes(ulCertValue);
+
+    const isProcessingOnly = priceRequest === 'Gia công';
+    const isBoth = priceRequest === 'Gia công & Tin cậy';
+
+    switch (pdfNumber) {
+      case 1: // Báo cáo tin cậy
+        // Ẩn nếu: ID [4,5,7] + "Gia công" HOẶC ID 1 + "Gia công"
+        if (isPaintRelatedMaterial && isProcessingOnly) return false;
+        if (isRigidMaterial && isProcessingOnly) return false;
+        // Hiển thị trong tất cả các trường hợp khác (bao gồm "Tin cậy" và "Gia công & Tin cậy")
+        return true;
+
+      case 2:
+      case 3:
+      case 4:
+      case 5:
+        // Hiển thị nếu: ID 1 + ("Gia công" HOẶC "Gia công & Tin cậy")
+        return isRigidMaterial && (isProcessingOnly || isBoth);
+
+      case 6:
+        // Hiển thị nếu: ID 1 + UL khác [1,2,3] + ("Gia công" HOẶC "Gia công & Tin cậy")
+        return isRigidMaterial && !hasUlCert123 && (isProcessingOnly || isBoth);
+
+      case 7:
+        // PDF 7 (Other) - không hiển thị trong logic hiện tại
+        return true;
+
+      case 8: // Mực phủ sơn
+        // Hiển thị nếu: ID [4,5,7] + ("Gia công" HOẶC "Gia công & Tin cậy")
+        return isPaintRelatedMaterial && (isProcessingOnly || isBoth);
+
+      default:
+        return false;
+    }
+  }, [form, ulCertStatus]);
 
   // ===== COMPONENT CON: Render từng PDF item =====
   const PDFUploadItem = ({ pdfNumber, label }) => {
     const pdfFile = pdfFiles.find(p => p.number === pdfNumber);
-    
+
     return (
       <Col span={12} key={`pdf-${pdfNumber}`}>
         <Form.Item label={label}>
@@ -102,16 +109,16 @@ const ProgressTab = ({
                   </span>
                 </div>
                 <Space size="small">
-                  <Button 
-                    size="small" 
-                    icon={<EyeOutlined />} 
+                  <Button
+                    size="small"
+                    icon={<EyeOutlined />}
                     onClick={() => handlePDFPreview(pdfNumber)}
                   >
                     Xem
                   </Button>
-                  <Button 
-                    size="small" 
-                    icon={<DownloadOutlined />} 
+                  <Button
+                    size="small"
+                    icon={<DownloadOutlined />}
                     onClick={() => handlePDFDownload(pdfNumber, pdfFile.fileName)}
                   >
                     Tải về
@@ -132,9 +139,9 @@ const ProgressTab = ({
               </Space>
             </div>
           ) : (
-            <Upload 
-              beforeUpload={(file) => handlePDFUpload(file, pdfNumber)} 
-              showUploadList={false} 
+            <Upload
+              beforeUpload={(file) => handlePDFUpload(file, pdfNumber)}
+              showUploadList={false}
               accept=".pdf"
             >
               <Button icon={<UploadOutlined />} loading={uploadingPDF[pdfNumber]} block>
@@ -152,6 +159,12 @@ const ProgressTab = ({
     const materialClassId = form.getFieldValue('MATERIAL_CLASS_ID');
     const priceRequest = form.getFieldValue('PRICE_REQUEST');
     const ulCertValue = form.getFieldValue('UL_CERT_STATUS') || ulCertStatus;
+    const reportActualDate = form.getFieldValue('PD5_REPORT_ACTUAL_DATE');
+
+    // ✅ Nếu đã có ngày nộp báo cáo -> không cho nộp lại
+    if (reportActualDate) {
+      return false
+    }
 
     const isPaintRelatedMaterial = materialClassId && [4, 5, 7].includes(materialClassId);
     const isRigidMaterial = materialClassId === 1;
@@ -189,21 +202,30 @@ const ProgressTab = ({
       }
     }
 
-    return requiredPDFs.every(pdfNum => 
+    const allUploaded = requiredPDFs.every(pdfNum =>
       pdfFiles.find(p => p.number === pdfNum)?.hasFile
     );
+
+    return allUploaded;
   }, [form, ulCertStatus, pdfFiles]);
+
+  useEffect(() => {
+    const canSubmit = checkAllRequiredPDFsUploaded();
+    setCanSubmitReport(canSubmit);
+  }, [checkAllRequiredPDFsUploaded, pdfFiles]);
+
+
 
   // ===== HANDLE SUBMIT REPORT =====
   const handleSubmitReport = async () => {
     try {
       setSubmittingReport(true);
-      
+
       const result = await submittingReported(certificationId);
-      
+
       if (result.success) {
         toast.success('Nộp báo cáo thành công');
-        
+
         const reportDate = result.data.reportDate;
         form.setFieldsValue({
           PD5_REPORT_ACTUAL_DATE: reportDate ? moment(reportDate) : null
@@ -237,7 +259,71 @@ const ProgressTab = ({
       });
     }
   };
+  // Sửa hàm checkCanResubmit (dòng ~308)
+const checkCanResubmit = useCallback(() => {
+  const reportActualDate = form.getFieldValue('PD5_REPORT_ACTUAL_DATE');
 
+  // ✅ Nếu đã có report date -> KHÔNG cho resubmit
+  if (reportActualDate) {
+    setCanResubmitReport(false);
+    return;
+  }
+
+  // ✅ Phải có file đã reupload
+  const hasReuploadedFiles = reuploadedFiles.length > 0;
+  
+  // ✅ Kiểm tra có đủ tất cả file yêu cầu không (bỏ qua check reportActualDate)
+  const materialClassId = form.getFieldValue('MATERIAL_CLASS_ID');
+  const priceRequest = form.getFieldValue('PRICE_REQUEST');
+  const ulCertValue = form.getFieldValue('UL_CERT_STATUS') || ulCertStatus;
+
+  const isPaintRelatedMaterial = materialClassId && [4, 5, 7].includes(materialClassId);
+  const isRigidMaterial = materialClassId === 1;
+  const hasUlCert123 = ulCertValue && [1, 2, 3].includes(ulCertValue);
+
+  const isProcessingOnly = priceRequest === 'Gia công';
+  const isReliabilityOnly = priceRequest === 'Tin cậy';
+  const isBoth = priceRequest === 'Gia công & Tin cậy';
+
+  let requiredPDFs = [];
+
+  if (isPaintRelatedMaterial) {
+    if (isProcessingOnly) {
+      requiredPDFs = [8];
+    } else if (isReliabilityOnly) {
+      requiredPDFs = [1];
+    } else if (isBoth) {
+      requiredPDFs = [1, 8];
+    }
+  } else if (isRigidMaterial) {
+    if (isReliabilityOnly) {
+      requiredPDFs = [1];
+    } else if (isProcessingOnly) {
+      if (hasUlCert123) {
+        requiredPDFs = [2, 3, 4, 5];
+      } else {
+        requiredPDFs = [2, 3, 4, 5, 6];
+      }
+    } else if (isBoth) {
+      if (hasUlCert123) {
+        requiredPDFs = [1, 2, 3, 4, 5];
+      } else {
+        requiredPDFs = [1, 2, 3, 4, 5, 6];
+      }
+    }
+  }
+
+  // ✅ Kiểm tra tất cả các PDF yêu cầu đã có chưa
+  const allUploaded = requiredPDFs.every(pdfNum =>
+    pdfFiles.find(p => p.number === pdfNum)?.hasFile
+  );
+
+  setCanResubmitReport(hasReuploadedFiles && allUploaded);
+}, [reuploadedFiles, form, pdfFiles, ulCertStatus]); // ✅ Thêm dependencies
+
+  useEffect(() => {
+  checkCanResubmit();
+}, [checkCanResubmit, pdfFiles, reuploadedFiles]);
   // ===== LOAD PDF INFO =====
   const loadPDFInfo = useCallback(async () => {
     if (!certificationId) return;
@@ -283,12 +369,31 @@ const ProgressTab = ({
 
     try {
       setUploadingPDF(prev => ({ ...prev, [pdfNumber]: true }));
-      await uploadCertificationPDF(certificationId, pdfNumber, file);
-      toast.success(`Tải lên ${getPDFLabel(pdfNumber)} thành công`);
-      
+
+      const result = await uploadCertificationPDF(certificationId, pdfNumber, file);
+
+      // ✅ Nếu là reupload, thêm vào danh sách
+      if (result.isReupload) {
+        setReuploadedFiles(prev => {
+          // Remove duplicates
+          const filtered = prev.filter(f => f.pdfNumber !== pdfNumber);
+          return [...filtered, {
+            pdfNumber: pdfNumber,
+            fileName: file.name,
+            label: getPDFLabel(pdfNumber)
+          }];
+        });
+
+        toast.success(`Upload lại ${getPDFLabel(pdfNumber)} thành công`, {
+          duration: 3000
+        });
+      } else {
+        toast.success(`Tải lên ${getPDFLabel(pdfNumber)} thành công`);
+      }
+
       await loadPDFInfo();
       handleFormChange();
-      
+
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('Lỗi khi tải lên PDF: ' + (error.message || ''));
@@ -299,20 +404,51 @@ const ProgressTab = ({
     return false;
   };
 
-  // ===== HANDLE PDF DELETE =====
-  const handlePDFDelete = async (pdfNumber) => {
-    try {
-      await deleteCertificationPDF(certificationId, pdfNumber);
-      toast.success(`Xoá ${getPDFLabel(pdfNumber)} thành công`);
-      
-      await loadPDFInfo();
-      handleFormChange();
-      
-    } catch (error) {
-      toast.error('Lỗi khi xoá PDF: ' + error.message);
-    }
-  };
 
+const handlePDFDelete = async (pdfNumber) => {
+  try {
+    console.log('🗑️ Deleting PDF:', pdfNumber);
+
+    const result = await deleteCertificationPDF(certificationId, pdfNumber);
+    console.log('✅ Delete result:', result);
+
+    toast.success(`Xoá ${getPDFLabel(pdfNumber)} thành công`);
+
+    // ✅ Reload PDF list
+    await loadPDFInfo();
+
+    // ✅ XÓA khỏi danh sách reuploadedFiles
+    setReuploadedFiles(prev => prev.filter(f => f.pdfNumber !== pdfNumber));
+
+    // ✅ Nếu đã revert về status 3
+    if (result.revertedToStatus3) {
+      console.log('🔙 Reverted to status 3 (Đang đánh giá)');
+      form.setFieldsValue({
+        PD5_REPORT_ACTUAL_DATE: null,
+        PROGRESS_ID: 3
+      });
+      toast.warning('Đã xóa hết PDF. Trạng thái quay về "Đang đánh giá". Vui lòng upload lại và nộp báo cáo.', {
+        duration: 6000
+      });
+    }
+    // ✅ Nếu còn PDF khác nhưng có thể nộp lại
+    else if (result.canResubmit) {
+      console.log('🔄 Can resubmit report');
+      form.setFieldsValue({
+        PD5_REPORT_ACTUAL_DATE: null
+      });
+      toast.info('Đã xóa file PDF. Vui lòng upload lại file cần thiết và nộp báo cáo.', {
+        duration: 5000
+      });
+    }
+
+    handleFormChange();
+
+  } catch (error) {
+    console.error('❌ Error deleting PDF:', error);
+    toast.error('Lỗi khi xoá PDF: ' + error.message);
+  }
+};
   // ===== HANDLE PDF DOWNLOAD =====
   const handlePDFDownload = async (pdfNumber, fileName) => {
     try {
@@ -331,7 +467,6 @@ const ProgressTab = ({
     }
   };
 
-  // ===== CHECK REQUIRED FIELDS =====
   const checkRequiredFields = () => {
     const values = form.getFieldsValue([
       'FACTORY_CERT_READY',
@@ -350,7 +485,6 @@ const ProgressTab = ({
     setCanApprove(!!allFilled);
   };
 
-  // ===== HANDLE FORM SAVE =====
   const handleFormSave = async () => {
     try {
       await form.validateFields();
@@ -358,6 +492,36 @@ const ProgressTab = ({
       setIsDataSaved(true);
     } catch (error) {
       console.error('Validation error:', error);
+    }
+  };
+  const handleResubmitReport = async () => {
+    try {
+      setResubmittingReport(true);
+
+      const result = await resubmitReport(certificationId, reuploadedFiles);
+
+      if (result.success) {
+        toast.success('Nộp lại báo cáo thành công. Email đã được gửi.', {
+          duration: 5000
+        });
+
+        const reportDate = result.data.reportDate;
+        form.setFieldsValue({
+          PD5_REPORT_ACTUAL_DATE: reportDate ? moment(reportDate) : null,
+          PROGRESS_ID: 4
+        });
+
+        // ✅ Clear danh sách file đã reupload
+        setReuploadedFiles([]);
+        setCanResubmitReport(false);
+
+        await loadPDFInfo();
+      }
+    } catch (error) {
+      console.error('Error resubmitting report:', error);
+      toast.error('Lỗi khi nộp lại báo cáo: ' + error.message);
+    } finally {
+      setResubmittingReport(false);
     }
   };
 
@@ -628,54 +792,97 @@ const ProgressTab = ({
         ) : (
           <>
             {/* SECTION 1: BÁO CÁO TIN CẬY */}
-            {(shouldShowPDF(1) || shouldShowPDF(7))&& (
+            {(shouldShowPDF(1) || shouldShowPDF(7)) && (
               <>
                 <Col span={24}>
                   <Divider orientation="left" style={{ marginTop: 0 }}>
                     Báo cáo tính tin cậy
                   </Divider>
                 </Col>
-                <PDFUploadItem pdfNumber={1} label="Báo cáo tin cậy (Reliability)" />
+                <PDFUploadItem pdfNumber={1} label="Báo cáo tin cậy" />
               </>
             )}
 
             {/* SECTION 2: BÁO CÁO GIA CÔNG */}
-            {(shouldShowPDF(2) || shouldShowPDF(3) || shouldShowPDF(4) || 
+            {(shouldShowPDF(2) || shouldShowPDF(3) || shouldShowPDF(4) ||
               shouldShowPDF(5) || shouldShowPDF(6) || shouldShowPDF(8) || shouldShowPDF(7)) && (
-              <>
-                <Col span={24}>
-                  <Divider orientation="left">Báo cáo tính gia công</Divider>
-                </Col>
+                <>
+                  <Col span={24}>
+                    <Divider orientation="left">Báo cáo tính gia công</Divider>
+                  </Col>
 
-                {shouldShowPDF(2) && <PDFUploadItem pdfNumber={2} label="NC" />}
-                {shouldShowPDF(3) && <PDFUploadItem pdfNumber={3} label="Gia công ngoại hình" />}
-                {shouldShowPDF(4) && <PDFUploadItem pdfNumber={4} label="Mạ (Plating)" />}
-                {shouldShowPDF(5) && <PDFUploadItem pdfNumber={5} label="Hàn điểm + Ép lớp (Spot Welding + Laminate)" />}
-                {shouldShowPDF(6) && <PDFUploadItem pdfNumber={6} label="LAZER" />}
-                {shouldShowPDF(8) && <PDFUploadItem pdfNumber={8} label="Mực phủ sơn, lấp lỗ, in chữ (Ink)" />}
-                {shouldShowPDF(7) && <PDFUploadItem pdfNumber={7} label="Báo cáo khác"/> }
-              </>
-            )}
+                  {shouldShowPDF(2) && <PDFUploadItem pdfNumber={2} label="NC" />}
+                  {shouldShowPDF(3) && <PDFUploadItem pdfNumber={3} label="Gia công ngoại hình" />}
+                  {shouldShowPDF(4) && <PDFUploadItem pdfNumber={4} label="Mạ" />}
+                  {shouldShowPDF(5) && <PDFUploadItem pdfNumber={5} label="Hàn điểm + Ép lớp" />}
+                  {shouldShowPDF(6) && <PDFUploadItem pdfNumber={6} label="LAZER" />}
+                  {shouldShowPDF(8) && <PDFUploadItem pdfNumber={8} label="Mực phủ sơn, lấp lỗ, in chữ (Ink)" />}
+                  {shouldShowPDF(7) && <PDFUploadItem pdfNumber={7} label="Báo cáo khác" />}
+                </>
+              )}
 
             {/* MESSAGE KHI CHƯA CHỌN ĐIỀU KIỆN */}
-            {!shouldShowPDF(1) && !shouldShowPDF(2) && !shouldShowPDF(3) && 
-             !shouldShowPDF(4) && !shouldShowPDF(5) && !shouldShowPDF(6) && 
-             !shouldShowPDF(8) && (
-              <Col span={24}>
-                <Alert
-                  message="Chưa chọn yêu cầu báo cáo"
-                  description="Vui lòng chọn 'Phân loại vật liệu', 'Cấu trúc lớp đạt chứng nhận' và 'Yêu cầu báo cáo đánh giá' để hiển thị các mẫu PDF cần upload."
-                  type="info"
-                  showIcon
-                  style={{ margin: '20px 0' }}
-                />
-              </Col>
-            )}
+            {!shouldShowPDF(1) && !shouldShowPDF(2) && !shouldShowPDF(3) &&
+              !shouldShowPDF(4) && !shouldShowPDF(5) && !shouldShowPDF(6) &&
+              !shouldShowPDF(8) && (
+                <Col span={24}>
+                  <Alert
+                    message="Chưa chọn yêu cầu báo cáo"
+                    description="Vui lòng chọn 'Phân loại vật liệu', 'Cấu trúc lớp đạt chứng nhận' và 'Yêu cầu báo cáo đánh giá' để hiển thị các mẫu PDF cần upload."
+                    type="info"
+                    showIcon
+                    style={{ margin: '20px 0' }}
+                  />
+                </Col>
+              )}
           </>
         )}
       </Row>
-      <Col span={24}>
-          {checkAllRequiredPDFsUploaded() ? (
+      <Col>
+      </Col>
+      {canResubmitReport && (
+        <Col span={24}>
+          <Form.Item label="Nộp lại báo cáo đánh giá">
+            <Space direction="vertical" style={{ width: '100%' }}>
+              <Alert
+                message={`Đã upload lại ${reuploadedFiles.length} file PDF`}
+                description={
+                  <div>
+                    <p style={{ marginBottom: '8px' }}>Danh sách file đã upload lại:</p>
+                    <ul style={{ marginBottom: 0, paddingLeft: '20px' }}>
+                      {reuploadedFiles.map((file, index) => (
+                        <li key={index}>
+                          <strong>{file.label}</strong>: {file.fileName}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                }
+                type="success"
+                showIcon
+              />
+              <Button
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                onClick={handleResubmitReport}
+                loading={resubmittingReport}
+                size="large"
+                style={{
+                  backgroundColor: '#10b981',
+                  borderColor: '#10b981'
+                }}
+              >
+                Nộp lại báo cáo và gửi email thông báo
+              </Button>
+            </Space>
+          </Form.Item>
+        </Col>
+      )}
+
+      {/* ===== EXISTING SUBMIT REPORT SECTION (for first time) ===== */}
+      {!canResubmitReport && (
+        <Col span={24}>
+          {canSubmitReport ? (
             <Form.Item label="Nộp báo cáo đánh giá">
               <Space direction="vertical" style={{ width: '100%' }}>
                 <Alert
@@ -692,8 +899,8 @@ const ProgressTab = ({
                   disabled={!!form.getFieldValue('PD5_REPORT_ACTUAL_DATE')}
                   size="large"
                 >
-                  {form.getFieldValue('PD5_REPORT_ACTUAL_DATE') 
-                    ? 'Đã nộp báo cáo' 
+                  {form.getFieldValue('PD5_REPORT_ACTUAL_DATE')
+                    ? 'Đã nộp báo cáo'
                     : 'Nộp báo cáo'}
                 </Button>
               </Space>
@@ -701,14 +908,26 @@ const ProgressTab = ({
           ) : (
             <Form.Item label="Nộp báo cáo đánh giá">
               <Alert
-                message="Chưa đủ điều kiện nộp báo cáo"
-                description="Vui lòng upload đầy đủ các file PDF yêu cầu trước khi nộp báo cáo"
-                type="warning"
+                message={
+                  form.getFieldValue('PD5_REPORT_ACTUAL_DATE')
+                    ? 'Đã nộp báo cáo trước đó'
+                    : 'Chưa đủ điều kiện nộp báo cáo'
+                }
+                description={
+                  form.getFieldValue('PD5_REPORT_ACTUAL_DATE')
+                    ? `Đã nộp ngày: ${moment(
+                      form.getFieldValue('PD5_REPORT_ACTUAL_DATE')
+                    ).format('DD/MM/YYYY')}`
+                    : 'Vui lòng upload đầy đủ các file PDF yêu cầu trước khi nộp báo cáo'
+                }
+                type={form.getFieldValue('PD5_REPORT_ACTUAL_DATE') ? 'info' : 'warning'}
                 showIcon
               />
             </Form.Item>
           )}
         </Col>
+      )}
+
       <Divider orientation="left">Thời gian thực hiện</Divider>
       <Row
         gutter={16}

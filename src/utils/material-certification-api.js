@@ -524,12 +524,19 @@ export const deleteCertificationPDF = async (certificationId, pdfNumber) => {
     if (pdfNumber < 1 || pdfNumber > 8) {
       throw new Error('Số PDF không hợp lệ (1-8)');
     }
+    
+    console.log(`🗑️ Deleting PDF${pdfNumber} from certification:`, certificationId);
+    
     const response = await axiosInstance.delete(
       `/material-certification/pdf/${certificationId}/${pdfNumber}`
     );
+    
     if (!response.data || !response.data.success) {
       throw new Error(response.data?.message || 'Lỗi khi xóa PDF');
     }
+    
+    console.log('✅ Delete response:', response.data);
+    
     return response.data;
   } catch (error) {
     console.error('❌ Error deleting certification PDF:', error);
@@ -597,13 +604,46 @@ export const submittingReported = async (certificationId) => {
     
     console.log('✅ Report submitted successfully:', response.data);
     
-    return response.data; // ← Thêm return này
+    return response.data; 
     
   } catch (error) {
     console.error('❌ Error submitting report:', error);
     
     if (error.response) {
       throw new Error(error.response.data?.message || 'Lỗi khi nộp báo cáo');
+    }
+    
+    throw error;
+  }
+};
+
+
+export const resubmitReport = async (certificationId, reuploadedFiles) => {
+  try {
+    if (!certificationId) {
+      throw new Error('Thiếu thông tin để nộp lại báo cáo');
+    }
+    
+    console.log('📤 Resubmitting report with files:', reuploadedFiles);
+    
+    const response = await axiosInstance.post(
+      `/material-certification/resubmit-report/${certificationId}`,
+      { reuploadedFiles }
+    );
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Lỗi khi nộp lại báo cáo');
+    }
+    
+    console.log('✅ Report resubmitted successfully:', response.data);
+    
+    return response.data;
+    
+  } catch (error) {
+    console.error('❌ Error resubmitting report:', error);
+    
+    if (error.response) {
+      throw new Error(error.response.data?.message || 'Lỗi khi nộp lại báo cáo');
     }
     
     throw error;
