@@ -1,25 +1,19 @@
 
 export const PDF_LABELS = {
-  1: 'RELABILITY FILE',
-  2: 'NC FILE',
-  3: 'GCNG FILE',
-  4: 'PLATING FILE',
-  5: 'LAMINATE + SPOT WELDING FILE',
-  6: 'LAZER FILE',
-  7: 'Other FILE',
+  1: 'Báo cáo tin cậy',
+  2: 'NC',
+  3: 'Gia công ngoại hình',
+  4: 'Mạ',
+  5: 'Hàn điểm + ép lớp',
+  6: 'Lazer',
+  7: 'Báo cáo khác',
   8: 'Mực phủ sơn, lấp lỗ, in chữ'
 };
 
-/**
- * Lấy label cho PDF number
- */
 export const getPDFLabel = (pdfNumber) => {
   return PDF_LABELS[pdfNumber] || `PDF ${pdfNumber}`;
 };
 
-/**
- * Lấy tất cả PDF configs
- */
 export const getAllPDFConfigs = () => {
   return Object.keys(PDF_LABELS).map(num => ({
     number: parseInt(num),

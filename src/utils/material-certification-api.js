@@ -446,16 +446,22 @@ export const softDeleteCertification = async (id) => {
   }
 };
 
-export const uploadCertificationPDF = async (certificationId, pdfNumber, file) => {
+export const uploadCertificationPDF = async (certificationId, pdfNumber, files) => {
   try{
-    if(!certificationId || !pdfNumber || !file){
+    if(!certificationId || !pdfNumber || !files){
       throw new Error('Thiếu thông tin để upload PDF');
   }
   if(pdfNumber < 1 || pdfNumber > 8){
     throw new Error('Số PDF không hợp lệ (1-8)');
   }
     const formData = new FormData();
-    formData.append('pdfFile', file);
+    if(Array.isArray(files)){
+      files.forEach(file => {
+        formData.append('pdfFiles', file);
+      });
+    }else{
+      formData.append('pdfFiles', files)
+    }
     const response = await axiosInstance.post(
       `/material-certification/upload-pdf/${certificationId}/${pdfNumber}`,
       formData,
@@ -474,6 +480,31 @@ export const uploadCertificationPDF = async (certificationId, pdfNumber, file) =
     console.error('❌ Error uploading certification PDF:', error);
     if (error.response) {
       throw new Error(error.response.data?.message || 'Lỗi khi upload PDF');
+    }
+    throw error;
+  }
+};
+export const getCertificationPDFFiles = async (certificationId, pdfNumber) => {
+  try {
+    if (!certificationId || !pdfNumber) {
+      throw new Error('Thiếu ID certification hoặc số PDF');
+    }
+
+    // console.log(`📄 Fetching files for PDF${pdfNumber}, certification:`, certificationId);
+
+    const response = await axiosInstance.get(
+      `/material-certification/pdf-files/${certificationId}/${pdfNumber}`
+    );
+
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Lỗi khi lấy danh sách file');
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error fetching PDF files:', error);
+    if (error.response) {
+      throw new Error(error.response.data?.message || 'Lỗi khi lấy danh sách file');
     }
     throw error;
   }
@@ -500,7 +531,7 @@ export const getCertificationPDFInFor = async (certificationId, ) => {
     if(!certificationId){
       throw new Error('ID certification không hợp lệ');
     }
-    console.log('📄 Fetching PDF info for certification:', certificationId);
+    // console.log('📄 Fetching PDF info for certification:', certificationId);
     const response = await axiosInstance.get(
       `/material-certification/pdf-info/${certificationId}`
     );
@@ -516,6 +547,56 @@ export const getCertificationPDFInFor = async (certificationId, ) => {
     throw error;
   }
 };
+
+// Thêm hàm để xóa 1 file cụ thể
+export const deleteCertificationPDFFile = async (certificationId, fileId) => {
+  try {
+    if (!certificationId || !fileId) {
+      throw new Error('Thiếu ID certification hoặc file ID');
+    }
+
+    console.log(`🗑️ Deleting file ${fileId} from certification:`, certificationId);
+
+    const response = await axiosInstance.delete(
+      `/material-certification/pdf-file/${certificationId}/${fileId}`
+    );
+
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Lỗi khi xóa file');
+    }
+
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error deleting PDF file:', error);
+    if (error.response) {
+      throw new Error(error.response.data?.message || 'Lỗi khi xóa file');
+    }
+    throw error;
+  }
+};
+
+// Thêm hàm để lấy URL của 1 file cụ thể
+export const getCertificationPDFFileUrl = (certificationId, fileId) => {
+  if (!certificationId || !fileId) {
+    console.warn('Missing certificationId or fileId for PDF file URL generation');
+    return null;
+  }
+
+  const certId = parseInt(certificationId);
+  const fId = parseInt(fileId);
+
+  if (isNaN(certId) || isNaN(fId)) {
+    console.warn('Invalid certificationId or fileId:', certificationId, fileId);
+    return null;
+  }
+
+  const baseURL = axiosInstance.defaults.baseURL || '';
+  const url = `${baseURL}/material-certification/pdf-file/${certId}/${fId}`;
+
+  return url;
+};
+
+// Sửa hàm deleteCertificationPDF (giữ nguyên cho backward compatibility)
 export const deleteCertificationPDF = async (certificationId, pdfNumber) => {
   try {
     if (!certificationId || !pdfNumber) {
@@ -524,19 +605,19 @@ export const deleteCertificationPDF = async (certificationId, pdfNumber) => {
     if (pdfNumber < 1 || pdfNumber > 8) {
       throw new Error('Số PDF không hợp lệ (1-8)');
     }
-    
-    console.log(`🗑️ Deleting PDF${pdfNumber} from certification:`, certificationId);
-    
+
+    console.log(`🗑️ Deleting all files for PDF${pdfNumber} from certification:`, certificationId);
+
     const response = await axiosInstance.delete(
       `/material-certification/pdf/${certificationId}/${pdfNumber}`
     );
-    
+
     if (!response.data || !response.data.success) {
       throw new Error(response.data?.message || 'Lỗi khi xóa PDF');
     }
-    
+
     console.log('✅ Delete response:', response.data);
-    
+
     return response.data;
   } catch (error) {
     console.error('❌ Error deleting certification PDF:', error);
@@ -545,8 +626,7 @@ export const deleteCertificationPDF = async (certificationId, pdfNumber) => {
     }
     throw error;
   }
-}
-
+};
 export const downloadCertificationPDF = async (certificationId, pdfNumber, fileName) => {
   try {
     if (!certificationId || !pdfNumber) {

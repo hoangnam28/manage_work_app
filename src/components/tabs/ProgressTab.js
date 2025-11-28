@@ -1,19 +1,20 @@
-import { Form, Input, DatePicker, Select, Button, Row, Col, Divider, Alert, Space, Card, Upload, Popconfirm, Spin } from 'antd';
+import { Form, Input, DatePicker, Select, Button, Row, Col, Divider, Alert, Space, Card, Upload, Popconfirm, Spin, Badge } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { CheckCircleOutlined, UploadOutlined, DeleteOutlined, DownloadOutlined, EyeOutlined, FileOutlined } from '@ant-design/icons';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { getPDFLabel } from '../../utils/pdf-labels';
 import {
   uploadCertificationPDF,
   getCertificationPDFInFor,
-  deleteCertificationPDF,
-  downloadCertificationPDF,
-  getCertificationPDFUrl,
   submittingReported,
-  resubmitReport
+  resubmitReport,
+  getCertificationPDFFiles,
+  deleteCertificationPDFFile,
+  fetchCertificationHistory
 } from '../../utils/material-certification-api';
 import moment from 'moment';
+import locale from 'antd/es/date-picker/locale/vi_VN';
 
 const { TextArea } = Input;
 
@@ -39,8 +40,14 @@ const ProgressTab = ({
   const [reuploadedFiles, setReuploadedFiles] = useState([]);
   const [canResubmitReport, setCanResubmitReport] = useState(false);
   const [resubmittingReport, setResubmittingReport] = useState(false);
+  const [pdfFilesList, setPdfFilesList] = useState({});
+  const [loadingFiles, setLoadingFiles] = useState({});
+  const [hasUploadHistory, setHasUploadHistory] = useState(false);
 
 
+
+
+  const uploadingRef = useRef({});
 
   // ===== HELPER FUNCTION: Kiểm tra PDF nào cần hiển thị =====
   const shouldShowPDF = useCallback((pdfNumber) => {
@@ -75,7 +82,7 @@ const ProgressTab = ({
         return isRigidMaterial && !hasUlCert123 && (isProcessingOnly || isBoth);
 
       case 7:
-        // PDF 7 (Other) - không hiển thị trong logic hiện tại
+        // PDF 7 (Other) - luôn hiển thị là optional
         return true;
 
       case 8: // Mực phủ sơn
@@ -87,85 +94,170 @@ const ProgressTab = ({
     }
   }, [form, ulCertStatus]);
 
+  const loadPDFFiles = useCallback(async (pdfNumber) => {
+    if (!certificationId) return;
+    try {
+      setLoadingFiles(prev => ({ ...prev, [pdfNumber]: true }));
+      const response = await getCertificationPDFFiles(certificationId, pdfNumber);
+
+      if (response.success) {
+        setPdfFilesList(prev => ({
+          ...prev,
+          [pdfNumber]: response.files || []
+        }));
+      }
+    } catch (error) {
+      console.error(`Error loading files for PDF${pdfNumber}:`, error);
+      // Don't show error toast, just log it
+    } finally {
+      setLoadingFiles(prev => ({ ...prev, [pdfNumber]: false }));
+    }
+  }, [certificationId]);
+
   // ===== COMPONENT CON: Render từng PDF item =====
   const PDFUploadItem = ({ pdfNumber, label }) => {
     const pdfFile = pdfFiles.find(p => p.number === pdfNumber);
+    const files = pdfFilesList[pdfNumber] || [];
+    const fileCount = pdfFile?.fileCount || 0;
 
     return (
       <Col span={12} key={`pdf-${pdfNumber}`}>
-        <Form.Item label={label}>
-          {pdfFile?.hasFile ? (
-            <div style={{
-              border: '1px solid #d9d9d9',
-              borderRadius: '8px',
-              padding: '12px',
-              backgroundColor: '#fff'
-            }}>
-              <Space direction="vertical" style={{ width: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <FileOutlined style={{ color: '#1890ff', fontSize: '18px' }} />
-                  <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {pdfFile.fileName}
-                  </span>
-                </div>
-                <Space size="small">
-                  <Button
-                    size="small"
-                    icon={<EyeOutlined />}
-                    onClick={() => handlePDFPreview(pdfNumber)}
-                  >
-                    Xem
-                  </Button>
-                  <Button
-                    size="small"
-                    icon={<DownloadOutlined />}
-                    onClick={() => handlePDFDownload(pdfNumber, pdfFile.fileName)}
-                  >
-                    Tải về
-                  </Button>
-                  <Popconfirm
-                    title="Xác nhận xóa PDF"
-                    description="Bạn có chắc chắn muốn xóa file này?"
-                    onConfirm={() => handlePDFDelete(pdfNumber)}
-                    okText="Xóa"
-                    cancelText="Hủy"
-                    okButtonProps={{ danger: true }}
-                  >
-                    <Button size="small" danger icon={<DeleteOutlined />}>
-                      Xóa
-                    </Button>
-                  </Popconfirm>
-                </Space>
-              </Space>
-            </div>
-          ) : (
+        <Form.Item label={
+          <span>
+            {label}
+            {fileCount > 0 && (
+              <Badge
+                count={fileCount}
+                style={{ marginLeft: '8px', backgroundColor: '#52c41a' }}
+              />
+            )}
+          </span>
+        }>
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            {/* Upload button */}
             <Upload
-              beforeUpload={(file) => handlePDFUpload(file, pdfNumber)}
+              multiple
+              beforeUpload={() => false}
+              onChange={(info) => {
+              if (info.fileList.length > 0) {
+                // Chỉ lấy những file MỚI được thêm vào (chưa có status)
+                const newFiles = info.fileList
+                  .filter(file => !file.status) // Lọc file chưa được xử lý
+                  .map(f => f.originFileObj)
+                  .filter(Boolean); // Loại bỏ undefined
+                
+                if (newFiles.length > 0) {
+                  handlePDFUpload(newFiles, pdfNumber);
+                }
+              }
+            }}
               showUploadList={false}
               accept=".pdf"
             >
-              <Button icon={<UploadOutlined />} loading={uploadingPDF[pdfNumber]} block>
-                {uploadingPDF[pdfNumber] ? 'Đang upload...' : 'Chọn file PDF'}
+              <Button
+                icon={<UploadOutlined />}
+                loading={uploadingPDF[pdfNumber]}
+                block
+                type={fileCount > 0 ? "default" : "primary"}
+              >
+                {uploadingPDF[pdfNumber]
+                  ? 'Đang upload...'
+                  : fileCount > 0
+                    ? `Thêm file (${fileCount} file)`
+                    : 'Chọn file PDF'}
               </Button>
             </Upload>
-          )}
+
+            {/* List of uploaded files */}
+            {loadingFiles[pdfNumber] ? (
+              <div style={{ textAlign: 'center', padding: '20px' }}>
+                <Spin size="small" />
+              </div>
+            ) : files.length > 0 ? (
+              <div style={{
+                border: '1px solid #d9d9d9',
+                borderRadius: '8px',
+                padding: '12px',
+                backgroundColor: '#fafafa',
+                maxHeight: '300px',
+                overflowY: 'auto'
+              }}>
+                <Space direction="vertical" style={{ width: '100%' }} size="small">
+                  {files.map((file, index) => (
+                    <div
+                      key={file.fileId}  // ✅ Dùng fileId thay vì index
+                      style={{
+                        padding: '8px',
+                        backgroundColor: '#fff',
+                        borderRadius: '4px',
+                        border: '1px solid #e8e8e8'
+                      }}
+                    >
+                      <Space direction="vertical" style={{ width: '100%' }} size={4}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <FileOutlined style={{ color: '#1890ff', fontSize: '16px' }} />
+                          <span style={{
+                            flex: 1,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            fontWeight: 500
+                          }}>
+                            {index + 1}. {file.fileName}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#999', paddingLeft: '24px' }}>
+                          {(file.fileSize / 1024).toFixed(2)} KB
+                          {file.uploadDate && ` • ${moment(file.uploadDate, "DD-MMM-YY hh.mm.ss.SSSSSS A").format("DD-MMM-YY")}`}
+                        </div>
+                        <Space size="small" style={{ paddingLeft: '24px' }}>
+                          <Button
+                            size="small"
+                            icon={<EyeOutlined />}
+                            onClick={() => handlePreviewPDFFile(file.url)}
+                          >
+                            Xem
+                          </Button>
+                          <Button
+                            size="small"
+                            icon={<DownloadOutlined />}
+                            onClick={() => handlePDFDownload(file.url, file.fileName)}
+                          >
+                            Tải về
+                          </Button>
+                          <Popconfirm
+                            title="Xác nhận xóa file"
+                            description={`Bạn có chắc muốn xóa "${file.fileName}"?`}
+                            onConfirm={() => handlePDFDelete(file.fileId, pdfNumber)}  // ✅ Pass fileId
+                            okText="Xóa"
+                            cancelText="Hủy"
+                            okButtonProps={{ danger: true }}
+                          >
+                            <Button size="small" danger icon={<DeleteOutlined />}>
+                              Xóa
+                            </Button>
+                          </Popconfirm>
+                        </Space>
+                      </Space>
+                    </div>
+                  ))}
+                </Space>
+              </div>
+            ) : null}
+          </Space>
         </Form.Item>
       </Col>
     );
   };
-
-  // ===== CHECK ALL REQUIRED PDFs UPLOADED =====
   const checkAllRequiredPDFsUploaded = useCallback(() => {
     const materialClassId = form.getFieldValue('MATERIAL_CLASS_ID');
     const priceRequest = form.getFieldValue('PRICE_REQUEST');
     const ulCertValue = form.getFieldValue('UL_CERT_STATUS') || ulCertStatus;
     const reportActualDate = form.getFieldValue('PD5_REPORT_ACTUAL_DATE');
 
-    // ✅ Nếu đã có ngày nộp báo cáo -> không cho nộp lại
     if (reportActualDate) {
-      return false
+      return true;
     }
-
     const isPaintRelatedMaterial = materialClassId && [4, 5, 7].includes(materialClassId);
     const isRigidMaterial = materialClassId === 1;
     const hasUlCert123 = ulCertValue && [1, 2, 3].includes(ulCertValue);
@@ -202,13 +294,19 @@ const ProgressTab = ({
       }
     }
 
-    const allUploaded = requiredPDFs.every(pdfNum =>
-      pdfFiles.find(p => p.number === pdfNum)?.hasFile
-    );
+    // ✅ Check if each required PDF has at least 1 file
+    const allUploaded = requiredPDFs.every(pdfNum => {
+      const files = pdfFilesList[pdfNum] || [];
+      return files.length > 0;
+    });
 
     return allUploaded;
-  }, [form, ulCertStatus, pdfFiles]);
+  }, [form, ulCertStatus, pdfFilesList]);
 
+  useEffect(() => {
+    const canSubmit = checkAllRequiredPDFsUploaded();
+    setCanSubmitReport(canSubmit);
+  }, [checkAllRequiredPDFsUploaded]);
   useEffect(() => {
     const canSubmit = checkAllRequiredPDFsUploaded();
     setCanSubmitReport(canSubmit);
@@ -258,21 +356,23 @@ const ProgressTab = ({
         PD5_REPORT_DEADLINE: null
       });
     }
+     handleFormChange();
   };
-  // Sửa hàm checkCanResubmit (dòng ~308)
-const checkCanResubmit = useCallback(() => {
+  const checkCanResubmit = useCallback(() => {
   const reportActualDate = form.getFieldValue('PD5_REPORT_ACTUAL_DATE');
 
-  // ✅ Nếu đã có report date -> KHÔNG cho resubmit
+  // Nếu đã có report date → không cho resubmit
   if (reportActualDate) {
     setCanResubmitReport(false);
     return;
   }
 
-  // ✅ Phải có file đã reupload
-  const hasReuploadedFiles = reuploadedFiles.length > 0;
-  
-  // ✅ Kiểm tra có đủ tất cả file yêu cầu không (bỏ qua check reportActualDate)
+  // ✅ KIỂM TRA LỊCH SỬ: Nếu không có lịch sử upload → không cho resubmit
+  if (!hasUploadHistory) {
+    setCanResubmitReport(false);
+    return;
+  }
+
   const materialClassId = form.getFieldValue('MATERIAL_CLASS_ID');
   const priceRequest = form.getFieldValue('PRICE_REQUEST');
   const ulCertValue = form.getFieldValue('UL_CERT_STATUS') || ulCertStatus;
@@ -313,18 +413,18 @@ const checkCanResubmit = useCallback(() => {
     }
   }
 
-  // ✅ Kiểm tra tất cả các PDF yêu cầu đã có chưa
-  const allUploaded = requiredPDFs.every(pdfNum =>
-    pdfFiles.find(p => p.number === pdfNum)?.hasFile
-  );
+  // ✅ Kiểm tra tất cả required PDF đã upload
+  const allUploaded = requiredPDFs.every(pdfNum => {
+    const files = pdfFilesList[pdfNum] || [];
+    return files.length > 0;
+  });
 
-  setCanResubmitReport(hasReuploadedFiles && allUploaded);
-}, [reuploadedFiles, form, pdfFiles, ulCertStatus]); // ✅ Thêm dependencies
+  setCanResubmitReport(allUploaded);
+}, [form, ulCertStatus, pdfFilesList, hasUploadHistory]); // ✅ Thêm hasUploadHistory vào deps
 
   useEffect(() => {
-  checkCanResubmit();
-}, [checkCanResubmit, pdfFiles, reuploadedFiles]);
-  // ===== LOAD PDF INFO =====
+    checkCanResubmit();
+  }, [checkCanResubmit, pdfFiles, reuploadedFiles]);
   const loadPDFInfo = useCallback(async () => {
     if (!certificationId) return;
     try {
@@ -332,6 +432,11 @@ const checkCanResubmit = useCallback(() => {
       const response = await getCertificationPDFInFor(certificationId);
       if (response.success) {
         setPdfFiles(response.pdfFiles || []);
+        response.pdfFiles.forEach(pdf => {
+          if (pdf.hasFile && pdf.fileCount > 0) {
+            loadPDFFiles(pdf.number);
+          }
+        });
       }
     } catch (error) {
       console.error('Error loading PDF info:', error);
@@ -339,134 +444,237 @@ const checkCanResubmit = useCallback(() => {
     } finally {
       setLoadingPDFs(false);
     }
-  }, [certificationId]);
+  }, [certificationId, loadPDFFiles]);
 
   useEffect(() => {
     loadPDFInfo();
   }, [loadPDFInfo]);
 
-  // ===== HANDLE PDF UPLOAD =====
-  const handlePDFUpload = async (file, pdfNumber) => {
-    console.log('📄 File info:', {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      pdfNumber: pdfNumber
-    });
+  useEffect(() => {
+    loadPDFInfo();
+  }, [loadPDFInfo]);
 
+
+const handlePDFUpload = async (fileList, pdfNumber) => {
+  if (!fileList || fileList.length === 0) return false;
+
+  // ✅ Kiểm tra đang upload
+  const uploadKey = `${pdfNumber}-${fileList.map(f => f.name).join('-')}`;
+  if (uploadingRef.current[uploadKey]) {
+    console.log('⚠️ Duplicate upload prevented for:', uploadKey);
+    return false;
+  }
+
+  const files = Array.isArray(fileList) ? fileList : [fileList];
+
+  const invalidFiles = files.filter(file => {
     const isPDF = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-
-    if (!isPDF) {
-      toast.error('Chỉ chấp nhận file PDF');
-      return false;
-    }
-
     const isLt10MB = file.size / 1024 / 1024 < 10;
-    if (!isLt10MB) {
-      toast.error('File phải nhỏ hơn 10MB');
-      return false;
-    }
+    return !isPDF || !isLt10MB;
+  });
 
-    try {
-      setUploadingPDF(prev => ({ ...prev, [pdfNumber]: true }));
+  if (invalidFiles.length > 0) {
+    toast.error('Một số file không hợp lệ (chỉ chấp nhận PDF < 10MB)');
+    return false;
+  }
 
-      const result = await uploadCertificationPDF(certificationId, pdfNumber, file);
+  try {
+    uploadingRef.current[uploadKey] = true;
+    setUploadingPDF(prev => ({ ...prev, [pdfNumber]: true }));
 
-      // ✅ Nếu là reupload, thêm vào danh sách
-      if (result.isReupload) {
-        setReuploadedFiles(prev => {
-          // Remove duplicates
-          const filtered = prev.filter(f => f.pdfNumber !== pdfNumber);
-          return [...filtered, {
-            pdfNumber: pdfNumber,
-            fileName: file.name,
-            label: getPDFLabel(pdfNumber)
-          }];
-        });
+    const result = await uploadCertificationPDF(certificationId, pdfNumber, files);
+      if (result.success) {
+        if (result.isReupload) {
+          const uploadedFileNames = files.map(f => f.name);
+          setReuploadedFiles(prev => {
+            const existingIndex = prev.findIndex(f => f.pdfNumber === pdfNumber);
 
-        toast.success(`Upload lại ${getPDFLabel(pdfNumber)} thành công`, {
-          duration: 3000
-        });
-      } else {
-        toast.success(`Tải lên ${getPDFLabel(pdfNumber)} thành công`);
+            if (existingIndex !== -1) {
+              return prev.map((item, idx) =>
+                idx === existingIndex
+                  ? {
+                    ...item,
+                    files: [...item.files, ...uploadedFileNames]
+                  }
+                  : item
+              );
+            } else {
+              return [...prev, {
+                pdfNumber: pdfNumber,
+                label: getPDFLabel(pdfNumber),
+                files: uploadedFileNames
+              }];
+            }
+          });
+
+          toast.success(
+            `Upload lại ${files.length} file cho ${getPDFLabel(pdfNumber)} thành công`,
+            { duration: 3000 }
+          );
+        } else {
+          toast.success(`Tải lên ${files.length} file thành công`);
+        }
+
+        await loadPDFInfo();
+        await loadPDFFiles(pdfNumber);
+        handleFormChange();
       }
 
-      await loadPDFInfo();
-      handleFormChange();
-
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error('Lỗi khi tải lên PDF: ' + (error.message || ''));
-    } finally {
-      setUploadingPDF(prev => ({ ...prev, [pdfNumber]: false }));
-    }
+    console.error('Upload error:', error);
+    toast.error('Lỗi khi tải lên PDF: ' + (error.message || ''));
+  } finally {
+    delete uploadingRef.current[uploadKey];
+    setUploadingPDF(prev => ({ ...prev, [pdfNumber]: false }));
+  }
 
-    return false;
-  };
+  return false;
+};
 
-
-const handlePDFDelete = async (pdfNumber) => {
+  const handlePDFDelete = async (fileId, pdfNumber) => {
   try {
-    console.log('🗑️ Deleting PDF:', pdfNumber);
+    const result = await deleteCertificationPDFFile(certificationId, fileId);
 
-    const result = await deleteCertificationPDF(certificationId, pdfNumber);
-    console.log('✅ Delete result:', result);
+    if (result.success) {
+      toast.success(`Xóa file thành công`);
 
-    toast.success(`Xoá ${getPDFLabel(pdfNumber)} thành công`);
+      await loadPDFFiles(pdfNumber);
+      await loadPDFInfo();
 
-    // ✅ Reload PDF list
-    await loadPDFInfo();
+      const deletedFileName = result.deletedFile || 'unknown';
 
-    // ✅ XÓA khỏi danh sách reuploadedFiles
-    setReuploadedFiles(prev => prev.filter(f => f.pdfNumber !== pdfNumber));
+      setReuploadedFiles(prev => {
+        const existingIndex = prev.findIndex(f => f.pdfNumber === pdfNumber);
 
-    // ✅ Nếu đã revert về status 3
-    if (result.revertedToStatus3) {
-      console.log('🔙 Reverted to status 3 (Đang đánh giá)');
-      form.setFieldsValue({
-        PD5_REPORT_ACTUAL_DATE: null,
-        PROGRESS_ID: 3
+        if (existingIndex !== -1) {
+          const updatedFiles = prev[existingIndex].files.filter(
+            fileName => fileName !== deletedFileName
+          );
+
+          if (updatedFiles.length === 0) {
+            return prev.filter((_, idx) => idx !== existingIndex);
+          } else {
+            return prev.map((item, idx) =>
+              idx === existingIndex
+                ? { ...item, files: updatedFiles }
+                : item
+            );
+          }
+        }
+
+        return prev;
       });
-      toast.warning('Đã xóa hết PDF. Trạng thái quay về "Đang đánh giá". Vui lòng upload lại và nộp báo cáo.', {
-        duration: 6000
-      });
+
+      // ✅ THÊM: Cập nhật form khi backend xóa DATE_PD5_HQ
+      if (result.clearedDatePd5Hq) {
+        form.setFieldsValue({
+          DATE_PD5_HQ: null
+        });
+        toast.info('Ngày PD5 gửi tổng đã được xóa do xóa file PDF', {
+          duration: 4000
+        });
+      }
+
+      // ✅ THÊM: Cập nhật progress_id nếu revert về status 4
+      if (result.revertedToStatus4) {
+        form.setFieldsValue({
+          PROGRESS_ID: 4
+        });
+        toast.info('Trạng thái đã chuyển về "Đang tổng hợp báo cáo"', {
+          duration: 4000
+        });
+      }
+
+      if (result.revertedToStatus3) {
+        form.setFieldsValue({
+          PD5_REPORT_ACTUAL_DATE: null,
+          PROGRESS_ID: 3,
+          DATE_PD5_HQ: null  // ✅ Đảm bảo xóa DATE_PD5_HQ
+        });
+        setReuploadedFiles([]);
+        toast.warning('Đã xóa hết PDF. Trạng thái quay về "Đang đánh giá"', {
+          duration: 6000
+        });
+      } else if (result.canResubmit) {
+        form.setFieldsValue({
+          PD5_REPORT_ACTUAL_DATE: null,
+          DATE_PD5_HQ: null  // ✅ Đảm bảo xóa DATE_PD5_HQ
+        });
+        toast.info('Vui lòng upload lại file cần thiết và nộp báo cáo.', {
+          duration: 5000
+        });
+      }
+
+      handleFormChange();
     }
-    // ✅ Nếu còn PDF khác nhưng có thể nộp lại
-    else if (result.canResubmit) {
-      console.log('🔄 Can resubmit report');
-      form.setFieldsValue({
-        PD5_REPORT_ACTUAL_DATE: null
-      });
-      toast.info('Đã xóa file PDF. Vui lòng upload lại file cần thiết và nộp báo cáo.', {
-        duration: 5000
-      });
-    }
-
-    handleFormChange();
-
   } catch (error) {
-    console.error('❌ Error deleting PDF:', error);
-    toast.error('Lỗi khi xoá PDF: ' + error.message);
+    console.error('❌ Error deleting file:', error);
+    toast.error('Lỗi khi xóa file: ' + error.message);
   }
 };
-  // ===== HANDLE PDF DOWNLOAD =====
-  const handlePDFDownload = async (pdfNumber, fileName) => {
+
+
+  const handlePDFDownload = async (url, fileName) => {
     try {
-      await downloadCertificationPDF(certificationId, pdfNumber, fileName);
-    } catch (error) {
-      console.error('Download error:', error);
-      toast.error('Lỗi khi download PDF: ' + error.message);
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Download failed');
+      }
+
+      const blob = await response.blob();
+      const downloadUrl = URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      URL.revokeObjectURL(downloadUrl);
+
+      toast.success('Tải file thành công');
+    } catch (err) {
+      console.error('Download error:', err);
+      toast.error("Không thể tải file");
     }
   };
 
-  // ===== HANDLE PDF PREVIEW =====
-  const handlePDFPreview = (pdfNumber) => {
-    const url = getCertificationPDFUrl(certificationId, pdfNumber);
-    if (url) {
-      window.open(url, '_blank');
-    }
-  };
+  const handlePreviewPDFFile = (fileUrl) => {
+    window.open(fileUrl, '_blank');
+  }
 
+  const checkUploadHistory = useCallback(async () => {
+  if (!certificationId) return;
+  
+  try {
+    // Sử dụng API có sẵn
+    const data = await fetchCertificationHistory(certificationId);
+    
+    // Kiểm tra xem có lịch sử upload PDF hoặc submit report không
+    const hasHistory = data.data?.some(item => 
+      ['UPLOAD_PDF', 'REUPLOAD_PDF', 'SUBMIT_REPORT', 'RESUBMIT_REPORT'].includes(item.actionType)
+    );
+    
+    setHasUploadHistory(hasHistory);
+    
+    console.log('✅ Upload history check:', {
+      certificationId,
+      hasHistory,
+      totalHistoryRecords: data.data?.length || 0
+    });
+    
+  } catch (error) {
+    console.error('❌ Error checking upload history:', error);
+    // Nếu lỗi, set false để an toàn
+    setHasUploadHistory(false);
+  }
+}, [certificationId]);
+
+// Gọi khi component mount
+useEffect(() => {
+  checkUploadHistory();
+}, [checkUploadHistory]);
   const checkRequiredFields = () => {
     const values = form.getFieldsValue([
       'FACTORY_CERT_READY',
@@ -498,7 +706,14 @@ const handlePDFDelete = async (pdfNumber) => {
     try {
       setResubmittingReport(true);
 
-      const result = await resubmitReport(certificationId, reuploadedFiles);
+      // ✅ Format data để gửi lên backend
+      const formattedFiles = reuploadedFiles.map(item => ({
+        pdfNumber: item.pdfNumber,
+        label: item.label,
+        fileNames: item.files // Array of file names
+      }));
+
+      const result = await resubmitReport(certificationId, formattedFiles);
 
       if (result.success) {
         toast.success('Nộp lại báo cáo thành công. Email đã được gửi.', {
@@ -511,7 +726,6 @@ const handlePDFDelete = async (pdfNumber) => {
           PROGRESS_ID: 4
         });
 
-        // ✅ Clear danh sách file đã reupload
         setReuploadedFiles([]);
         setCanResubmitReport(false);
 
@@ -718,7 +932,7 @@ const handlePDFDelete = async (pdfNumber) => {
       <Row gutter={16} style={{ backgroundColor: '#e6f7ff', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
         <Col span={12}>
           <Form.Item name="START_DATE" label="Ngày bắt đầu">
-            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" placeholder="10/16/2024" />
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" locale={locale} placeholder="10/16/2024" />
           </Form.Item>
         </Col>
         <Col span={12}>
@@ -791,7 +1005,6 @@ const handlePDFDelete = async (pdfNumber) => {
           </Col>
         ) : (
           <>
-            {/* SECTION 1: BÁO CÁO TIN CẬY */}
             {(shouldShowPDF(1) || shouldShowPDF(7)) && (
               <>
                 <Col span={24}>
@@ -803,7 +1016,6 @@ const handlePDFDelete = async (pdfNumber) => {
               </>
             )}
 
-            {/* SECTION 2: BÁO CÁO GIA CÔNG */}
             {(shouldShowPDF(2) || shouldShowPDF(3) || shouldShowPDF(4) ||
               shouldShowPDF(5) || shouldShowPDF(6) || shouldShowPDF(8) || shouldShowPDF(7)) && (
                 <>
@@ -821,7 +1033,6 @@ const handlePDFDelete = async (pdfNumber) => {
                 </>
               )}
 
-            {/* MESSAGE KHI CHƯA CHỌN ĐIỀU KIỆN */}
             {!shouldShowPDF(1) && !shouldShowPDF(2) && !shouldShowPDF(3) &&
               !shouldShowPDF(4) && !shouldShowPDF(5) && !shouldShowPDF(6) &&
               !shouldShowPDF(8) && (
@@ -845,14 +1056,21 @@ const handlePDFDelete = async (pdfNumber) => {
           <Form.Item label="Nộp lại báo cáo đánh giá">
             <Space direction="vertical" style={{ width: '100%' }}>
               <Alert
-                message={`Đã upload lại ${reuploadedFiles.length} file PDF`}
+                message={`Đã upload lại ${reuploadedFiles.reduce((sum, item) => sum + item.files.length, 0)} file PDF`}
                 description={
                   <div>
                     <p style={{ marginBottom: '8px' }}>Danh sách file đã upload lại:</p>
                     <ul style={{ marginBottom: 0, paddingLeft: '20px' }}>
-                      {reuploadedFiles.map((file, index) => (
+                      {reuploadedFiles.map((item, index) => (
                         <li key={index}>
-                          <strong>{file.label}</strong>: {file.fileName}
+                          <strong>{item.label}</strong>:
+                          <ul style={{ marginTop: '4px', marginBottom: '4px' }}>
+                            {item.files.map((fileName, fileIdx) => (
+                              <li key={fileIdx} style={{ fontSize: '13px', color: '#666' }}>
+                                {fileName}
+                              </li>
+                            ))}
+                          </ul>
                         </li>
                       ))}
                     </ul>
@@ -872,7 +1090,7 @@ const handlePDFDelete = async (pdfNumber) => {
                   borderColor: '#10b981'
                 }}
               >
-                Nộp lại báo cáo và gửi email thông báo
+                Nộp lại báo
               </Button>
             </Space>
           </Form.Item>
@@ -953,6 +1171,7 @@ const handlePDFDelete = async (pdfNumber) => {
               format="DD/MM/YYYY"
               placeholder="8/2/2025"
               onChange={handleCompletionDeadlineChange}
+              locale={locale}
             />
           </Form.Item>
         </Col>
@@ -963,7 +1182,7 @@ const handlePDFDelete = async (pdfNumber) => {
             label="Ngày hoàn thành thực tế"
             extra="Khi điền ngày và lưu, trạng thái sẽ tự động chuyển sang 'Hoàn thành'"
           >
-            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" disabled />
           </Form.Item>
         </Col>
 
@@ -971,7 +1190,7 @@ const handlePDFDelete = async (pdfNumber) => {
           <Form.Item
             name="PD5_REPORT_ACTUAL_DATE"
             label="Ngày gửi báo cáo tới PD5 thực tế"
-            extra="Tự động cập nhật khi điền Link gửi báo cáo đánh giá"
+            extra="Tự động cập nhật khi nộp đầy đủ báo cáo."
           >
             <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" disabled />
           </Form.Item>
@@ -983,7 +1202,7 @@ const handlePDFDelete = async (pdfNumber) => {
             label="Ngày PD5 gửi tổng"
             extra="Khi điền ngày và lưu, trạng thái sẽ tự động chuyển sang 'HQ đang phê duyệt'"
           >
-            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" locale={locale}/>
           </Form.Item>
         </Col>
         <Col span={8}>
@@ -991,7 +1210,7 @@ const handlePDFDelete = async (pdfNumber) => {
             name="DATE_PD5_GET_REPORT"
             label="Ngày PD5 tổng hợp báo cáo"
           >
-            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" />
+            <DatePicker style={{ width: '100%' }} format="DD/MM/YYYY" locale={locale}/>
           </Form.Item>
         </Col>
       </Row>

@@ -75,6 +75,16 @@ const CertificationHistoryModal = ({ open, onClose, certificationId, certificati
         return 'purple';
       case 'DELETE':
         return 'red';
+      case 'UPLOAD_IMAGE':
+      case 'UPLOAD_PDF':
+      case 'REUPLOAD_PDF':
+        return 'cyan';
+      case 'DELETE_IMAGE':
+      case 'DELETE_PDF_FILE':
+        return 'orange';
+      case 'SUBMIT_REPORT':
+      case 'RESUBMIT_REPORT':
+        return 'geekblue';
       default:
         return 'default';
     }
@@ -90,6 +100,20 @@ const CertificationHistoryModal = ({ open, onClose, certificationId, certificati
         return 'Phê duyệt';
       case 'DELETE':
         return 'Xóa';
+      case 'UPLOAD_IMAGE':
+        return 'Upload ảnh';
+      case 'DELETE_IMAGE':
+        return 'Xóa ảnh';
+      case 'UPLOAD_PDF':
+        return 'Upload PDF';
+      case 'REUPLOAD_PDF':
+        return 'Upload lại PDF';
+      case 'DELETE_PDF_FILE':
+        return 'Xóa file PDF';
+      case 'SUBMIT_REPORT':
+        return 'Nộp báo cáo';
+      case 'RESUBMIT_REPORT':
+        return 'Nộp lại báo cáo';
       default:
         return actionType;
     }
@@ -140,137 +164,219 @@ const CertificationHistoryModal = ({ open, onClose, certificationId, certificati
     PERSON_ACCEPT: 'Người phê duyệt TKSX',
     PERSON_ACCEPT_QL2: 'Người phê duyệt QL2',
     IS_DELETED: 'Trạng thái xóa',
+    IMAGES: 'Hình ảnh',
+    PDF_1_FILES: 'Báo cáo tin cậy',
+    PDF_2_FILES: 'NC',
+    PDF_3_FILES: 'GCNH',
+    PDF_4_FILES: 'Mạ',
+    PDF_5_FILES: 'Ép lớp + Hàn điểm',
+    PDF_6_FILES: 'Lazer',
+    PDF_7_FILES: 'Báo cáo khác',
+    PDF_8_FILES: 'Mực phủ sơn, lấp lỗ, in chữ',
+    PDF_1_FILE: 'File Báo cáo tin cậy',
+    PDF_2_FILE: 'File NC',
+    PDF_3_FILE: 'File GCNH',
+    PDF_4_FILE: 'File Mạ',
+    PDF_5_FILE: 'File Ép lớp + Hàn điểm',
+    PDF_6_FILE: 'File Lazer',
+    PDF_7_FILE: 'File Báo cáo khác',
+    PDF_8_FILE: 'File Mực phủ sơn, lấp lỗ, in chữ',
   };
 
   const formatValue = (value) => {
     if (value === null || value === undefined) return '-';
     if (typeof value === 'boolean') return value ? 'Có' : 'Không';
+    
+    // ✅ Handle array of file objects
+    if (Array.isArray(value)) {
+      if (value.length === 0) return '-';
+      
+      // Check if it's array of file objects
+      if (value[0] && (value[0].fileName || value[0].fileType)) {
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {value.map((file, idx) => (
+              <div key={idx} style={{ fontSize: '12px' }}>
+                📎 <strong>{file.fileName}</strong>
+                {file.fileType && <span style={{ color: '#6b7280', marginLeft: '8px' }}>
+                  ({file.fileType})
+                </span>}
+                {file.fileSize && <span style={{ color: '#6b7280', marginLeft: '4px' }}>
+                  - {(file.fileSize / 1024).toFixed(1)} KB
+                </span>}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      return value.join(', ');
+    }
+    
     if (typeof value === 'object') return JSON.stringify(value);
     return String(value);
   };
 
   const renderChangedFields = (history) => {
-  if (history.actionType === 'CREATE') {
-    const newValues = history.newValues || {};
-    const entries = Object.entries(newValues);
+    if (history.actionType === 'CREATE') {
+      const newValues = history.newValues || {};
+      const entries = Object.entries(newValues);
 
-    return (
-      <Descriptions bordered size="small" column={1}>
-        {entries.map(([key, value]) => (
-          <Descriptions.Item
-            key={key}
-            label={
-              <span
-                style={{
-                  fontSize: '12px',
-                  whiteSpace: 'nowrap',
-                  display: 'block',
-                  maxWidth: '200px'
-                }}
-              >
-                {fieldLabels[key] || key}
-              </span>
-            }
-            contentStyle={{
-              fontSize: '12px',
-              wordBreak: 'break-word'
-            }}
-          >
-            <Tag color="green" style={{ margin: 0 }}>
-              {formatValue(value)}
-            </Tag>
-          </Descriptions.Item>
-        ))}
-      </Descriptions>
-    );
-  }
-
-  if (history.actionType === 'UPDATE' && history.changedFields?.length > 0) {
-    const entries = history.changedFields.map(field => ({
-      field,
-      oldValue: history.oldValues?.[field],
-      newValue: history.newValues?.[field]
-    }));
-
-    return (
-      <Descriptions bordered size="small" column={1}>
-        {entries.map(({ field, oldValue, newValue }) => (
-          <Descriptions.Item
-            key={field}
-            label={
-              <span
-                style={{
-                  fontSize: '12px',
-                  whiteSpace: 'nowrap',
-                  display: 'block',
-                  maxWidth: '200px'
-                }}
-              >
-                {fieldLabels[field] || field}
-              </span>
-            }
-            contentStyle={{
-              fontSize: '12px',
-              wordBreak: 'break-word'
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                flexWrap: 'wrap'
+      return (
+        <Descriptions bordered size="small" column={1}>
+          {entries.map(([key, value]) => (
+            <Descriptions.Item
+              key={key}
+              label={
+                <span
+                  style={{
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap',
+                    display: 'block',
+                    maxWidth: '200px'
+                  }}
+                >
+                  {fieldLabels[key] || key}
+                </span>
+              }
+              contentStyle={{
+                fontSize: '12px',
+                wordBreak: 'break-word'
               }}
             >
-              <Tag color="red" style={{ margin: 0 }}>
-                {formatValue(oldValue)}
-              </Tag>
-              <span style={{ fontSize: '12px' }}>→</span>
               <Tag color="green" style={{ margin: 0 }}>
-                {formatValue(newValue)}
+                {formatValue(value)}
               </Tag>
-            </div>
-          </Descriptions.Item>
-        ))}
-      </Descriptions>
-    );
-  }
+            </Descriptions.Item>
+          ))}
+        </Descriptions>
+      );
+    }
 
-  if (history.actionType === 'APPROVE') {
+    // ✅ Handle UPLOAD_IMAGE, DELETE_IMAGE, UPLOAD_PDF, DELETE_PDF_FILE actions
+    if (['UPLOAD_IMAGE', 'DELETE_IMAGE', 'UPLOAD_PDF', 'REUPLOAD_PDF', 'DELETE_PDF_FILE'].includes(history.actionType)) {
+      const values = history.actionType.includes('DELETE') ? history.oldValues : history.newValues;
+      
+      return (
+        <Descriptions bordered size="small" column={1}>
+          {Object.entries(values || {}).map(([key, value]) => (
+            <Descriptions.Item
+              key={key}
+              label={
+                <span style={{ fontSize: '12px', whiteSpace: 'nowrap' }}>
+                  {fieldLabels[key] || key}
+                </span>
+              }
+              contentStyle={{
+                fontSize: '12px',
+                wordBreak: 'break-word'
+              }}
+            >
+              <Tag 
+                color={history.actionType.includes('DELETE') ? 'red' : 'green'} 
+                style={{ margin: 0, width: '100%' }}
+              >
+                {formatValue(value)}
+              </Tag>
+            </Descriptions.Item>
+          ))}
+        </Descriptions>
+      );
+    }
+
+    if (history.actionType === 'UPDATE' && history.changedFields?.length > 0) {
+      const entries = history.changedFields.map(field => ({
+        field,
+        oldValue: history.oldValues?.[field],
+        newValue: history.newValues?.[field]
+      }));
+
+      return (
+        <Descriptions bordered size="small" column={1}>
+          {entries.map(({ field, oldValue, newValue }) => (
+            <Descriptions.Item
+              key={field}
+              label={
+                <span
+                  style={{
+                    fontSize: '12px',
+                    whiteSpace: 'nowrap',
+                    display: 'block',
+                    maxWidth: '200px'
+                  }}
+                >
+                  {fieldLabels[field] || field}
+                </span>
+              }
+              contentStyle={{
+                fontSize: '12px',
+                wordBreak: 'break-word'
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '8px',
+                  flexWrap: 'wrap'
+                }}
+              >
+                {oldValue !== null && oldValue !== undefined && (
+                  <>
+                    <div style={{ flex: 1, minWidth: '150px' }}>
+                      <Tag color="red" style={{ margin: 0, width: '100%' }}>
+                        {formatValue(oldValue)}
+                      </Tag>
+                    </div>
+                    <span style={{ fontSize: '12px' }}>→</span>
+                  </>
+                )}
+                <div style={{ flex: 1, minWidth: '150px' }}>
+                  <Tag color="green" style={{ margin: 0, width: '100%' }}>
+                    {formatValue(newValue)}
+                  </Tag>
+                </div>
+              </div>
+            </Descriptions.Item>
+          ))}
+        </Descriptions>
+      );
+    }
+
+    if (history.actionType === 'APPROVE') {
+      return (
+        <Descriptions bordered size="small" column={1}>
+          {history.changedFields?.map(field => (
+            <Descriptions.Item
+              key={field}
+              label={
+                <span style={{ fontSize: '12px' }}>
+                  {fieldLabels[field] || field}
+                </span>
+              }
+              contentStyle={{ fontSize: '12px' }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <Tag color="red" style={{ margin: 0 }}>
+                  {formatValue(history.oldValues?.[field])}
+                </Tag>
+                <span>→</span>
+                <Tag color="green" style={{ margin: 0 }}>
+                  {formatValue(history.newValues?.[field])}
+                </Tag>
+              </div>
+            </Descriptions.Item>
+          ))}
+        </Descriptions>
+      );
+    }
+
     return (
-      <Descriptions bordered size="small" column={1}>
-        {history.changedFields?.map(field => (
-          <Descriptions.Item
-            key={field}
-            label={
-              <span style={{ fontSize: '12px' }}>
-                {fieldLabels[field] || field}
-              </span>
-            }
-            contentStyle={{ fontSize: '12px' }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Tag color="red" style={{ margin: 0 }}>
-                {formatValue(history.oldValues?.[field])}
-              </Tag>
-              <span>→</span>
-              <Tag color="green" style={{ margin: 0 }}>
-                {formatValue(history.newValues?.[field])}
-              </Tag>
-            </div>
-          </Descriptions.Item>
-        ))}
-      </Descriptions>
+      <Empty
+        description="Không có thay đổi"
+        image={Empty.PRESENTED_IMAGE_SIMPLE}
+      />
     );
-  }
-
-  return (
-    <Empty
-      description="Không có thay đổi"
-      image={Empty.PRESENTED_IMAGE_SIMPLE}
-    />
-  );
-};
+  };
 
   return (
     <Modal
